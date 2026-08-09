@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Task & Operations Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-500 p-2.5 rounded-lg shadow">
+          <i class="fa-solid fa-list-check text-2xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">Task & Operations Hub</h1>
+          <p class="text-xs text-indigo-200">Google Sheets Managed Application</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="setupDbBtn" onclick="runSetupDatabase()" class="px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-xs font-semibold rounded-lg transition flex items-center gap-2">
+          <i class="fa-solid fa-database"></i> Setup Sheets
+        </button>
+        <button id="addNewBtn" onclick="openModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> New Record
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <!-- Overview Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Records</p>
+          <h3 id="statTotal" class="text-2xl font-bold text-slate-800 mt-1">--</h3>
+        </div>
+        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xl">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Completed</p>
+          <h3 id="statCompleted" class="text-2xl font-bold text-emerald-600 mt-1">--</h3>
+        </div>
+        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Pending</p>
+          <h3 id="statPending" class="text-2xl font-bold text-amber-600 mt-1">--</h3>
+        </div>
+        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-xl">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Budget / Value</p>
+          <h3 id="statAmount" class="text-2xl font-bold text-slate-800 mt-1">$0.00</h3>
+        </div>
+        <div class="w-12 h-12 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center text-xl">
+          <i class="fa-solid fa-sack-dollar"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls / Filters -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap gap-3 justify-between items-center">
+      <div class="flex-1 min-w-[240px] relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search title or notes..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+        <select id="filterStatus" onchange="renderTable()" class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <option value="ALL">All Statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+        <select id="filterPriority" onchange="renderTable()" class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <option value="ALL">All Priorities</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <button onclick="fetchData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Data Table Container -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase text-xs tracking-wider">
+              <th class="p-4">Title & Details</th>
+              <th class="p-4">Category</th>
+              <th class="p-4">Priority</th>
+              <th class="p-4">Status</th>
+              <th class="p-4">Due Date</th>
+              <th class="p-4">Amount</th>
+              <th class="p-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Skeleton Rows -->
+            <tr class="border-b border-slate-100">
+              <td class="p-4"><div class="h-4 skeleton rounded w-3/4"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-20"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-16"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-20"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-24"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-16"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-12 ml-auto"></div></td>
+            </tr>
+            <tr class="border-b border-slate-100">
+              <td class="p-4"><div class="h-4 skeleton rounded w-2/3"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-20"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-16"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-20"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-24"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-16"></div></td>
+              <td class="p-4"><div class="h-4 skeleton rounded w-12 ml-auto"></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Form -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden transform transition-all">
+      <div class="bg-slate-100 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+        <h3 id="modalTitle" class="font-bold text-slate-800 text-lg">Add New Task</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="taskForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="taskId">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Title *</label>
+          <input type="text" id="taskTitle" required placeholder="Enter descriptive title" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Category</label>
+            <select id="taskCategory" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="General">General</option>
+              <option value="Work">Work</option>
+              <option value="Personal">Personal</option>
+              <option value="Finance">Finance</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Priority</label>
+            <select id="taskPriority" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status</label>
+            <select id="taskStatus" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Due Date</label>
+            <input type="date" id="taskDueDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Amount ($)</label>
+          <input type="number" step="0.01" id="taskAmount" placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Notes</label>
+          <textarea id="taskNotes" rows="3" placeholder="Additional details or links..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-medium rounded-lg transition">Cancel</button>
+          <button type="submit" id="saveSubmitBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-2">
+            <span>Save Task</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Custom Alert Modal -->
+  <div id="alertDialog" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-6 text-center">
+      <div id="alertIconContainer" class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i id="alertIcon" class="fa-solid fa-circle-info"></i>
+      </div>
+      <h4 id="alertTitle" class="font-bold text-slate-800 text-lg mb-2">Notification</h4>
+      <p id="alertMessage" class="text-sm text-slate-600 mb-6">Action output message goes here.</p>
+      <button onclick="closeAlertDialog()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition">OK</button>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Dialog -->
+  <div id="confirmDialog" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-6 text-center">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h4 class="font-bold text-slate-800 text-lg mb-2">Confirm Action</h4>
+      <p id="confirmMessage" class="text-sm text-slate-600 mb-6">Are you sure you want to delete this record?</p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirmDialog(false)" class="flex-1 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 font-medium rounded-lg text-sm transition">Cancel</button>
+        <button id="confirmYesBtn" onclick="closeConfirmDialog(true)" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg text-sm transition">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAVUkA0HuE4sip2fPT5dE2Se4JZ5RrT9mkHEaasKanuYG7dItwGRWvO9dC9AXqBJb68g/exec';
+    var appData = { tasks: [], categories: [] };
+    var pendingConfirmCallback = null;
+
+    function postRequest(action, payload) {
+      return fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, payload: payload || {} })
+      })
+      .then(function(res) { return res.text(); })
+      .then(function(text) {
+        var json = JSON.parse(text);
+        if (!json.ok) {
+          throw new Error(json.message || 'Server request failed');
+        }
+        return json.data;
+      });
+    }
+
+    function showAlert(title, message, isSuccess) {
+      document.getElementById('alertTitle').textContent = title;
+      document.getElementById('alertMessage').textContent = message;
+      var iconContainer = document.getElementById('alertIconContainer');
+      var icon = document.getElementById('alertIcon');
+
+      if (isSuccess) {
+        iconContainer.className = 'w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-xl';
+        icon.className = 'fa-solid fa-circle-check';
+      } else {
+        iconContainer.className = 'w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 text-xl';
+        icon.className = 'fa-solid fa-triangle-exclamation';
+      }
+
+      document.getElementById('alertDialog').classList.remove('hidden');
+    }
+
+    function closeAlertDialog() {
+      document.getElementById('alertDialog').classList.add('hidden');
+    }
+
+    function showConfirm(message, onConfirm) {
+      document.getElementById('confirmMessage').textContent = message;
+      pendingConfirmCallback = onConfirm;
+      document.getElementById('confirmDialog').classList.remove('hidden');
+    }
+
+    function closeConfirmDialog(result) {
+      document.getElementById('confirmDialog').classList.add('hidden');
+      if (result && typeof pendingConfirmCallback === 'function') {
+        pendingConfirmCallback();
+      }
+      pendingConfirmCallback = null;
+    }
+
+    function fetchData() {
+      renderSkeleton();
+      postRequest('getInitialData')
+        .then(function(data) {
+          appData = data || { tasks: [], categories: [] };
+          updateStats();
+          renderTable();
+        })
+        .catch(function(err) {
+          showAlert('Error', err.message, false);
+        });
+    }
+
+    function runSetupDatabase() {
+      var btn = document.getElementById('setupDbBtn');
+      var oldHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Setting up...';
+
+      postRequest('setupDatabase')
+        .then(function(res) {
+          showAlert('Database Ready', 'Sheets schema created and headers verified successfully.', true);
+          fetchData();
+        })
+        .catch(function(err) {
+          showAlert('Setup Failed', err.message, false);
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.innerHTML = oldHtml;
+        });
+    }
+
+    function updateStats() {
+      var tasks = appData.tasks || [];
+      var total = tasks.length;
+      var completed = 0;
+      var pending = 0;
+      var totalAmount = 0;
+
+      for (var i = 0; i < tasks.length; i++) {
+        if (tasks[i].status === 'Completed') completed++;
+        if (tasks[i].status === 'Pending') pending++;
+        totalAmount += Number(tasks[i].amount || 0);
+      }
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statCompleted').textContent = completed;
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statAmount').textContent = '$' + totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function renderSkeleton() {
+      var tbody = document.getElementById('tableBody');
+      var rowsHtml = '';
+      for (var i = 0; i < 4; i++) {
+        rowsHtml += '<tr class="border-b border-slate-100">' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-3/4"></div></td>' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-20"></div></td>' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-16"></div></td>' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-20"></div></td>' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-24"></div></td>' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-16"></div></td>' +
+          '<td class="p-4"><div class="h-4 skeleton rounded w-12 ml-auto"></div></td>' +
+        '</tr>';
+      }
+      tbody.innerHTML = rowsHtml;
+    }
+
+    function renderTable() {
+      var tbody = document.getElementById('tableBody');
+      var tasks = appData.tasks || [];
+
+      var searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      var filterStatus = document.getElementById('filterStatus').value;
+      var filterPriority = document.getElementById('filterPriority').value;
+
+      var filtered = tasks.filter(function(t) {
+        var matchesSearch = !searchVal || 
+          (t.title && t.title.toLowerCase().indexOf(searchVal) !== -1) ||
+          (t.notes && t.notes.toLowerCase().indexOf(searchVal) !== -1);
+        var matchesStatus = filterStatus === 'ALL' || t.status === filterStatus;
+        var matchesPriority = filterPriority === 'ALL' || t.priority === filterPriority;
+        return matchesSearch && matchesStatus && matchesPriority;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 font-medium">No records found matching your filters.</td></tr>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < filtered.length; i++) {
+        var item = filtered[i];
+
+        var priorityBadge = '';
+        if (item.priority === 'High') {
+          priorityBadge = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">High</span>';
+        } else if (item.priority === 'Medium') {
+          priorityBadge = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Medium</span>';
+        } else {
+          priorityBadge = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Low</span>';
+        }
+
+        var statusBadge = '';
+        if (item.status === 'Completed') {
+          statusBadge = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><i class="fa-solid fa-check mr-1"></i> Completed</span>';
+        } else if (item.status === 'In Progress') {
+          statusBadge = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700"><i class="fa-solid fa-spinner mr-1"></i> In Progress</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700"><i class="fa-solid fa-hourglass-start mr-1"></i> Pending</span>';
+        }
+
+        var amtStr = '$' + Number(item.amount || 0).toFixed(2);
+
+        html += '<tr class="border-b border-slate-100 hover:bg-slate-50/80 transition">' +
+          '<td class="p-4">' +
+            '<div class="font-semibold text-slate-800">' + escapeHtml(item.title) + '</div>' +
+            (item.notes ? '<div class="text-xs text-slate-500 mt-0.5 max-w-xs truncate">' + escapeHtml(item.notes) + '</div>' : '') +
+          '</td>' +
+          '<td class="p-4"><span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-700 rounded-md text-xs font-medium">' + escapeHtml(item.category) + '</span></td>' +
+          '<td class="p-4">' + priorityBadge + '</td>' +
+          '<td class="p-4">' + statusBadge + '</td>' +
+          '<td class="p-4 text-slate-600 font-mono text-xs">' + (item.dueDate || '--') + '</td>' +
+          '<td class="p-4 font-semibold text-slate-700 font-mono text-xs">' + amtStr + '</td>' +
+          '<td class="p-4 text-right">' +
+            '<div class="flex items-center justify-end gap-1.5">' +
+              '<button onclick="toggleStatus(\'' + item.id + '\', \'' + item.status + '\')" title="Quick Status Switch" class="p-1.5 hover:bg-slate-200 rounded text-slate-600 transition"><i class="fa-solid fa-arrow-rotate-right"></i></button>' +
+              '<button onclick="editItem(\'' + item.id + '\')" title="Edit Record" class="p-1.5 hover:bg-indigo-50 rounded text-indigo-600 transition"><i class="fa-solid fa-pen-to-square"></i></button>' +
+              '<button onclick="confirmDelete(\'' + item.id + '\')" title="Delete Record" class="p-1.5 hover:bg-rose-50 rounded text-rose-600 transition"><i class="fa-solid fa-trash"></i></button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function openModal(editId) {
+      var form = document.getElementById('taskForm');
+      form.reset();
+
+      if (editId) {
+        var item = (appData.tasks || []).find(function(t) { return t.id === editId; });
+        if (item) {
+          document.getElementById('modalTitle').textContent = 'Edit Record';
+          document.getElementById('taskId').value = item.id;
+          document.getElementById('taskTitle').value = item.title;
+          document.getElementById('taskCategory').value = item.category || 'General';
+          document.getElementById('taskPriority').value = item.priority || 'Medium';
+          document.getElementById('taskStatus').value = item.status || 'Pending';
+          document.getElementById('taskDueDate').value = item.dueDate || '';
+          document.getElementById('taskAmount').value = item.amount || '';
+          document.getElementById('taskNotes').value = item.notes || '';
+        }
+      } else {
+        document.getElementById('modalTitle').textContent = 'Add New Task';
+        document.getElementById('taskId').value = '';
+      }
+
+      document.getElementById('itemModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('itemModal').classList.add('hidden');
+    }
+
+    function editItem(id) {
+      openModal(id);
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      var btn = document.getElementById('saveSubmitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+      var payload = {
+        id: document.getElementById('taskId').value,
+        title: document.getElementById('taskTitle').value,
+        category: document.getElementById('taskCategory').value,
+        priority: document.getElementById('taskPriority').value,
+        status: document.getElementById('taskStatus').value,
+        dueDate: document.getElementById('taskDueDate').value,
+        amount: parseFloat(document.getElementById('taskAmount').value) || 0,
+        notes: document.getElementById('taskNotes').value
+      };
+
+      postRequest('saveTask', payload)
+        .then(function(data) {
+          appData = data;
+          updateStats();
+          renderTable();
+          closeModal();
+          showAlert('Success', 'Record saved successfully.', true);
+        })
+        .catch(function(err) {
+          showAlert('Error', err.message, false);
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Save Task</span>';
+        });
+    }
+
+    function toggleStatus(id, currentStatus) {
+      var nextStatus = 'Pending';
+      if (currentStatus === 'Pending') nextStatus = 'In Progress';
+      else if (currentStatus === 'In Progress') nextStatus = 'Completed';
+      else if (currentStatus === 'Completed') nextStatus = 'Pending';
+
+      postRequest('updateTaskStatus', { id: id, status: nextStatus })
+        .then(function(data) {
+          appData = data;
+          updateStats();
+          renderTable();
+        })
+        .catch(function(err) {
+          showAlert('Status Update Failed', err.message, false);
+        });
+    }
+
+    function confirmDelete(id) {
+      showConfirm('Are you sure you want to delete this record? This action cannot be undone.', function() {
+        postRequest('deleteTask', { id: id })
+          .then(function(data) {
+            appData = data;
+            updateStats();
+            renderTable();
+            showAlert('Deleted', 'Record removed successfully.', true);
+          })
+          .catch(function(err) {
+            showAlert('Delete Failed', err.message, false);
+          });
+      });
+    }
+
+    // Initial Load
+    window.addEventListener('DOMContentLoaded', function() {
+      fetchData();
+    });
+  </script>
+</body>
+</html>
