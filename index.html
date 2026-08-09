@@ -305,6 +305,36 @@
             <!-- ================= VIEW 2: FORMULIR PENDAFTARAN 3 STEP ================= -->
             <div x-show="mode === 'register'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
               
+              <!-- VISUAL PROGRESS BAR STEPPER (Sangat Jelas & Bermanfaat di Layar HP & Desktop) -->
+              <div class="mb-6 border-b border-slate-200 pb-4">
+                <div class="flex items-center justify-between relative px-2">
+                  <div class="absolute left-6 right-6 top-4 -translate-y-1/2 h-1 bg-slate-200 -z-0"></div>
+                  <div class="absolute left-6 top-4 -translate-y-1/2 h-1 bg-emerald-600 transition-all duration-300 -z-0"
+                       :style="'width: ' + ((regStep - 1) * 50) + '%'"></div>
+
+                  <!-- Step 1 Indicator -->
+                  <button type="button" @click="regStep = 1" class="flex flex-col items-center z-10 bg-white px-1 focus:outline-none">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
+                         :class="regStep >= 1 ? 'bg-emerald-700 text-white shadow-md ring-4 ring-emerald-100' : 'bg-slate-200 text-slate-500'">1</div>
+                    <span class="text-[11px] font-bold mt-1" :class="regStep >= 1 ? 'text-emerald-800' : 'text-slate-400'">1. Jalur</span>
+                  </button>
+
+                  <!-- Step 2 Indicator -->
+                  <button type="button" @click="nextStep(2)" class="flex flex-col items-center z-10 bg-white px-1 focus:outline-none">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
+                         :class="regStep >= 2 ? 'bg-emerald-700 text-white shadow-md ring-4 ring-emerald-100' : 'bg-slate-200 text-slate-500'">2</div>
+                    <span class="text-[11px] font-bold mt-1" :class="regStep >= 2 ? 'text-emerald-800' : 'text-slate-400'">2. Biodata</span>
+                  </button>
+
+                  <!-- Step 3 Indicator -->
+                  <button type="button" @click="nextStep(3)" class="flex flex-col items-center z-10 bg-white px-1 focus:outline-none">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
+                         :class="regStep === 3 ? 'bg-emerald-700 text-white shadow-md ring-4 ring-emerald-100' : 'bg-slate-200 text-slate-500'">3</div>
+                    <span class="text-[11px] font-bold mt-1" :class="regStep === 3 ? 'text-emerald-800' : 'text-slate-400'">3. Syarat</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- STEP 1: PILIH JALUR & JENJANG -->
               <div x-show="regStep === 1" class="space-y-5">
                 <div>
@@ -413,28 +443,28 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Santri *</label>
-                    <input type="text" x-model="regForm.namaLengkap" required placeholder="Nama lengkap sesuai ijazah/akta"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
+                    <input type="text" x-model="regForm.namaLengkap" @input="regForm.namaLengkap = regForm.namaLengkap.toUpperCase()" required placeholder="NAMA LENGKAP SESUAI IJAZAH/AKTA"
+                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
                   </div>
 
                   <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">NISN (Opsional)</label>
-                    <input type="text" x-model="regForm.nisn" placeholder="10 digit NISN"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
+                    <input type="text" x-model="regForm.nisn" placeholder="10 DIGIT NISN"
+                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
                   </div>
 
                   <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Kelamin *</label>
-                    <select x-model="regForm.gender" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                      <option value="Laki-laki">Laki-laki</option>
-                      <option value="Perempuan">Perempuan</option>
+                    <select x-model="regForm.gender" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
+                      <option value="LAKI-LAKI">LAKI-LAKI</option>
+                      <option value="PEREMPUAN">PEREMPUAN</option>
                     </select>
                   </div>
 
                   <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Asal Sekolah *</label>
-                    <input type="text" x-model="regForm.asalSekolah" placeholder="Contoh: SD Negeri 1 Malang / MI Al-Hidayah"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
+                    <input type="text" x-model="regForm.asalSekolah" @input="regForm.asalSekolah = regForm.asalSekolah.toUpperCase()" placeholder="CONTOH: SD NEGERI 1 MALANG / MI AL-HIDAYAH"
+                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
                   </div>
 
                   <div>
@@ -616,19 +646,11 @@
           </template>
 
           <template x-if="mode === 'register'">
-            <div class="space-y-3">
-              <h3 class="text-sm font-bold text-white">Tahapan Pendaftaran</h3>
-              <div class="grid grid-cols-3 gap-2">
-                <div class="p-2 rounded-lg text-center" :class="regStep === 1 ? 'bg-emerald-700/80 border border-emerald-400/50 text-white' : 'bg-emerald-900/50 text-emerald-300'">
-                  <div class="text-xs font-bold">1. Jalur</div>
-                </div>
-                <div class="p-2 rounded-lg text-center" :class="regStep === 2 ? 'bg-emerald-700/80 border border-emerald-400/50 text-white' : 'bg-emerald-900/50 text-emerald-300'">
-                  <div class="text-xs font-bold">2. Biodata</div>
-                </div>
-                <div class="p-2 rounded-lg text-center" :class="regStep === 3 ? 'bg-emerald-700/80 border border-emerald-400/50 text-white' : 'bg-emerald-900/50 text-emerald-300'">
-                  <div class="text-xs font-bold">3. Syarat</div>
-                </div>
-              </div>
+            <div class="space-y-2">
+              <h3 class="text-xs font-semibold text-emerald-200">Petunjuk Pendaftaran:</h3>
+              <p class="text-xs text-emerald-100/80 leading-relaxed">
+                Orang tua/wali santri dapat mendaftarkan lebih dari 1 calon santri menggunakan Nomor WhatsApp dan Email yang sama.
+              </p>
             </div>
           </template>
         </div>
