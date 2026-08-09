@@ -84,12 +84,34 @@
   <main class="flex-1 flex items-center justify-center p-3 sm:p-6 md:p-10">
     <div class="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 min-h-[640px] flex flex-col md:flex-row transition-all duration-300">
       
-      <!-- ================= SISI KIRI PANEL (PENGUMUMAN & TOMBOL) ================= -->
-      <div class="w-full md:w-5/12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 order-2 md:order-1">
+      <!-- ================= 1. MOBILE TOP HEADER (Khusus Mobile & Tablet) ================= -->
+      <div class="md:hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-5 relative overflow-hidden border-b border-emerald-800">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col space-y-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-emerald-600/60 backdrop-blur border border-emerald-400/30 rounded-xl flex items-center justify-center text-emerald-200 shadow-inner">
+              <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h1 class="font-bold text-base leading-tight text-white tracking-wide">AL-UMM</h1>
+              <p class="text-[11px] text-emerald-200/80 font-medium">Pondok Pesantren &amp; Madrasah</p>
+            </div>
+          </div>
+          <div>
+            <div class="inline-flex items-center space-x-2 bg-emerald-700/50 border border-emerald-500/30 rounded-full px-3 py-1 text-[11px] text-emerald-100 font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>PSB Tahun Ajaran <strong x-text="config.TAHUN_AJARAN || '2025/2026'"></strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 2. DESKTOP LEFT PANEL (Khusus Layar Komputer / Desktop) ================= -->
+      <div class="hidden md:flex md:w-5/12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-6 sm:p-8 flex-col justify-between relative overflow-hidden transition-all duration-500">
         <!-- Pattern background overlay -->
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
 
-        <!-- HEADER / LOGO (Terlihat di Tablet/Mobile & Desktop) -->
+        <!-- HEADER / LOGO DESKTOP -->
         <div class="relative z-10">
           <div class="flex items-center space-x-3">
             <div class="w-12 h-12 bg-emerald-600/60 backdrop-blur border border-emerald-400/30 rounded-2xl flex items-center justify-center text-emerald-200 shadow-inner">
@@ -97,7 +119,7 @@
             </div>
             <div>
               <h1 class="font-bold text-lg leading-tight text-white tracking-wide">AL-UMM</h1>
-              <p class="text-xs text-emerald-200/80 font-medium">Pondok Pesantren & Madrasah</p>
+              <p class="text-xs text-emerald-200/80 font-medium">Pondok Pesantren &amp; Madrasah</p>
             </div>
           </div>
 
@@ -108,12 +130,9 @@
           </div>
         </div>
 
-        <!-- CONTENT PANEL SISI KIRI DEPENDS ON MODE -->
-        
-        <!-- MODE 1: LOGIN MODE (Penyambutan & Slide Info) -->
+        <!-- CONTENT PANEL DESKTOP -->
         <template x-if="mode === 'login'">
           <div class="my-8 relative z-10 transition-all duration-300">
-            <!-- Loading Skeleton Slide -->
             <template x-if="loadingInitial">
               <div class="animate-pulse space-y-3">
                 <div class="h-4 bg-emerald-700/50 rounded w-1/3"></div>
@@ -122,14 +141,12 @@
               </div>
             </template>
 
-            <!-- Active Slide Content -->
             <template x-if="!loadingInitial && slides.length > 0">
               <div class="space-y-4">
                 <span class="inline-block px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider bg-amber-400 text-amber-950" x-text="slides[activeSlide].badge"></span>
                 <h2 class="text-xl sm:text-2xl font-bold leading-snug text-white" x-text="slides[activeSlide].title"></h2>
                 <p class="text-xs sm:text-sm text-emerald-100/80 leading-relaxed" x-text="slides[activeSlide].content"></p>
                 
-                <!-- Slide Indicators -->
                 <div class="flex items-center space-x-2 pt-2">
                   <template x-for="(slide, index) in slides" :key="index">
                     <button @click="activeSlide = index" 
@@ -142,7 +159,6 @@
           </div>
         </template>
 
-        <!-- MODE 2: REGISTER MODE (Indikator Langkah Pendaftaran) -->
         <template x-if="mode === 'register'">
           <div class="my-8 relative z-10 space-y-6 transition-all duration-300">
             <div>
@@ -150,45 +166,41 @@
               <p class="text-xs text-emerald-200/80 mt-1">Lengkapi data santri baru dengan mudah</p>
             </div>
 
-            <!-- Steps List -->
             <div class="space-y-4">
-              <!-- Step 1 Indicator -->
               <div class="flex items-center space-x-3 p-3 rounded-xl transition-all"
                    :class="regStep === 1 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200'">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
                      :class="regStep === 1 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">1</div>
                 <div>
-                  <h4 class="text-xs font-semibold">Jalur & Jenjang</h4>
+                  <h4 class="text-xs font-semibold">Jalur &amp; Jenjang</h4>
                   <p class="text-[10px] text-emerald-200/80">Pilihan program studi</p>
                 </div>
               </div>
 
-              <!-- Step 2 Indicator -->
               <div class="flex items-center space-x-3 p-3 rounded-xl transition-all"
                    :class="regStep === 2 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200'">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
                      :class="regStep === 2 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">2</div>
                 <div>
-                  <h4 class="text-xs font-semibold">Biodata & NISN</h4>
-                  <p class="text-[10px] text-emerald-200/80">Identitas santri & wali</p>
+                  <h4 class="text-xs font-semibold">Biodata &amp; NISN</h4>
+                  <p class="text-[10px] text-emerald-200/80">Identitas santri &amp; wali</p>
                 </div>
               </div>
 
-              <!-- Step 3 Indicator -->
               <div class="flex items-center space-x-3 p-3 rounded-xl transition-all"
                    :class="regStep === 3 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200'">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
                      :class="regStep === 3 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">3</div>
                 <div>
                   <h4 class="text-xs font-semibold">Persetujuan Syarat</h4>
-                  <p class="text-[10px] text-emerald-200/80">Konfirmasi data & ketentuan</p>
+                  <p class="text-[10px] text-emerald-200/80">Konfirmasi data &amp; ketentuan</p>
                 </div>
               </div>
             </div>
           </div>
         </template>
 
-        <!-- FOOTER KIRI: ACTION BUTTONS (Brosur & Helpdesk) -->
+        <!-- FOOTER DESKTOP BUTTONS -->
         <div class="relative z-10 pt-4 border-t border-emerald-700/50 flex flex-col sm:flex-row gap-2">
           <a :href="config.BROCHURE_URL || '#'" target="_blank" 
              class="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
@@ -204,8 +216,8 @@
       </div>
 
 
-      <!-- ================= SISI KANAN PANEL (FORM & HASIL AKUN) ================= -->
-      <div class="w-full md:w-7/12 p-6 sm:p-10 flex flex-col justify-center bg-white relative order-1 md:order-2">
+      <!-- ================= 3. AREA UTAMA FORM (LOGIN / REGISTRASI / HASIL) ================= -->
+      <div class="w-full md:w-7/12 p-6 sm:p-10 flex flex-col justify-center bg-white relative">
         
         <!-- SKELETON LOADING STATE FOR FORM INITIALIZATION -->
         <template x-if="loadingInitial">
@@ -577,6 +589,65 @@
         </template>
 
       </div>
+
+      <!-- ================= 4. MOBILE BOTTOM PANEL (Khusus Mobile & Tablet) ================= -->
+      <div class="md:hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-5 sm:p-6 relative overflow-hidden border-t border-emerald-800 space-y-5">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+
+        <div class="relative z-10">
+          <template x-if="mode === 'login'">
+            <div class="space-y-3">
+              <template x-if="!loadingInitial && slides.length > 0">
+                <div class="space-y-3">
+                  <span class="inline-block px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider bg-amber-400 text-amber-950" x-text="slides[activeSlide].badge"></span>
+                  <h3 class="text-lg font-bold leading-snug text-white" x-text="slides[activeSlide].title"></h3>
+                  <p class="text-xs text-emerald-100/80 leading-relaxed" x-text="slides[activeSlide].content"></p>
+                  
+                  <div class="flex items-center space-x-2 pt-1">
+                    <template x-for="(slide, index) in slides" :key="index">
+                      <button @click="activeSlide = index" 
+                              class="h-1.5 rounded-full transition-all duration-300"
+                              :class="activeSlide === index ? 'w-6 bg-emerald-300' : 'w-2 bg-emerald-700'"></button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <template x-if="mode === 'register'">
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold text-white">Tahapan Pendaftaran</h3>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="p-2 rounded-lg text-center" :class="regStep === 1 ? 'bg-emerald-700/80 border border-emerald-400/50 text-white' : 'bg-emerald-900/50 text-emerald-300'">
+                  <div class="text-xs font-bold">1. Jalur</div>
+                </div>
+                <div class="p-2 rounded-lg text-center" :class="regStep === 2 ? 'bg-emerald-700/80 border border-emerald-400/50 text-white' : 'bg-emerald-900/50 text-emerald-300'">
+                  <div class="text-xs font-bold">2. Biodata</div>
+                </div>
+                <div class="p-2 rounded-lg text-center" :class="regStep === 3 ? 'bg-emerald-700/80 border border-emerald-400/50 text-white' : 'bg-emerald-900/50 text-emerald-300'">
+                  <div class="text-xs font-bold">3. Syarat</div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- FOOTER BUTTONS (Stack Vertikal di Mobile) -->
+        <div class="relative z-10 pt-3 border-t border-emerald-700/50 flex flex-col gap-2.5">
+          <a :href="config.BROCHURE_URL || '#'" target="_blank" 
+             class="w-full inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
+            <i data-lucide="file-down" class="w-4 h-4 text-emerald-300"></i>
+            <span>Brosur PSB</span>
+          </a>
+          <a :href="'https://wa.me/' + (config.HELPDESK_WA || '6281234567890')" target="_blank"
+             class="w-full inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
+            <i data-lucide="message-circle" class="w-4 h-4 text-emerald-300"></i>
+            <span>Helpdesk WA</span>
+          </a>
+        </div>
+      </div>
+
     </div>
   </main>
 
