@@ -3,40 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PSB Pondok Pesantren Al-Umm</title>
-  <!-- Tailwind CSS CDN -->
+  <title>PSB Online - Pondok Pesantren Al-Umm</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- html2pdf CDN for Registration Card PDF Download -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #0f172a;
+      background: linear-gradient(135deg, #062319 0%, #0B4F37 50%, #132A22 100%);
+      min-height: 100vh;
+      color: #141414;
     }
-    .bg-emerald-solid {
-      background-color: #065f46;
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
+
+    /* Glassmorphism Components */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 4px;
+
+    .glass-panel-green {
+      background: linear-gradient(145deg, rgba(11, 79, 55, 0.92), rgba(6, 35, 25, 0.95));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(15, 23, 42, 0.15);
+      transition: all 0.2s ease-in-out;
     }
+    .glass-input:focus {
+      background: #ffffff;
+      border-color: #0B4F37;
+      box-shadow: 0 0 0 3px rgba(11, 79, 55, 0.15);
+      outline: none;
+    }
+
+    /* Skeleton Loading Animation */
     .skeleton {
-      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-      background-size: 200% 100%;
-      animation: skeleton-loading 1.5s infinite;
-    }
-    .skeleton-dark {
-      background: linear-gradient(90deg, #044e38 25%, #065f46 50%, #044e38 75%);
+      background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.1) 75%);
       background-size: 200% 100%;
       animation: skeleton-loading 1.5s infinite;
     }
@@ -44,464 +65,428 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
+
+    /* Print styles for Registration PDF Output */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-credential, #printable-credential * { visibility: visible; }
+      #printable-credential {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff !important;
+        color: #000 !important;
+        padding: 20px;
+      }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 text-slate-800">
+<body class="p-3 md:p-6 flex items-center justify-center min-h-screen">
 
-  <!-- MAIN CONTAINER -->
-  <div class="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-700/30 flex flex-col lg:flex-row min-h-[620px]">
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Custom Alert/Confirm Modal Overlay -->
+  <div id="custom-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-white/40 transform transition-all">
+      <h3 id="modal-title" class="text-lg font-bold text-slate-800 mb-2"></h3>
+      <p id="modal-body" class="text-sm text-slate-600 mb-6"></p>
+      <div id="modal-actions" class="flex justify-end gap-3"></div>
+    </div>
+  </div>
+
+  <!-- MAIN WRAPPER CARD -->
+  <div class="w-full max-w-6xl glass-card rounded-3xl overflow-hidden shadow-2xl my-auto">
     
-    <!-- LEFT PANEL: Dynamic Solid Green (Announcement Mode vs Step Progress Mode) -->
-    <div id="leftPanel" class="lg:w-5/12 bg-emerald-solid text-white p-6 sm:p-8 flex flex-col justify-between relative transition-all duration-300">
-      
-      <!-- Skeleton Left Panel -->
-      <div id="leftSkeleton" class="space-y-6">
-        <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 rounded-xl skeleton-dark"></div>
-          <div class="space-y-2 flex-1">
-            <div class="h-4 w-28 skeleton-dark rounded"></div>
-            <div class="h-3 w-36 skeleton-dark rounded"></div>
-          </div>
-        </div>
-        <div class="h-6 w-32 skeleton-dark rounded-full my-6"></div>
-        <div class="h-8 w-3/4 skeleton-dark rounded"></div>
-        <div class="h-24 w-full skeleton-dark rounded-xl"></div>
-        <div class="h-12 w-full skeleton-dark rounded-xl"></div>
-      </div>
-
-      <!-- Real Left Content (Hidden while loading skeleton) -->
-      <div id="leftContent" class="hidden flex-col justify-between h-full space-y-8">
-        
-        <!-- Header Brand -->
-        <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm">
-            <i data-lucide="graduation-cap" class="w-7 h-7 text-emerald-200"></i>
-          </div>
-          <div>
-            <h1 class="font-extrabold text-lg tracking-tight leading-tight text-white">PSB AL-UMM</h1>
-            <p class="text-xs text-emerald-200/90 font-medium">Pondok Pesantren Al-Umm</p>
-          </div>
-        </div>
-
-        <!-- MODE 1: INFO & ANNOUNCEMENT SLIDER (LOGIN VIEW) -->
-        <div id="leftInfoMode" class="space-y-6 my-auto">
-          <div>
-            <span id="promoBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-950 uppercase tracking-wider mb-3 shadow-sm">
-              <i data-lucide="zap" class="w-3.5 h-3.5 fill-current"></i>
-              <span id="promoBadgeText">PROMO EARLY BIRD DIBUKA</span>
-            </span>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-              Penerimaan Santri Baru<br>
-              <span id="tahunAjaranText" class="text-amber-300">Tahun Ajaran 2027/2028</span>
-            </h2>
-            <p class="text-xs sm:text-sm text-emerald-100/80 mt-2 font-normal">
-              Satu portal terpadu untuk calon santri dan panitia pendaftaran.
-            </p>
-          </div>
-
-          <!-- Slide Box Card -->
-          <div class="bg-emerald-900/60 border border-emerald-500/30 rounded-xl p-4 sm:p-5 backdrop-blur-md relative overflow-hidden">
-            <div class="flex items-center justify-between text-xs text-emerald-200 font-semibold mb-2">
-              <span class="flex items-center gap-1.5">
-                <i data-lucide="megaphone" class="w-4 h-4 text-amber-300"></i>
-                <span id="announcementBadge">Pengumuman PSB</span>
-              </span>
-              <span id="slideCounter" class="text-[11px] opacity-75">1/1</span>
-            </div>
-            <h3 id="slideTitle" class="font-bold text-amber-300 text-sm sm:text-base mb-1">PROMO EARLY BIRD DIBUKA!</h3>
-            <p id="slideDesc" class="text-xs text-emerald-100/90 leading-relaxed min-h-[48px]">
-              Dapatkan Potongan Khusus Biaya Pendaftaran! Cukup buat akun & kunci kuota sebelum Gelombang I resmi dibuka.
-            </p>
-            <!-- Dots indicator -->
-            <div id="slideDots" class="flex gap-1.5 mt-3"></div>
-          </div>
-
-          <!-- Brochure & Helpdesk Buttons -->
-          <div class="space-y-2 pt-2">
-            <a id="btnBrosur" href="#" target="_blank" class="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]">
-              <i data-lucide="download" class="w-4 h-4"></i>
-              <span>Download Brosur PSB (PDF / Drive)</span>
-            </a>
-            <a id="btnHelpdesk" href="#" target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-emerald-700/60 hover:bg-emerald-700 text-emerald-100 font-semibold text-xs flex items-center justify-center gap-2 transition-all border border-emerald-500/30">
-              <i data-lucide="message-circle" class="w-4 h-4 text-emerald-300"></i>
-              <span>Hubungi Helpdesk WhatsApp</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- MODE 2: REGISTRATION STEPS PROGRESS (REGISTER VIEW) -->
-        <div id="leftStepMode" class="hidden my-auto space-y-6">
-          <div>
-            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-900/80 text-emerald-200 border border-emerald-500/30 mb-2">
-              Pendaftaran Online
-            </span>
-            <h2 class="text-2xl font-extrabold text-white">Alur Pendaftaran</h2>
-            <p class="text-xs text-emerald-100/80 mt-1">Lengkapi data secara bertahap di bawah ini.</p>
-          </div>
-
-          <!-- Step Indicators Vertical -->
-          <div class="space-y-6 pt-2">
-            <!-- Step 1 Indicator -->
-            <div id="stepInd1" class="flex items-start gap-3.5 group">
-              <div id="stepCircle1" class="w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 shadow-md">1</div>
-              <div>
-                <p id="stepTitle1" class="text-xs font-bold text-white">Pilih Jenjang & Jalur</p>
-                <p class="text-[11px] text-emerald-200/80">Reguler, Mutasi, atau Inden</p>
-              </div>
-            </div>
-
-            <!-- Step 2 Indicator -->
-            <div id="stepInd2" class="flex items-start gap-3.5 group opacity-60">
-              <div id="stepCircle2" class="w-8 h-8 rounded-full border-2 border-emerald-300/60 text-emerald-200 font-bold flex items-center justify-center text-xs shrink-0">2</div>
-              <div>
-                <p id="stepTitle2" class="text-xs font-bold text-emerald-100">Biodata & NISN</p>
-                <p class="text-[11px] text-emerald-200/80">Identitas calon santri</p>
-              </div>
-            </div>
-
-            <!-- Step 3 Indicator -->
-            <div id="stepInd3" class="flex items-start gap-3.5 group opacity-60">
-              <div id="stepCircle3" class="w-8 h-8 rounded-full border-2 border-emerald-300/60 text-emerald-200 font-bold flex items-center justify-center text-xs shrink-0">3</div>
-              <div>
-                <p id="stepTitle3" class="text-xs font-bold text-emerald-100">Persetujuan & S&K</p>
-                <p class="text-[11px] text-emerald-200/80">Konfirmasi syarat pendaftaran</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer Info -->
-        <div class="flex items-center justify-between text-[11px] text-emerald-200/70 border-t border-emerald-700/50 pt-4">
-          <span>&copy; 2025 Pesantren Al-Umm</span>
-          <span class="px-2 py-0.5 rounded bg-emerald-900/60 text-[10px]">v1.1</span>
-        </div>
-
+    <!-- SKELETON LOADING INITIAL STATE -->
+    <div id="skeleton-loader" class="p-6 md:p-10 grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[620px]">
+      <div class="md:col-span-5 rounded-2xl skeleton min-h-[300px]"></div>
+      <div class="md:col-span-7 flex flex-col justify-center space-y-4">
+        <div class="h-8 skeleton w-1/3 rounded-lg"></div>
+        <div class="h-4 skeleton w-2/3 rounded-lg"></div>
+        <div class="h-12 skeleton w-full rounded-xl"></div>
+        <div class="h-12 skeleton w-full rounded-xl"></div>
+        <div class="h-12 skeleton w-full rounded-xl"></div>
       </div>
     </div>
 
-    <!-- RIGHT PANEL: Forms Container -->
-    <div class="lg:w-7/12 p-6 sm:p-10 flex flex-col justify-center bg-white relative min-h-[500px]">
+    <!-- APP CONTENT CONTAINER -->
+    <div id="app-content" class="hidden flex flex-col md:flex-row min-h-[620px]">
       
-      <!-- Right Side Skeleton Loading -->
-      <div id="rightSkeleton" class="space-y-6 max-w-md mx-auto w-full">
-        <div class="h-7 w-48 skeleton rounded"></div>
-        <div class="h-4 w-64 skeleton rounded"></div>
-        <div class="space-y-4 pt-4">
-          <div class="h-12 w-full skeleton rounded-xl"></div>
-          <div class="h-12 w-full skeleton rounded-xl"></div>
-          <div class="h-12 w-full skeleton rounded-xl"></div>
+      <!-- MOBILE / TABLET HEADER (VISIBLE ON SMALL SCREENS ONLY) -->
+      <div class="block md:hidden bg-emerald-950 p-4 text-white text-center border-b border-emerald-800/50">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-400/30">
+            <i data-lucide="graduation-cap" class="w-5 h-5 text-emerald-400"></i>
+          </div>
+          <span class="font-bold text-lg tracking-wide text-emerald-100">PONPES AL-UMM</span>
         </div>
+        <p class="text-xs text-emerald-300/80">Penerimaan Santri Baru Tahun Ajaran <span class="ta-label font-semibold">...</span></p>
       </div>
 
-      <!-- VIEW 1: LOGIN FORM -->
-      <div id="viewLogin" class="hidden max-w-md mx-auto w-full">
-        <div class="mb-6">
-          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk ke Akun</h2>
-          <p class="text-xs text-slate-500 mt-1">Gunakan No. Registrasi (contoh PSB25-1084), No. WA, atau Email.</p>
+      <!-- LEFT SIDE / GREEN PANEL (DESKTOP: LEFT 5 COLS | MOBILE: STACKED AT BOTTOM) -->
+      <div id="left-panel" class="w-full md:w-5/12 glass-panel-green p-6 md:p-8 flex flex-col justify-between text-white order-2 md:order-1">
+        
+        <!-- TOP BRANDING (Desktop) -->
+        <div class="hidden md:block">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-400/30 shadow-inner">
+              <i data-lucide="graduation-cap" class="w-6 h-6 text-emerald-300"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-xl text-white tracking-tight leading-tight">PONPES AL-UMM</h2>
+              <p class="text-xs text-emerald-300/80 font-medium">Sistem Penerimaan Santri Baru</p>
+            </div>
+          </div>
+          <div class="inline-block px-3 py-1 bg-emerald-900/60 border border-emerald-500/30 rounded-full text-xs font-semibold text-emerald-200">
+            Tahun Ajaran <span class="ta-label">...</span>
+          </div>
         </div>
 
-        <form id="formLogin" onsubmit="handleLoginSubmit(event)" class="space-y-4">
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">No. Registrasi / WA / Email</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i data-lucide="user" class="w-4 h-4"></i>
+        <!-- MIDDLE CONTENT: DYNAMIC BETWEEN LOGIN MODE & REGISTER STEPS MODE -->
+        <div id="left-dynamic-content" class="my-6">
+          
+          <!-- MODE LOGIN: ANNOUNCEMENT SLIDER -->
+          <div id="slider-wrapper">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-emerald-300/90 flex items-center gap-1.5">
+                <i data-lucide="bell" class="w-3.5 h-3.5 text-emerald-400"></i> Info & Pengumuman
               </span>
-              <input type="text" id="loginIdentifier" required placeholder="PSB25-1084 / 08123456789" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all">
+              <div class="flex gap-1" id="slider-dots"></div>
+            </div>
+            <div class="relative overflow-hidden rounded-xl bg-emerald-950/50 border border-emerald-500/20 p-4 min-h-[140px] flex flex-col justify-center">
+              <div id="slider-container" class="transition-all duration-500">
+                <!-- Slide content injected here dynamically -->
+              </div>
             </div>
           </div>
 
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                <i data-lucide="lock" class="w-4 h-4"></i>
-              </span>
-              <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all">
+          <!-- MODE REGISTER: STEP INDICATOR -->
+          <div id="step-indicator-wrapper" class="hidden">
+            <h3 class="text-lg font-bold text-white mb-1">Langkah Pendaftaran</h3>
+            <p class="text-xs text-emerald-200/80 mb-6">Lengkapi formulir dengan data santri yang valid</p>
+            
+            <div class="space-y-4 relative">
+              <!-- Step Line -->
+              <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-emerald-800/60 z-0"></div>
+
+              <!-- Step 1 Indicator -->
+              <div id="step-node-1" class="relative z-10 flex items-center gap-3">
+                <div class="step-num-circle w-8 h-8 rounded-full bg-emerald-500 text-emerald-950 font-bold flex items-center justify-center text-sm ring-4 ring-emerald-950">1</div>
+                <div>
+                  <p class="text-xs font-bold text-white">Jalur & Jenjang</p>
+                  <p class="text-[11px] text-emerald-300/70">Pilih program pendidikan</p>
+                </div>
+              </div>
+
+              <!-- Step 2 Indicator -->
+              <div id="step-node-2" class="relative z-10 flex items-center gap-3 opacity-50">
+                <div class="step-num-circle w-8 h-8 rounded-full bg-emerald-900 text-emerald-300 font-bold flex items-center justify-center text-sm ring-4 ring-emerald-950 border border-emerald-700">2</div>
+                <div>
+                  <p class="text-xs font-bold text-white">Biodata Santri</p>
+                  <p class="text-[11px] text-emerald-300/70">Identitas dan kontak aktif</p>
+                </div>
+              </div>
+
+              <!-- Step 3 Indicator -->
+              <div id="step-node-3" class="relative z-10 flex items-center gap-3 opacity-50">
+                <div class="step-num-circle w-8 h-8 rounded-full bg-emerald-900 text-emerald-300 font-bold flex items-center justify-center text-sm ring-4 ring-emerald-950 border border-emerald-700">3</div>
+                <div>
+                  <p class="text-xs font-bold text-white">Persetujuan & Kirim</p>
+                  <p class="text-[11px] text-emerald-300/70">Konfirmasi syarat pendaftaran</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="flex items-center justify-between text-xs pt-1">
-            <label class="flex items-center gap-2 cursor-pointer text-slate-600">
-              <input type="checkbox" id="rememberMe" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-              <span>Ingat saya</span>
-            </label>
-            <a href="javascript:void(0)" onclick="showModal('Lupa Password', 'Silakan hubungi Panitia PSB via Helpdesk WhatsApp untuk bantuan reset password akun Anda.')" class="font-bold text-emerald-700 hover:underline">Lupa Password?</a>
-          </div>
-
-          <button type="submit" id="btnLoginSubmit" class="w-full py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.99] mt-2">
-            <span>Masuk Sekarang</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </form>
-
-        <div class="mt-6 text-center text-xs text-slate-600">
-          Belum memiliki akun pendaftaran? 
-          <button type="button" onclick="switchView('register_step1')" class="font-bold text-emerald-700 hover:underline ml-1">Buat Akun Baru</button>
         </div>
+
+        <!-- BOTTOM ACTION BUTTONS -->
+        <div class="space-y-2.5 pt-4 border-t border-emerald-800/50">
+          <a id="btn-download-brosur" href="#" target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-emerald-800/40 hover:bg-emerald-800/70 border border-emerald-500/30 text-emerald-100 text-xs font-medium flex items-center justify-center gap-2 transition-all">
+            <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Download Brosur PSB
+          </a>
+          <a id="btn-contact-helpdesk" href="#" target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-medium flex items-center justify-center gap-2 transition-all">
+            <i data-lucide="message-circle" class="w-4 h-4 text-emerald-300"></i> Hubungi Helpdesk WA
+          </a>
+        </div>
+
       </div>
 
-      <!-- VIEW 2: REGISTER STEP 1 (Jalurnya & Jenjang) -->
-      <div id="viewStep1" class="hidden max-w-md mx-auto w-full">
-        <div class="mb-6">
-          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Step 1: Pilih Jalur & Jenjang</h2>
-          <p class="text-xs text-slate-500 mt-1">Pilih program pendidikan calon santri.</p>
-        </div>
-
-        <div class="space-y-5">
-          <!-- Jalur Pendaftaran -->
+      <!-- RIGHT SIDE / FORM DISPLAY AREA (DESKTOP: RIGHT 7 COLS | MOBILE: ORDER 1) -->
+      <div class="w-full md:w-7/12 p-6 md:p-10 flex flex-col justify-center bg-white/60 order-1 md:order-2">
+        
+        <!-- 1. LOGIN FORM CONTAINER -->
+        <div id="view-login" class="space-y-6">
           <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">Jalur Pendaftaran</label>
-            <div class="grid grid-cols-3 gap-2.5">
-              <button type="button" onclick="selectTrack('Reguler')" id="btnTrackReguler" class="track-btn p-3 rounded-xl border-2 text-center flex flex-col items-center justify-center gap-1 transition-all border-emerald-600 bg-emerald-50/60 text-emerald-800 font-bold text-xs">
-                <i data-lucide="book-open" class="w-5 h-5 mb-0.5"></i>
-                <span>Reguler</span>
-              </button>
-              <button type="button" onclick="selectTrack('Mutasi')" id="btnTrackMutasi" class="track-btn p-3 rounded-xl border-2 text-center flex flex-col items-center justify-center gap-1 transition-all border-slate-200 text-slate-600 hover:border-slate-300 text-xs">
-                <i data-lucide="arrow-left-right" class="w-5 h-5 mb-0.5"></i>
-                <span>Mutasi</span>
-              </button>
-              <button type="button" onclick="selectTrack('Inden')" id="btnTrackInden" class="track-btn p-3 rounded-xl border-2 text-center flex flex-col items-center justify-center gap-1 transition-all border-slate-200 text-slate-600 hover:border-slate-300 text-xs">
-                <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
-                <span>Inden</span>
-              </button>
-            </div>
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Selamat Datang</h1>
+            <p class="text-xs text-slate-500 mt-1">Masuk ke portal penerimaan santri baru Al-Umm</p>
           </div>
 
-          <!-- Jenjang Sekolah -->
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">Jenjang Sekolah</label>
-            <div class="grid grid-cols-2 gap-3">
-              <button type="button" onclick="selectLevel('SMP Al-Umm')" id="btnLevelSMP" class="level-btn p-3.5 rounded-xl border-2 text-center font-bold text-xs transition-all border-emerald-600 bg-emerald-50/60 text-emerald-800">
-                SMP Al-Umm
-              </button>
-              <button type="button" onclick="selectLevel('MA Al-Umm')" id="btnLevelMA" class="level-btn p-3.5 rounded-xl border-2 text-center font-bold text-xs transition-all border-slate-200 text-slate-600 hover:border-slate-300">
-                MA Al-Umm
-              </button>
-            </div>
-          </div>
-
-          <button type="button" onclick="switchView('register_step2')" class="w-full py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.99] mt-4">
-            <span>Lanjut ke Step 2</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-
-        <div class="mt-6 text-center text-xs text-slate-600">
-          Sudah punya akun? 
-          <button type="button" onclick="switchView('login')" class="font-bold text-emerald-700 hover:underline ml-1">Kembali ke Login</button>
-        </div>
-      </div>
-
-      <!-- VIEW 3: REGISTER STEP 2 (Biodata Form) -->
-      <div id="viewStep2" class="hidden max-w-md mx-auto w-full">
-        <div class="mb-5">
-          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Step 2: Biodata & NISN</h2>
-          <p class="text-xs text-slate-500 mt-1">Isi data calon santri dan kontak aktif.</p>
-        </div>
-
-        <form id="formStep2" onsubmit="handleStep2Submit(event)" class="space-y-3.5">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Nama Lengkap</label>
-              <input type="text" id="regName" required placeholder="SESUAI IJAZAH / AKTA" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 uppercase">
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">NISN (10 Digit)</label>
-              <input type="text" id="regNisn" maxlength="10" required placeholder="0012345678" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Jenis Kelamin</label>
-            <div class="grid grid-cols-2 gap-3">
-              <button type="button" onclick="selectGender('Laki-laki (PA)')" id="btnGenderL" class="gender-btn p-2.5 rounded-xl border-2 text-center text-xs font-bold border-emerald-600 bg-emerald-50/60 text-emerald-800">
-                Laki-laki (PA)
-              </button>
-              <button type="button" onclick="selectGender('Perempuan (PI)')" id="btnGenderP" class="gender-btn p-2.5 rounded-xl border-2 text-center text-xs font-bold border-slate-200 text-slate-600 hover:border-slate-300">
-                Perempuan (PI)
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Asal Sekolah</label>
-            <input type="text" id="regSchool" required placeholder="CONTOH: SD NEGERI 1 MALANG / MI" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 uppercase">
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Nomor WA</label>
-              <input type="text" id="regPhone" required placeholder="08123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Email Aktif</label>
-              <input type="email" id="regEmail" required placeholder="email@domain.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Buat Password Akun</label>
-            <input type="password" id="regPassword" minlength="6" required placeholder="Minimal 6 karakter" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600">
-          </div>
-
-          <div class="flex gap-3 pt-2">
-            <button type="button" onclick="switchView('register_step1')" class="w-1/3 py-3 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 hover:bg-slate-50">
-              Kembali
+          <!-- Role Selector Segment -->
+          <div class="grid grid-cols-2 gap-1 p-1 bg-slate-200/80 rounded-xl">
+            <button type="button" id="role-btn-santri" onclick="switchRole('santri')" class="py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-800 shadow-sm flex items-center justify-center gap-1.5">
+              <i data-lucide="user" class="w-3.5 h-3.5"></i> Calon Santri / Wali
             </button>
-            <button type="submit" class="w-2/3 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2">
-              <span>Lanjut ke Step 3</span>
+            <button type="button" id="role-btn-admin" onclick="switchRole('admin')" class="py-2 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Panitia / Admin
+            </button>
+          </div>
+
+          <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Username / ID Pendaftaran</label>
+              <div class="relative">
+                <i data-lucide="user-check" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" id="login-username" required placeholder="Masukkan username" class="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+              <div class="relative">
+                <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="password" id="login-password" required placeholder="Masukkan password" class="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+              </div>
+            </div>
+
+            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition-all">
+              <span>Masuk Portal</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </form>
+
+          <div class="pt-4 border-t border-slate-200/80 text-center">
+            <p class="text-xs text-slate-600">Belum memiliki akun pendaftaran?</p>
+            <button type="button" onclick="switchToRegisterMode()" class="mt-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1">
+              Buat Akun Santri Baru <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. MULTI-STEP REGISTRATION FORM CONTAINER -->
+        <div id="view-register" class="hidden space-y-5">
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <span id="step-badge" class="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">Langkah 1 dari 3</span>
+              <h2 id="step-title" class="text-xl font-bold text-slate-800 mt-1">Pilih Jalur & Jenjang</h2>
+            </div>
+            <button type="button" onclick="switchToLoginMode()" class="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1">
+              <i data-lucide="x-circle" class="w-4 h-4"></i> Batal
+            </button>
+          </div>
+
+          <form id="form-register" onsubmit="handleRegistrationSubmit(event)" class="space-y-4">
+            
+            <!-- STEP 1 FIELDS -->
+            <div id="reg-step-1" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Jalur Pendaftaran</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <label class="border border-slate-300 rounded-xl p-3 cursor-pointer hover:border-emerald-600 transition-all text-center flex flex-col items-center">
+                    <input type="radio" name="jalur" value="Reguler" checked onchange="onJalurChange()" class="accent-emerald-700 mb-1">
+                    <span class="text-xs font-bold text-slate-800">Reguler</span>
+                    <span class="text-[10px] text-slate-500">Siswa Baru</span>
+                  </label>
+                  <label class="border border-slate-300 rounded-xl p-3 cursor-pointer hover:border-emerald-600 transition-all text-center flex flex-col items-center">
+                    <input type="radio" name="jalur" value="Mutasi" onchange="onJalurChange()" class="accent-emerald-700 mb-1">
+                    <span class="text-xs font-bold text-slate-800">Mutasi</span>
+                    <span class="text-[10px] text-slate-500">Pindahan</span>
+                  </label>
+                  <label class="border border-slate-300 rounded-xl p-3 cursor-pointer hover:border-emerald-600 transition-all text-center flex flex-col items-center">
+                    <input type="radio" name="jalur" value="Inden" onchange="onJalurChange()" class="accent-emerald-700 mb-1">
+                    <span class="text-xs font-bold text-slate-800">Inden</span>
+                    <span class="text-[10px] text-slate-500">Pesan Dini</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- JENJANG PENDIDIKAN DYNAMIC OPTIONS -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Jenjang Pendidikan Dituju</label>
+                <select id="reg-jenjang" onchange="onJenjangChange()" class="glass-input w-full px-3 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+                  <option value="SMP">SMP Al-Umm</option>
+                  <option value="MA">MA Al-Umm</option>
+                </select>
+              </div>
+
+              <!-- DYNAMIC SUB-CLASS SELECTION (MUTASI / INDEN) -->
+              <div id="container-detail-kelas" class="hidden">
+                <label id="label-detail-kelas" class="block text-xs font-semibold text-slate-700 mb-1">Pilihan Kelas</label>
+                <select id="reg-detail-kelas" class="glass-input w-full px-3 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+                  <!-- Injected dynamically via JS -->
+                </select>
+              </div>
+            </div>
+
+            <!-- STEP 2 FIELDS -->
+            <div id="reg-step-2" class="hidden space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Santri</label>
+                <input type="text" id="reg-nama" placeholder="Contoh: Ahmad Fauzi" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Kelamin</label>
+                <div class="flex gap-4 pt-1">
+                  <label class="flex items-center gap-2 text-xs text-slate-700 font-medium cursor-pointer">
+                    <input type="radio" name="jk" value="Laki-laki" checked class="accent-emerald-700"> Laki-laki
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-700 font-medium cursor-pointer">
+                    <input type="radio" name="jk" value="Perempuan" class="accent-emerald-700"> Perempuan
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Asal Sekolah</label>
+                <input type="text" id="reg-asal-sekolah" placeholder="Contoh: SD Negeri 1 Malang / MI Negeri" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor WhatsApp Aktif (Untuk Akun & WA Notification)</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">+62 / 0</span>
+                  <input type="tel" id="reg-wa" oninput="formatWaInput(this)" placeholder="81234567890" class="glass-input w-full pl-16 pr-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Note: 4 digit terakhir nomor ini akan menjadi password awal akun Anda.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Alamat Email Aktif (Konfirmasi Bukti Pendaftaran)</label>
+                <input type="email" id="reg-email" placeholder="nama@gmail.com" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800">
+              </div>
+            </div>
+
+            <!-- STEP 3 FIELDS -->
+            <div id="reg-step-3" class="hidden space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Syarat & Ketentuan Pendaftaran</label>
+                <div class="h-32 overflow-y-auto p-3 bg-slate-100 rounded-xl text-[11px] text-slate-600 border border-slate-200 leading-relaxed space-y-2">
+                  <p><strong>1. Ketentuan Umum:</strong> Seluruh calon santri wajib mengikuti tahapan seleksi administrasi, tes akademik, dan wawancara sesuai jadwal.</p>
+                  <p><strong>2. Keabsahan Data:</strong> Data yang diisikan harus sesuai dengan dokumen asli (KK, Akta Kelahiran, Ijazah/Rapor).</p>
+                  <p><strong>3. Kewajiban Orang Tua/Wali:</strong> Bersedia mendampingi proses pendaftaran dan mematuhi seluruh tata tertib Pondok Pesantren Al-Umm.</p>
+                </div>
+              </div>
+
+              <div class="space-y-2 pt-2">
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" id="chk-agreed-1" class="mt-0.5 accent-emerald-700 rounded">
+                  <span class="text-xs text-slate-700">Saya telah membaca & menyetujui seluruh Syarat dan Ketentuan pendaftaran.</span>
+                </label>
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" id="chk-agreed-2" class="mt-0.5 accent-emerald-700 rounded">
+                  <span class="text-xs text-slate-700">Saya bersedia & siap mengikuti seluruh rangkaian proses seleksi hingga selesai.</span>
+                </label>
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" id="chk-agreed-3" class="mt-0.5 accent-emerald-700 rounded">
+                  <span class="text-xs text-slate-700">Saya menyatakan data yang diisi adalah benar & dapat dipertanggungjawabkan.</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- REGISTRATION WIZARD BUTTONS -->
+            <div class="flex items-center justify-between pt-4 border-t border-slate-200/80">
+              <button type="button" id="btn-reg-prev" onclick="changeRegStep(-1)" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100 hidden">
+                Kembali
+              </button>
+              <div></div>
+              <button type="button" id="btn-reg-next" onclick="changeRegStep(1)" class="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-700/20">
+                <span>Lanjut</span>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+              <button type="submit" id="btn-reg-submit" class="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs hidden items-center gap-1.5 shadow-lg shadow-emerald-800/30">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>Selesaikan Pendaftaran</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- 3. REGISTRATION SUCCESS / CREDENTIAL DISPLAY VIEW -->
+        <div id="view-success" class="hidden space-y-6">
+          <div class="text-center">
+            <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3 ring-8 ring-emerald-50">
+              <i data-lucide="party-popper" class="w-7 h-7"></i>
+            </div>
+            <h2 class="text-xl font-extrabold text-slate-800">Pendaftaran Berhasil!</h2>
+            <p class="text-xs text-slate-500 mt-1">Akun santri telah dibuat. Simpan informasi login di bawah ini.</p>
+          </div>
+
+          <!-- CREDENTIAL CARD (PRINTABLE AREA) -->
+          <div id="printable-credential" class="p-5 bg-gradient-to-br from-emerald-900 to-slate-900 text-white rounded-2xl shadow-xl border border-emerald-700/40 relative overflow-hidden">
+            <div class="absolute right-[-20px] top-[-20px] opacity-10">
+              <i data-lucide="graduation-cap" class="w-40 h-40"></i>
+            </div>
+
+            <div class="border-b border-emerald-700/60 pb-3 mb-3 flex justify-between items-center">
+              <div>
+                <p class="text-[10px] text-emerald-300 font-mono tracking-wider">KARTU AKUN PSB AL-UMM</p>
+                <h3 id="res-nama" class="font-bold text-sm text-white">...</h3>
+              </div>
+              <span id="res-jalur-tag" class="px-2.5 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-[10px] font-bold text-emerald-200">...</span>
+            </div>
+
+            <div class="space-y-2.5 text-xs">
+              <div class="flex justify-between py-1 border-b border-white/10">
+                <span class="text-slate-300">Username / ID Login:</span>
+                <span id="res-username" class="font-mono font-bold text-emerald-300">...</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-white/10">
+                <span class="text-slate-300">Password Awal:</span>
+                <span id="res-password" class="font-mono font-bold text-amber-300">...</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-white/10">
+                <span class="text-slate-300">Jenjang / Kelas:</span>
+                <span id="res-jenjang" class="font-semibold text-white">...</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-300">Email Terdaftar:</span>
+                <span id="res-email" class="text-slate-200">...</span>
+              </div>
+            </div>
+
+            <p class="text-[10px] text-emerald-300/80 mt-4 text-center italic">*Bukti konfirmasi juga telah dikirimkan secara otomatis ke email Anda.</p>
+          </div>
+
+          <!-- ACTION BUTTONS FOR SUCCESS VIEW -->
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="button" onclick="window.print()" class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> Cetak / Simpan PDF
+            </button>
+            <button type="button" onclick="autoLoginAfterRegister()" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md">
+              <span>Masuk ke Dashboard</span>
               <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
           </div>
-        </form>
-
-        <div class="mt-4 text-center text-xs text-slate-600">
-          Sudah punya akun? 
-          <button type="button" onclick="switchView('login')" class="font-bold text-emerald-700 hover:underline ml-1">Kembali ke Login</button>
-        </div>
-      </div>
-
-      <!-- VIEW 4: REGISTER STEP 3 (Terms & Agreement) -->
-      <div id="viewStep3" class="hidden max-w-md mx-auto w-full">
-        <div class="mb-4">
-          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Step 3: Persetujuan</h2>
-          <p class="text-xs text-slate-500 mt-1">Bacalah syarat dan ketentuan dengan cermat.</p>
         </div>
 
-        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/80 text-xs text-slate-600 h-44 overflow-y-auto custom-scrollbar leading-relaxed space-y-2 mb-4">
-          <h4 class="font-bold text-slate-800 uppercase text-[11px]">Syarat dan Ketentuan Pendaftaran Santri Baru (PSB)</h4>
-          <p><strong>Ketentuan Umum:</strong><br>Sistem ini adalah platform resmi satu-satunya untuk proses pendaftaran, ujian, dan pengumuman PSB Pondok Pesantren Al-Umm. Seluruh informasi dan jadwal yang tertera bersifat mengikat dan wajib dipatuhi.</p>
-          <p><strong>Akun dan Keamanan Data:</strong><br>Calon santri dan wali berkewajiban memberikan data diri secara jujur dan akurat. Menyembunyikan riwayat kesehatan berat atau pemalsuan identitas dapat berakibat pada pembatalan pendaftaran.</p>
-        </div>
-
-        <form id="formStep3" onsubmit="handleRegisterSubmit(event)" class="space-y-3">
-          <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700">
-            <input type="checkbox" required class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 shrink-0">
-            <span>Saya telah membaca & menyetujui seluruh Syarat dan Ketentuan pendaftaran.</span>
-          </label>
-          <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700">
-            <input type="checkbox" required class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 shrink-0">
-            <span>Saya bersedia & siap mengikuti seluruh rangkaian proses seleksi hingga selesai.</span>
-          </label>
-          <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700">
-            <input type="checkbox" required class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 shrink-0">
-            <span>Saya menyatakan data yang diisi adalah benar & dapat dipertanggungjawabkan.</span>
-          </label>
-
-          <div class="flex gap-3 pt-3">
-            <button type="button" onclick="switchView('register_step2')" class="w-1/3 py-3 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 hover:bg-slate-50">
-              Kembali
-            </button>
-            <button type="submit" id="btnSubmitRegister" class="w-2/3 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2">
-              <span>Kirim Pendaftaran</span>
-            </button>
-          </div>
-        </form>
-
-        <div class="mt-4 text-center text-xs text-slate-600">
-          Sudah punya akun? 
-          <button type="button" onclick="switchView('login')" class="font-bold text-emerald-700 hover:underline ml-1">Kembali ke Login</button>
-        </div>
-      </div>
-
-      <!-- VIEW 5: REGISTRATION SUCCESS CARD (Proof Display & Download) -->
-      <div id="viewSuccess" class="hidden max-w-md mx-auto w-full text-center space-y-5">
-        <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
-          <i data-lucide="check-circle-2" class="w-10 h-10"></i>
-        </div>
-
-        <div>
-          <span class="text-xs font-bold text-emerald-700 uppercase tracking-widest">PENDAFTARAN BERHASIL</span>
-          <h2 id="successName" class="text-2xl font-black text-slate-900 mt-1 uppercase">MAHAMUD</h2>
-          <p class="text-xs text-slate-500 mt-1">Simpan No. Registrasi di bawah ini untuk Login ke portal PSB:</p>
-        </div>
-
-        <!-- PDF Card Container -->
-        <div id="registrationProofCard" class="bg-emerald-50/50 border-2 border-dashed border-emerald-300 rounded-2xl p-5 text-center">
-          <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">NO. REGISTRASI (USERNAME LOGIN)</p>
-          <div id="successRegNo" class="text-3xl font-black text-emerald-800 tracking-wider">PSB25-1006</div>
-          <div class="mt-3 pt-3 border-t border-emerald-200/60 flex items-center justify-between text-[11px] text-slate-600">
-            <span>Jenjang: <strong id="successLevel">SMP</strong></span>
-            <span>Jalur: <strong id="successTrack">Reguler</strong></span>
-          </div>
-        </div>
-
-        <!-- Email Notice -->
-        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center gap-3 text-left">
-          <i data-lucide="mail-check" class="w-5 h-5 text-emerald-600 shrink-0"></i>
-          <p class="text-xs text-slate-700 leading-snug">
-            Bukti pendaftaran & detail login telah dikirimkan ke Email <strong id="successEmail" class="text-emerald-800">eko.aisybe@gmail.com</strong>.
-          </p>
-        </div>
-
-        <div class="space-y-2 pt-2">
-          <button type="button" onclick="downloadProofPDF()" class="w-full py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Download Bukti Pendaftaran (PDF)</span>
-          </button>
-          <button type="button" onclick="switchView('login')" class="w-full py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition-all">
-            Lanjut ke Login Sekarang
-          </button>
-        </div>
-      </div>
-
-      <!-- VIEW 6: DASHBOARD PLACEHOLDER AFTER LOGIN -->
-      <div id="viewDashboard" class="hidden max-w-md mx-auto w-full text-center space-y-4">
-        <div class="p-4 bg-emerald-50 text-emerald-800 rounded-2xl border border-emerald-200">
-          <i data-lucide="user-check" class="w-12 h-12 mx-auto mb-2 text-emerald-600"></i>
-          <h3 class="font-bold text-lg">Selamat Datang!</h3>
-          <p id="dashUserRole" class="text-xs text-emerald-700 font-semibold uppercase mt-0.5">PESERTA</p>
-          <p id="dashUserName" class="text-base font-extrabold text-slate-800 mt-2">Nama User</p>
-          <p id="dashUserReg" class="text-xs text-slate-500 font-mono mt-0.5">PSB25-1001</p>
-        </div>
-        <button type="button" onclick="logout()" class="w-full py-3 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition-all">
-          Keluar (Logout)
-        </button>
       </div>
 
     </div>
-  </div>
 
-  <!-- CUSTOM MODAL DIALOG -->
-  <div id="customModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center transform transition-all">
-      <div id="modalIconContainer" class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
-        <i data-lucide="info" class="w-6 h-6"></i>
-      </div>
-      <div>
-        <h3 id="modalTitle" class="font-bold text-base text-slate-900">Informasi</h3>
-        <p id="modalMessage" class="text-xs text-slate-600 mt-1 leading-relaxed">Pesan modal disini...</p>
-      </div>
-      <button type="button" onclick="closeModal()" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
-        Tutup
-      </button>
-    </div>
   </div>
 
   <script>
-    // DEPLOYED WEB APP URL
+    // CONFIGURATION & GLOBAL STATE
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAVUkA0HuE4sip2fPT5dE2Se4JZ5RrT9mkHEaasKanuYG7dItwGRWvO9dC9AXqBJb68g/exec';
 
-    // APP STATE
-    let configData = {};
-    let announcements = [];
-    let currentSlide = 0;
-    let slideInterval = null;
-
-    let registerState = {
-      track: 'Reguler',
-      level: 'SMP Al-Umm',
-      gender: 'Laki-laki (PA)',
-      fullName: '',
-      nisn: '',
-      school: '',
-      phone: '',
-      email: '',
-      password: ''
+    let appConfig = {
+      tahunAjaran: '2025/2026',
+      linkBrosur: '#',
+      helpdeskWa: '6281234567890'
     };
+    let announcements = [];
+    let currentSlideIdx = 0;
+    let sliderInterval = null;
 
-    let registeredUserResult = null;
+    let selectedRole = 'santri';
+    let currentRegStep = 1;
+    let newlyCreatedAccount = null;
 
     // INITIALIZATION
     window.addEventListener('DOMContentLoaded', function() {
@@ -509,335 +494,514 @@
       fetchInitialData();
     });
 
-    // FETCH BACKEND CONFIG & ANNOUNCEMENTS
+    // FETCH PUBLIC CONFIG & ANNOUNCEMENTS
     function fetchInitialData() {
-      showLoadingSkeletons(true);
-      
       fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getInitialData', payload: {} })
+        body: JSON.stringify({ action: 'getPublicData', payload: {} })
       })
       .then(function(r) { return r.text(); })
       .then(function(text) {
         try {
           const res = JSON.parse(text);
-          if (res.ok) {
-            configData = res.data.config || {};
-            announcements = res.data.announcements || [];
-            renderConfig();
-            renderAnnouncements();
-            showLoadingSkeletons(false);
-            switchView('login');
+          if (res.ok && res.data) {
+            if (res.data.config) {
+              appConfig = res.data.config;
+              updateConfigUI();
+            }
+            if (res.data.announcements && res.data.announcements.length > 0) {
+              announcements = res.data.announcements;
+              renderAnnouncements();
+            } else {
+              renderDefaultAnnouncement();
+            }
           } else {
-            showModal('Gagal Memuat Data', res.message || 'Terjadi kesalahan sistem.');
+            renderDefaultAnnouncement();
           }
         } catch(e) {
-          showModal('Error', 'Gagal memproses data dari server.');
+          renderDefaultAnnouncement();
         }
+        hideSkeleton();
       })
       .catch(function(err) {
-        showModal('Koneksi Gagal', 'Gagal terhubung ke server PSB. Periksa koneksi internet Anda.');
+        renderDefaultAnnouncement();
+        hideSkeleton();
       });
     }
 
-    function showLoadingSkeletons(show) {
-      const leftSkel = document.getElementById('leftSkeleton');
-      const leftCont = document.getElementById('leftContent');
-      const rightSkel = document.getElementById('rightSkeleton');
-
-      if (show) {
-        leftSkel.classList.remove('hidden');
-        leftCont.classList.add('hidden');
-        leftCont.classList.remove('flex');
-        rightSkel.classList.remove('hidden');
-      } else {
-        leftSkel.classList.add('hidden');
-        leftCont.classList.remove('hidden');
-        leftCont.classList.add('flex');
-        rightSkel.classList.add('hidden');
-      }
+    function hideSkeleton() {
+      document.getElementById('skeleton-loader').classList.add('hidden');
+      document.getElementById('app-content').classList.remove('hidden');
     }
 
-    function renderConfig() {
-      if (configData.TAHUN_AJARAN) {
-        document.getElementById('tahunAjaranText').textContent = 'Tahun Ajaran ' + configData.TAHUN_AJARAN;
+    function updateConfigUI() {
+      const labels = document.querySelectorAll('.ta-label');
+      for (let i = 0; i < labels.length; i++) {
+        labels[i].textContent = appConfig.tahunAjaran || '2025/2026';
       }
-      if (configData.BROCHURE_URL) {
-        document.getElementById('btnBrosur').href = configData.BROCHURE_URL;
+      
+      const btnBrosur = document.getElementById('btn-download-brosur');
+      if (appConfig.linkBrosur && appConfig.linkBrosur !== '#') {
+        btnBrosur.href = appConfig.linkBrosur;
+      } else {
+        btnBrosur.onclick = function(e) {
+          e.preventDefault();
+          showCustomModal('Info Brosur', 'Brosur digital sedang disiapkan oleh panitia PSB.');
+        };
       }
-      if (configData.HELPDESK_WA) {
-        let wa = configData.HELPDESK_WA.replace(/[^0-9]/g, '');
-        document.getElementById('btnHelpdesk').href = 'https://wa.me/' + wa;
-      }
+
+      const btnWa = document.getElementById('btn-contact-helpdesk');
+      const waNum = (appConfig.helpdeskWa || '').replace(/\D/g, '');
+      btnWa.href = 'https://wa.me/' + (waNum || '6281234567890') + '?text=Assalamu%27alaikum%20Panitia%20PSB%20Al-Umm';
+    }
+
+    // ANNOUNCEMENTS SLIDER
+    function renderDefaultAnnouncement() {
+      announcements = [{
+        title: 'Selamat Datang di PSB Al-Umm',
+        content: 'Pendaftaran Santri Baru telah dibuka. Silakan buat akun untuk memulai pengisian formulir.'
+      }];
+      renderAnnouncements();
     }
 
     function renderAnnouncements() {
-      if (!announcements || announcements.length === 0) return;
-      currentSlide = 0;
-      updateSlideDisplay();
+      const container = document.getElementById('slider-container');
+      const dotsContainer = document.getElementById('slider-dots');
+      container.innerHTML = '';
+      dotsContainer.innerHTML = '';
 
-      if (slideInterval) clearInterval(slideInterval);
+      for (let i = 0; i < announcements.length; i++) {
+        // Create Dot
+        const dot = document.createElement('div');
+        dot.className = 'w-2 h-2 rounded-full transition-all ' + (i === 0 ? 'bg-emerald-400 w-4' : 'bg-emerald-800');
+        dot.id = 'dot-' + i;
+        dotsContainer.appendChild(dot);
+      }
+
+      showSlide(0);
+
       if (announcements.length > 1) {
-        slideInterval = setInterval(function() {
-          currentSlide = (currentSlide + 1) % announcements.length;
-          updateSlideDisplay();
+        if (sliderInterval) clearInterval(sliderInterval);
+        sliderInterval = setInterval(function() {
+          currentSlideIdx = (currentSlideIdx + 1) % announcements.length;
+          showSlide(currentSlideIdx);
         }, 5000);
       }
     }
 
-    function updateSlideDisplay() {
-      const item = announcements[currentSlide];
-      if (!item) return;
-
-      document.getElementById('announcementBadge').textContent = item.Badge || 'Pengumuman PSB';
-      document.getElementById('slideTitle').textContent = item.Title || '';
-      document.getElementById('slideDesc').textContent = item.Description || '';
-      document.getElementById('slideCounter').textContent = (currentSlide + 1) + '/' + announcements.length;
-
-      // Dots
-      const dotsContainer = document.getElementById('slideDots');
-      dotsContainer.innerHTML = '';
-      for (let i = 0; i < announcements.length; i++) {
-        const dot = document.createElement('div');
-        dot.className = i === currentSlide ? 'w-5 h-1.5 rounded-full bg-amber-400 transition-all' : 'w-1.5 h-1.5 rounded-full bg-emerald-700';
-        dotsContainer.appendChild(dot);
-      }
-    }
-
-    // NAVIGATION & VIEW SWITCHING
-    function switchView(viewName) {
-      // Views: login, register_step1, register_step2, register_step3, register_success, dashboard
-      const views = ['viewLogin', 'viewStep1', 'viewStep2', 'viewStep3', 'viewSuccess', 'viewDashboard'];
-      views.forEach(function(v) {
-        document.getElementById(v).classList.add('hidden');
-      });
-
-      const leftInfo = document.getElementById('leftInfoMode');
-      const leftStep = document.getElementById('leftStepMode');
-
-      if (viewName.indexOf('register') === 0) {
-        leftInfo.classList.add('hidden');
-        leftStep.classList.remove('hidden');
-        updateStepIndicators(viewName);
-      } else {
-        leftInfo.classList.remove('hidden');
-        leftStep.classList.add('hidden');
-      }
-
-      if (viewName === 'login') {
-        document.getElementById('viewLogin').classList.remove('hidden');
-      } else if (viewName === 'register_step1') {
-        document.getElementById('viewStep1').classList.remove('hidden');
-      } else if (viewName === 'register_step2') {
-        document.getElementById('viewStep2').classList.remove('hidden');
-      } else if (viewName === 'register_step3') {
-        document.getElementById('viewStep3').classList.remove('hidden');
-      } else if (viewName === 'register_success') {
-        document.getElementById('viewSuccess').classList.remove('hidden');
-      } else if (viewName === 'dashboard') {
-        document.getElementById('viewDashboard').classList.remove('hidden');
-      }
-
-      lucide.createIcons();
-    }
-
-    function updateStepIndicators(viewName) {
-      const step1 = document.getElementById('stepInd1');
-      const step2 = document.getElementById('stepInd2');
-      const step3 = document.getElementById('stepInd3');
-
-      const c1 = document.getElementById('stepCircle1');
-      const c2 = document.getElementById('stepCircle2');
-      const c3 = document.getElementById('stepCircle3');
-
-      // Reset
-      [step1, step2, step3].forEach(function(el) { el.classList.add('opacity-60'); });
+    function showSlide(idx) {
+      currentSlideIdx = idx;
+      const item = announcements[idx];
+      const container = document.getElementById('slider-container');
       
-      if (viewName === 'register_step1') {
-        step1.classList.remove('opacity-60');
-        c1.innerHTML = '1';
-        c1.className = 'w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 shadow-md';
-      } else if (viewName === 'register_step2') {
-        step1.classList.remove('opacity-60');
-        step2.classList.remove('opacity-60');
-        c1.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
-        c1.className = 'w-8 h-8 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-md';
-        c2.className = 'w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 shadow-md';
-      } else if (viewName === 'register_step3') {
-        step1.classList.remove('opacity-60');
-        step2.classList.remove('opacity-60');
-        step3.classList.remove('opacity-60');
-        c1.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
-        c2.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
-        c1.className = 'w-8 h-8 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-md';
-        c2.className = 'w-8 h-8 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-md';
-        c3.className = 'w-8 h-8 rounded-full bg-white text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 shadow-md';
-      }
+      container.innerHTML = 
+        '<h4 class="font-bold text-sm text-emerald-200 mb-1 flex items-center gap-1.5">' +
+          '<i data-lucide="info" class="w-4 h-4 text-emerald-400"></i> ' + escapeHtml(item.title) +
+        '</h4>' +
+        '<p class="text-xs text-emerald-100/80 leading-relaxed">' + escapeHtml(item.content) + '</p>';
+      
       lucide.createIcons();
-    }
 
-    // FORM STEP 1 ACTIONS
-    function selectTrack(track) {
-      registerState.track = track;
-      document.querySelectorAll('.track-btn').forEach(function(btn) {
-        btn.className = 'track-btn p-3 rounded-xl border-2 text-center flex flex-col items-center justify-center gap-1 transition-all border-slate-200 text-slate-600 hover:border-slate-300 text-xs';
-      });
-      const activeBtn = document.getElementById('btnTrack' + track);
-      if (activeBtn) {
-        activeBtn.className = 'track-btn p-3 rounded-xl border-2 text-center flex flex-col items-center justify-center gap-1 transition-all border-emerald-600 bg-emerald-50/60 text-emerald-800 font-bold text-xs';
+      // Update dots
+      for (let i = 0; i < announcements.length; i++) {
+        const d = document.getElementById('dot-' + i);
+        if (d) {
+          d.className = 'w-2 h-2 rounded-full transition-all ' + (i === idx ? 'bg-emerald-400 w-4' : 'bg-emerald-800');
+        }
       }
     }
 
-    function selectLevel(level) {
-      registerState.level = level;
-      document.querySelectorAll('.level-btn').forEach(function(btn) {
-        btn.className = 'level-btn p-3.5 rounded-xl border-2 text-center font-bold text-xs transition-all border-slate-200 text-slate-600 hover:border-slate-300';
-      });
-      const id = level.indexOf('SMP') >= 0 ? 'btnLevelSMP' : 'btnLevelMA';
-      document.getElementById(id).className = 'level-btn p-3.5 rounded-xl border-2 text-center font-bold text-xs transition-all border-emerald-600 bg-emerald-50/60 text-emerald-800';
+    // ROLE SWITCHER
+    function switchRole(role) {
+      selectedRole = role;
+      const btnSantri = document.getElementById('role-btn-santri');
+      const btnAdmin = document.getElementById('role-btn-admin');
+
+      if (role === 'santri') {
+        btnSantri.className = 'py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-800 shadow-sm flex items-center justify-center gap-1.5';
+        btnAdmin.className = 'py-2 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5';
+      } else {
+        btnAdmin.className = 'py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-800 shadow-sm flex items-center justify-center gap-1.5';
+        btnSantri.className = 'py-2 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5';
+      }
     }
 
-    // FORM STEP 2 ACTIONS
-    function selectGender(gender) {
-      registerState.gender = gender;
-      document.querySelectorAll('.gender-btn').forEach(function(btn) {
-        btn.className = 'gender-btn p-2.5 rounded-xl border-2 text-center text-xs font-bold border-slate-200 text-slate-600 hover:border-slate-300';
-      });
-      const id = gender.indexOf('Laki') >= 0 ? 'btnGenderL' : 'btnGenderP';
-      document.getElementById(id).className = 'gender-btn p-2.5 rounded-xl border-2 text-center text-xs font-bold border-emerald-600 bg-emerald-50/60 text-emerald-800';
+    // MODE SWITCHING (LOGIN / REGISTER / SUCCESS)
+    function switchToRegisterMode() {
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-success').classList.add('hidden');
+      document.getElementById('view-register').classList.remove('hidden');
+
+      document.getElementById('slider-wrapper').classList.add('hidden');
+      document.getElementById('step-indicator-wrapper').classList.remove('hidden');
+
+      currentRegStep = 1;
+      updateStepUI();
+      onJalurChange();
     }
 
-    function handleStep2Submit(e) {
+    function switchToLoginMode() {
+      document.getElementById('view-register').classList.add('hidden');
+      document.getElementById('view-success').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+
+      document.getElementById('step-indicator-wrapper').classList.add('hidden');
+      document.getElementById('slider-wrapper').classList.remove('hidden');
+    }
+
+    // STEP-BY-STEP REGISTRATION LOGIC
+    function onJalurChange() {
+      const selectedJalur = document.querySelector('input[name="jalur"]:checked').value;
+      const jenjangSelect = document.getElementById('reg-jenjang');
+      const containerDetail = document.getElementById('container-detail-kelas');
+      const labelDetail = document.getElementById('label-detail-kelas');
+      const selectDetail = document.getElementById('reg-detail-kelas');
+
+      if (selectedJalur === 'Reguler') {
+        containerDetail.classList.add('hidden');
+      } else if (selectedJalur === 'Mutasi') {
+        containerDetail.classList.remove('hidden');
+        labelDetail.textContent = 'Pilih Kelas Pindahan (Mutasi)';
+        updateMutasiClasses();
+      } else if (selectedJalur === 'Inden') {
+        containerDetail.classList.remove('hidden');
+        labelDetail.textContent = 'Kelas Berapa Santri Saat Ini?';
+        selectDetail.innerHTML = 
+          '<option value="Kelas 5 SD/MI">Kelas 5 SD/MI</option>' +
+          '<option value="Kelas 6 SD/MI">Kelas 6 SD/MI</option>' +
+          '<option value="Kelas 8 SMP/MTs">Kelas 8 SMP/MTs</option>' +
+          '<option value="Kelas 9 SMP/MTs">Kelas 9 SMP/MTs</option>';
+      }
+    }
+
+    function onJenjangChange() {
+      const selectedJalur = document.querySelector('input[name="jalur"]:checked').value;
+      if (selectedJalur === 'Mutasi') {
+        updateMutasiClasses();
+      }
+    }
+
+    function updateMutasiClasses() {
+      const jenjang = document.getElementById('reg-jenjang').value;
+      const selectDetail = document.getElementById('reg-detail-kelas');
+      if (jenjang === 'SMP') {
+        selectDetail.innerHTML = 
+          '<option value="Kelas 7 (Semester 2)">Kelas 7 (Semester 2)</option>' +
+          '<option value="Kelas 8 (Semester 1/2)">Kelas 8 (Semester 1/2)</option>' +
+          '<option value="Kelas 9 (Semester 1)">Kelas 9 (Semester 1)</option>';
+      } else {
+        selectDetail.innerHTML = 
+          '<option value="Kelas 10 (Semester 2)">Kelas 10 (Semester 2)</option>' +
+          '<option value="Kelas 11 (Semester 1/2)">Kelas 11 (Semester 1/2)</option>' +
+          '<option value="Kelas 12 (Semester 1)">Kelas 12 (Semester 1)</option>';
+      }
+    }
+
+    function changeRegStep(delta) {
+      if (delta > 0 && !validateStep(currentRegStep)) {
+        return;
+      }
+      currentRegStep += delta;
+      if (currentRegStep < 1) currentRegStep = 1;
+      if (currentRegStep > 3) currentRegStep = 3;
+      updateStepUI();
+    }
+
+    function validateStep(step) {
+      if (step === 1) {
+        return true; // Always valid choice
+      } else if (step === 2) {
+        const nama = document.getElementById('reg-nama').value.trim();
+        const sekolah = document.getElementById('reg-asal-sekolah').value.trim();
+        const wa = document.getElementById('reg-wa').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+
+        if (!nama) { showToast('Mohon isi nama lengkap santri', 'warning'); return false; }
+        if (!sekolah) { showToast('Mohon isi asal sekolah santri', 'warning'); return false; }
+        if (!wa || wa.length < 8) { showToast('Nomor WhatsApp tidak valid', 'warning'); return false; }
+        if (!email || email.indexOf('@') === -1) { showToast('Email tidak valid', 'warning'); return false; }
+        return true;
+      }
+      return true;
+    }
+
+    function updateStepUI() {
+      // Step badge & title
+      const badge = document.getElementById('step-badge');
+      const title = document.getElementById('step-title');
+      
+      badge.textContent = 'Langkah ' + currentRegStep + ' dari 3';
+      if (currentRegStep === 1) title.textContent = 'Pilih Jalur & Jenjang';
+      else if (currentRegStep === 2) title.textContent = 'Biodata & Kontak Santri';
+      else if (currentRegStep === 3) title.textContent = 'Persetujuan & Kirim';
+
+      // Step cards display
+      document.getElementById('reg-step-1').classList.toggle('hidden', currentRegStep !== 1);
+      document.getElementById('reg-step-2').classList.toggle('hidden', currentRegStep !== 2);
+      document.getElementById('reg-step-3').classList.toggle('hidden', currentRegStep !== 3);
+
+      // Buttons visibility
+      document.getElementById('btn-reg-prev').classList.toggle('hidden', currentRegStep === 1);
+      document.getElementById('btn-reg-next').classList.toggle('hidden', currentRegStep === 3);
+      
+      const submitBtn = document.getElementById('btn-reg-submit');
+      if (currentRegStep === 3) {
+        submitBtn.classList.remove('hidden');
+        submitBtn.classList.add('flex');
+      } else {
+        submitBtn.classList.add('hidden');
+        submitBtn.classList.remove('flex');
+      }
+
+      // Left panel step indicators animation
+      for (let i = 1; i <= 3; i++) {
+        const node = document.getElementById('step-node-' + i);
+        if (i === currentRegStep) {
+          node.classList.remove('opacity-50');
+          node.querySelector('.step-num-circle').className = 'step-num-circle w-8 h-8 rounded-full bg-emerald-400 text-emerald-950 font-bold flex items-center justify-center text-sm ring-4 ring-emerald-950 shadow-lg shadow-emerald-400/30';
+        } else if (i < currentRegStep) {
+          node.classList.remove('opacity-50');
+          node.querySelector('.step-num-circle').className = 'step-num-circle w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-sm ring-4 ring-emerald-950';
+        } else {
+          node.classList.add('opacity-50');
+          node.querySelector('.step-num-circle').className = 'step-num-circle w-8 h-8 rounded-full bg-emerald-900 text-emerald-300 font-bold flex items-center justify-center text-sm ring-4 ring-emerald-950 border border-emerald-700';
+        }
+      }
+    }
+
+    function formatWaInput(input) {
+      let val = input.value.replace(/\D/g, '');
+      if (val.startsWith('0')) {
+        val = val.substring(1);
+      } else if (val.startsWith('62')) {
+        val = val.substring(2);
+      }
+      input.value = val;
+    }
+
+    // FORM SUBMISSIONS
+    function handleLogin(e) {
       e.preventDefault();
-      const nisn = document.getElementById('regNisn').value.trim();
-      if (nisn.length !== 10) {
-        showModal('Format NISN Salah', 'NISN harus berjumlah tepat 10 digit angka.');
+      const submitBtn = document.getElementById('btn-login-submit');
+      const usernameInput = document.getElementById('login-username').value.trim();
+      const passwordInput = document.getElementById('login-password').value.trim();
+
+      if (!usernameInput || !passwordInput) {
+        showToast('Username dan Password wajib diisi', 'warning');
         return;
       }
 
-      registerState.fullName = document.getElementById('regName').value.trim().toUpperCase();
-      registerState.nisn = nisn;
-      registerState.school = document.getElementById('regSchool').value.trim().toUpperCase();
-      registerState.phone = document.getElementById('regPhone').value.trim();
-      registerState.email = document.getElementById('regEmail').value.trim();
-      registerState.password = document.getElementById('regPassword').value;
-
-      switchView('register_step3');
-    }
-
-    // FINAL REGISTER SUBMIT
-    function handleRegisterSubmit(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btnSubmitRegister');
-      setButtonLoading(btn, true, 'Memproses Pendaftaran...');
+      setLoading(submitBtn, true, 'Memeriksa Account...');
 
       fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'register', payload: registerState })
+        body: JSON.stringify({
+          action: 'login',
+          payload: {
+            username: usernameInput,
+            password: passwordInput,
+            role: selectedRole
+          }
+        })
       })
       .then(function(r) { return r.text(); })
       .then(function(text) {
-        setButtonLoading(btn, false, 'Kirim Pendaftaran');
+        setLoading(submitBtn, false, 'Masuk Portal');
         try {
           const res = JSON.parse(text);
           if (res.ok) {
-            registeredUserResult = res.data;
-            document.getElementById('successName').textContent = res.data.fullName;
-            document.getElementById('successRegNo').textContent = res.data.registrationNo;
-            document.getElementById('successLevel').textContent = res.data.level;
-            document.getElementById('successTrack').textContent = res.data.track;
-            document.getElementById('successEmail').textContent = res.data.email;
-            switchView('register_success');
+            showToast('Login berhasil! Mengalihkan...', 'success');
+            // Store session info if needed & redirect or display user dashboard alert
+            setTimeout(function() {
+              showCustomModal('Selamat Datang ' + res.data.nama_lengkap, 'Anda berhasil masuk sebagai ' + res.data.role + '. Fitur Dashboard Santri sedang memuat data.');
+            }, 500);
           } else {
-            showModal('Pendaftaran Gagal', res.message || 'Terjadi kesalahan.');
+            showCustomModal('Gagal Login', res.message || 'Username atau password tidak sesuai.');
           }
-        } catch(e) {
-          showModal('Error', 'Format respon server tidak valid.');
+        } catch(err) {
+          showToast('Terjadi kesalahan respons server', 'danger');
         }
       })
-      .catch(function(err) {
-        setButtonLoading(btn, false, 'Kirim Pendaftaran');
-        showModal('Error Koneksi', 'Gagal terhubung ke server.');
+      .catch(function() {
+        setLoading(submitBtn, false, 'Masuk Portal');
+        showToast('Gagal terhubung ke server', 'danger');
       });
     }
 
-    // LOGIN SUBMIT
-    function handleLoginSubmit(e) {
+    function handleRegistrationSubmit(e) {
       e.preventDefault();
-      const identifier = document.getElementById('loginIdentifier').value.trim();
-      const password = document.getElementById('loginPassword').value;
-      const btn = document.getElementById('btnLoginSubmit');
 
-      setButtonLoading(btn, true, 'Memeriksa Kredensial...');
+      const chk1 = document.getElementById('chk-agreed-1').checked;
+      const chk2 = document.getElementById('chk-agreed-2').checked;
+      const chk3 = document.getElementById('chk-agreed-3').checked;
 
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login', payload: { identifier: identifier, password: password } })
-      })
-      .then(function(r) { return r.text(); })
-      .then(function(text) {
-        setButtonLoading(btn, false, 'Masuk Sekarang');
-        try {
-          const res = JSON.parse(text);
-          if (res.ok) {
-            const user = res.data;
-            document.getElementById('dashUserName').textContent = user.fullName;
-            document.getElementById('dashUserReg').textContent = user.registrationNo;
-            document.getElementById('dashUserRole').textContent = user.role;
-            switchView('dashboard');
-          } else {
-            showModal('Login Gagal', res.message || 'Username atau password salah.');
-          }
-        } catch(e) {
-          showModal('Error', 'Respon server tidak dapat diproses.');
-        }
-      })
-      .catch(function(err) {
-        setButtonLoading(btn, false, 'Masuk Sekarang');
-        showModal('Error Koneksi', 'Terjadi gangguan jaringan.');
-      });
-    }
+      if (!chk1 || !chk2 || !chk3) {
+        showToast('Anda harus menyetujui seluruh syarat & ketentuan', 'warning');
+        return;
+      }
 
-    function logout() {
-      document.getElementById('formLogin').reset();
-      switchView('login');
-    }
+      const submitBtn = document.getElementById('btn-reg-submit');
+      setLoading(submitBtn, true, 'Memproses Pendaftaran...');
 
-    // DOWNLOAD PROOF AS PDF
-    function downloadProofPDF() {
-      const element = document.getElementById('registrationProofCard');
-      const opt = {
-        margin:       10,
-        filename:     'Bukti_Pendaftaran_' + (registeredUserResult ? registeredUserResult.registrationNo : 'PSB') + '.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+      const jalur = document.querySelector('input[name="jalur"]:checked').value;
+      const jenjang = document.getElementById('reg-jenjang').value;
+      let detailKelas = '-';
+      if (jalur !== 'Reguler') {
+        detailKelas = document.getElementById('reg-detail-kelas').value;
+      }
+
+      const rawWa = document.getElementById('reg-wa').value.trim();
+      const cleanWa = '0' + rawWa; // Formatted full zero lead string
+
+      const payload = {
+        jalur: jalur,
+        jenjang: jenjang,
+        detailKelas: detailKelas,
+        namaLengkap: document.getElementById('reg-nama').value.trim(),
+        jenisKelamin: document.querySelector('input[name="jk"]:checked').value,
+        asalSekolah: document.getElementById('reg-asal-sekolah').value.trim(),
+        nomorWa: cleanWa,
+        email: document.getElementById('reg-email').value.trim()
       };
-      html2pdf().set(opt).from(element).save();
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'registerStudent',
+          payload: payload
+        })
+      })
+      .then(function(r) { return r.text(); })
+      .then(function(text) {
+        setLoading(submitBtn, false, 'Selesaikan Pendaftaran');
+        try {
+          const res = JSON.parse(text);
+          if (res.ok && res.data) {
+            newlyCreatedAccount = res.data;
+            showRegistrationSuccessView(res.data);
+          } else {
+            showCustomModal('Pendaftaran Gagal', res.message || 'Gagal menyimpan data.');
+          }
+        } catch(err) {
+          showToast('Respons server tidak valid', 'danger');
+        }
+      })
+      .catch(function() {
+        setLoading(submitBtn, false, 'Selesaikan Pendaftaran');
+        showToast('Terjadi kesalahan jaringan', 'danger');
+      });
     }
 
-    // HELPERS & MODAL UTILS
-    function setButtonLoading(btn, isLoading, defaultText) {
+    function showRegistrationSuccessView(data) {
+      document.getElementById('view-register').classList.add('hidden');
+      document.getElementById('view-success').classList.remove('hidden');
+
+      document.getElementById('res-nama').textContent = data.namaLengkap;
+      document.getElementById('res-jalur-tag').textContent = data.jalur;
+      document.getElementById('res-username').textContent = data.username;
+      document.getElementById('res-password').textContent = data.initialPassword;
+      document.getElementById('res-jenjang').textContent = data.jenjang + (data.detailKelas !== '-' ? ' (' + data.detailKelas + ')' : '');
+      document.getElementById('res-email').textContent = data.email;
+    }
+
+    function autoLoginAfterRegister() {
+      if (!newlyCreatedAccount) return;
+      switchToLoginMode();
+      document.getElementById('login-username').value = newlyCreatedAccount.username;
+      document.getElementById('login-password').value = newlyCreatedAccount.initialPassword;
+      switchRole('santri');
+      showToast('Form login telah terisi otomatis', 'info');
+    }
+
+    // UI HELPERS (LOADING, TOAST, MODAL)
+    function setLoading(btn, isLoading, defaultText) {
       if (isLoading) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> <span>' + defaultText + '</span>';
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>' + defaultText + '</span>';
       } else {
         btn.disabled = false;
         btn.innerHTML = '<span>' + defaultText + '</span>';
       }
+      lucide.createIcons();
     }
 
-    function showModal(title, message) {
-      document.getElementById('modalTitle').textContent = title;
-      document.getElementById('modalMessage').textContent = message;
-      document.getElementById('customModal').classList.remove('hidden');
+    function showToast(msg, type) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bgClass = 'bg-slate-800 text-white';
+      if (type === 'success') bgClass = 'bg-emerald-700 text-white';
+      if (type === 'warning') bgClass = 'bg-amber-600 text-white';
+      if (type === 'danger') bgClass = 'bg-rose-700 text-white';
+      if (type === 'info') bgClass = 'bg-blue-700 text-white';
+
+      toast.className = 'pointer-events-auto p-3.5 rounded-xl shadow-xl text-xs font-semibold flex items-center justify-between gap-3 transform transition-all duration-300 translate-y-2 opacity-0 ' + bgClass;
+      toast.innerHTML = '<span>' + escapeHtml(msg) + '</span><button onclick="this.parentElement.remove()"><i data-lucide="x" class="w-4 h-4"></i></button>';
+      
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(function() {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(function() {
+        if (toast.parentNode) {
+          toast.classList.add('opacity-0');
+          setTimeout(function() { toast.remove(); }, 300);
+        }
+      }, 4000);
+    }
+
+    function showCustomModal(title, bodyText, onConfirm) {
+      const modal = document.getElementById('custom-modal');
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').textContent = bodyText;
+
+      const actions = document.getElementById('modal-actions');
+      actions.innerHTML = '';
+
+      if (onConfirm) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold';
+        cancelBtn.textContent = 'Batal';
+        cancelBtn.onclick = closeModal;
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'px-4 py-2 rounded-xl bg-emerald-700 text-white text-xs font-semibold';
+        confirmBtn.textContent = 'Ya, Lanjutkan';
+        confirmBtn.onclick = function() {
+          closeModal();
+          onConfirm();
+        };
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+      } else {
+        const okBtn = document.createElement('button');
+        okBtn.className = 'px-4 py-2 rounded-xl bg-emerald-700 text-white text-xs font-semibold';
+        okBtn.textContent = 'Mengerti';
+        okBtn.onclick = closeModal;
+        actions.appendChild(okBtn);
+      }
+
+      modal.classList.remove('hidden');
     }
 
     function closeModal() {
-      document.getElementById('customModal').classList.add('hidden');
+      document.getElementById('custom-modal').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
   </script>
 </body>
