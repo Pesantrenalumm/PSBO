@@ -46,7 +46,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col" x-data="psbApp()" x-init="initApp()">
+<body class="bg-[#0e1424] font-sans text-slate-800 antialiased min-h-screen flex flex-col" x-data="psbApp()" x-init="initApp()">
 
   <!-- Toast Notification Custom Modal -->
   <div x-cloak x-show="toast.show" 
@@ -84,8 +84,8 @@
   <main class="flex-1 flex items-center justify-center p-3 sm:p-6 md:p-10">
     <div class="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 min-h-[640px] flex flex-col md:flex-row transition-all duration-300">
       
-      <!-- ================= SISI KIRI / ATAS PANEL (SOLID GREEN & GRADIENT) ================= -->
-      <div class="w-full md:w-5/12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500">
+      <!-- ================= SISI KIRI PANEL (PENGUMUMAN & TOMBOL) ================= -->
+      <div class="w-full md:w-5/12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 order-2 md:order-1">
         <!-- Pattern background overlay -->
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
 
@@ -205,7 +205,7 @@
 
 
       <!-- ================= SISI KANAN PANEL (FORM & HASIL AKUN) ================= -->
-      <div class="w-full md:w-7/12 p-6 sm:p-10 flex flex-col justify-center bg-white relative">
+      <div class="w-full md:w-7/12 p-6 sm:p-10 flex flex-col justify-center bg-white relative order-1 md:order-2">
         
         <!-- SKELETON LOADING STATE FOR FORM INITIALIZATION -->
         <template x-if="loadingInitial">
@@ -696,6 +696,10 @@
         },
 
         switchMode: function(newMode) {
+          if (newMode === 'login' && this.createdUser && this.createdUser.username) {
+            this.loginForm.username = this.createdUser.username;
+            this.loginForm.password = this.createdUser.password;
+          }
           this.mode = newMode;
           this.regStep = 1;
           setTimeout(function() {
@@ -766,11 +770,7 @@
             var resData = JSON.parse(text);
             if (resData.ok && resData.data) {
               var user = resData.data;
-              self.showToast('Login Berhasil', 'Selamat datang, ' + user.fullName, 'success');
-              // Berikan respon sesuai role
-              setTimeout(function() {
-                alert('Login Berhasil! Welcome ' + user.fullName + ' (' + user.role + ')');
-              }, 500);
+              self.showToast('Login Berhasil', 'Selamat datang, ' + user.fullName + ' (' + user.role + ')', 'success');
             } else {
               self.showToast('Gagal Login', resData.message || 'Kredensial salah.', 'error');
             }
