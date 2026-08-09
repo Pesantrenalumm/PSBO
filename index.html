@@ -69,6 +69,137 @@
     </button>
   </div>
 
+  <!-- MODAL ADMIN CONTROL BUKA/TUTUP JALUR & PERIODE -->
+  <div x-cloak x-show="showAdminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white max-w-lg w-full rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8">
+      <div class="bg-emerald-800 text-white p-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-emerald-300"></i>
+          <h3 class="font-bold text-sm">Pengaturan Buka/Tutup & Periode PSB</h3>
+        </div>
+        <button type="button" @click="showAdminModal = false" class="text-emerald-200 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <!-- PERIODE PENDAFTARAN AKTIF -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Periode Pendaftaran Aktif Saat Ini</label>
+          <select x-model="adminConfig.PERIODE_AKTIF" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-600">
+            <option value="Early Bird">Early Bird</option>
+            <option value="Gelombang 1">Gelombang 1</option>
+            <option value="Gelombang 2">Gelombang 2</option>
+            <option value="Susulan">Susulan</option>
+          </select>
+        </div>
+
+        <!-- STATUS PERIODE INDIVIDUAL -->
+        <div class="border-t border-slate-200 pt-3">
+          <h4 class="text-xs font-bold text-slate-800 uppercase mb-2">Status Masing-Masing Periode</h4>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Early Bird</label>
+              <select x-model="adminConfig.PERIODE_EARLY_BIRD" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+                <option value="MENDATANG">MENDATANG</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Gelombang 1</label>
+              <select x-model="adminConfig.PERIODE_GEL1" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+                <option value="MENDATANG">MENDATANG</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Gelombang 2</label>
+              <select x-model="adminConfig.PERIODE_GEL2" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+                <option value="MENDATANG">MENDATANG</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-600">Susulan</label>
+              <select x-model="adminConfig.PERIODE_SUSULAN" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+                <option value="MENDATANG">MENDATANG</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATUS BUKA/TUTUP SATUAN & JALUR -->
+        <div class="border-t border-slate-200 pt-3">
+          <h4 class="text-xs font-bold text-slate-800 uppercase mb-2">Buka/Tutup Satuan Pendidikan & Jalur</h4>
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="font-medium text-slate-700">SMP Putra (SMP Pa)</span>
+              <select x-model="adminConfig.STATUS_SMP_PA" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_SMP_PA === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="font-medium text-slate-700">SMP Putri (SMP Pi)</span>
+              <select x-model="adminConfig.STATUS_SMP_PI" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_SMP_PI === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="font-medium text-slate-700">MA Putra (MA Pa)</span>
+              <select x-model="adminConfig.STATUS_MA_PA" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_MA_PA === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="font-medium text-slate-700">MA Putri (MA Pi)</span>
+              <select x-model="adminConfig.STATUS_MA_PI" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_MA_PI === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="font-medium text-slate-700">Jalur Mutasi</span>
+              <select x-model="adminConfig.STATUS_MUTASI" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_MUTASI === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="font-medium text-slate-700">Jalur Inden</span>
+              <select x-model="adminConfig.STATUS_INDEN" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_INDEN === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
+                <option value="BUKA">BUKA</option>
+                <option value="TUTUP">TUTUP</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end space-x-2">
+        <button type="button" @click="showAdminModal = false" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold">
+          Batal
+        </button>
+        <button type="button" @click="saveAdminConfig()" :disabled="isSubmitting" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow flex items-center space-x-1.5">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span>Simpan Perubahan</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Full Overlay (Blocker operations) -->
   <div x-cloak x-show="isPageBlocking" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
     <div class="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center space-y-3">
@@ -128,6 +259,44 @@
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>PSB Tahun Ajaran <strong x-text="config.TAHUN_AJARAN || '2025/2026'"></strong></span>
           </div>
+
+          <!-- INFORMASI PERIODE PENDAFTARAN -->
+          <div class="mt-4 pt-3 border-t border-emerald-700/50 space-y-2">
+            <div class="flex items-center justify-between text-xs text-emerald-200">
+              <span class="font-semibold uppercase text-[10px] tracking-wider">Periode Pendaftaran</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-950" x-text="'Aktif: ' + (config.PERIODE_AKTIF || 'Gelombang 1')"></span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+              <div class="p-2 rounded-lg bg-emerald-900/60 border border-emerald-700/60 flex items-center justify-between"
+                   :class="config.PERIODE_AKTIF === 'Early Bird' ? 'ring-1 ring-amber-400 bg-emerald-800/80' : ''">
+                <span class="font-medium text-emerald-100">Early Bird</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold" 
+                      :class="config.PERIODE_EARLY_BIRD === 'BUKA' ? 'bg-emerald-500 text-white' : (config.PERIODE_EARLY_BIRD === 'MENDATANG' ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-300')"
+                      x-text="config.PERIODE_EARLY_BIRD || 'TUTUP'"></span>
+              </div>
+              <div class="p-2 rounded-lg bg-emerald-900/60 border border-emerald-700/60 flex items-center justify-between"
+                   :class="config.PERIODE_AKTIF === 'Gelombang 1' ? 'ring-1 ring-amber-400 bg-emerald-800/80' : ''">
+                <span class="font-medium text-emerald-100">Gelombang 1</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold" 
+                      :class="config.PERIODE_GEL1 === 'BUKA' ? 'bg-emerald-500 text-white' : (config.PERIODE_GEL1 === 'MENDATANG' ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-300')"
+                      x-text="config.PERIODE_GEL1 || 'BUKA'"></span>
+              </div>
+              <div class="p-2 rounded-lg bg-emerald-900/60 border border-emerald-700/60 flex items-center justify-between"
+                   :class="config.PERIODE_AKTIF === 'Gelombang 2' ? 'ring-1 ring-amber-400 bg-emerald-800/80' : ''">
+                <span class="font-medium text-emerald-100">Gelombang 2</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold" 
+                      :class="config.PERIODE_GEL2 === 'BUKA' ? 'bg-emerald-500 text-white' : (config.PERIODE_GEL2 === 'MENDATANG' ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-300')"
+                      x-text="config.PERIODE_GEL2 || 'MENDATANG'"></span>
+              </div>
+              <div class="p-2 rounded-lg bg-emerald-900/60 border border-emerald-700/60 flex items-center justify-between"
+                   :class="config.PERIODE_AKTIF === 'Susulan' ? 'ring-1 ring-amber-400 bg-emerald-800/80' : ''">
+                <span class="font-medium text-emerald-100">Susulan</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold" 
+                      :class="config.PERIODE_SUSULAN === 'BUKA' ? 'bg-emerald-500 text-white' : (config.PERIODE_SUSULAN === 'MENDATANG' ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-300')"
+                      x-text="config.PERIODE_SUSULAN || 'MENDATANG'"></span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- CONTENT PANEL DESKTOP -->
@@ -167,50 +336,55 @@
             </div>
 
             <div class="space-y-4">
-              <div class="flex items-center space-x-3 p-3 rounded-xl transition-all"
-                   :class="regStep === 1 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+              <button type="button" @click="regStep = 1" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all"
+                   :class="regStep === 1 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200 hover:opacity-100'">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
                      :class="regStep === 1 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">1</div>
                 <div>
                   <h4 class="text-xs font-semibold">Jalur &amp; Jenjang</h4>
                   <p class="text-[10px] text-emerald-200/80">Pilihan program studi</p>
                 </div>
-              </div>
+              </button>
 
-              <div class="flex items-center space-x-3 p-3 rounded-xl transition-all"
-                   :class="regStep === 2 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+              <button type="button" @click="nextStep(2)" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all"
+                   :class="regStep === 2 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200 hover:opacity-100'">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
                      :class="regStep === 2 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">2</div>
                 <div>
                   <h4 class="text-xs font-semibold">Biodata &amp; NISN</h4>
                   <p class="text-[10px] text-emerald-200/80">Identitas santri &amp; wali</p>
                 </div>
-              </div>
+              </button>
 
-              <div class="flex items-center space-x-3 p-3 rounded-xl transition-all"
-                   :class="regStep === 3 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+              <button type="button" @click="nextStep(3)" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all"
+                   :class="regStep === 3 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200 hover:opacity-100'">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
                      :class="regStep === 3 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">3</div>
                 <div>
                   <h4 class="text-xs font-semibold">Persetujuan Syarat</h4>
                   <p class="text-[10px] text-emerald-200/80">Konfirmasi data &amp; ketentuan</p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </template>
 
         <!-- FOOTER DESKTOP BUTTONS -->
         <div class="relative z-10 pt-4 border-t border-emerald-700/50 flex flex-col sm:flex-row gap-2">
+          <button type="button" @click="openAdminModal()" 
+                  class="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-xs transition shadow-sm">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>Atur Buka/Tutup</span>
+          </button>
           <a :href="config.BROCHURE_URL || '#'" target="_blank" 
              class="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
             <i data-lucide="file-down" class="w-4 h-4 text-emerald-300"></i>
-            <span>Brosur PSB</span>
+            <span>Brosur</span>
           </a>
           <a :href="'https://wa.me/' + (config.HELPDESK_WA || '6281234567890')" target="_blank"
              class="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
             <i data-lucide="message-circle" class="w-4 h-4 text-emerald-300"></i>
-            <span>Helpdesk WA</span>
+            <span>Helpdesk</span>
           </a>
         </div>
       </div>
@@ -305,8 +479,8 @@
             <!-- ================= VIEW 2: FORMULIR PENDAFTARAN 3 STEP ================= -->
             <div x-show="mode === 'register'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
               
-              <!-- VISUAL PROGRESS BAR STEPPER (Sangat Jelas & Bermanfaat di Layar HP & Desktop) -->
-              <div class="mb-6 border-b border-slate-200 pb-4">
+              <!-- VISUAL PROGRESS BAR STEPPER (Khusus Tampil di HP & Tablet) -->
+              <div class="md:hidden mb-6 border-b border-slate-200 pb-4">
                 <div class="flex items-center justify-between relative px-2">
                   <div class="absolute left-6 right-6 top-4 -translate-y-1/2 h-1 bg-slate-200 -z-0"></div>
                   <div class="absolute left-6 top-4 -translate-y-1/2 h-1 bg-emerald-600 transition-all duration-300 -z-0"
@@ -348,18 +522,31 @@
                   <div class="grid grid-cols-3 gap-2">
                     <button type="button" @click="regForm.jalur = 'reguler'; regForm.kelasTarget = ''"
                             :class="regForm.jalur === 'reguler' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3 border rounded-xl text-center text-xs font-medium transition">
-                      Reguler
+                            class="p-2.5 border rounded-xl text-center text-xs font-medium transition relative">
+                      <span>Reguler</span>
+                      <span class="block text-[9px] text-emerald-600 font-bold mt-0.5">BUKA</span>
                     </button>
-                    <button type="button" @click="regForm.jalur = 'mutasi'; regForm.kelasTarget = ''"
-                            :class="regForm.jalur === 'mutasi' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3 border rounded-xl text-center text-xs font-medium transition">
-                      Mutasi
+
+                    <button type="button" @click="if(config.STATUS_MUTASI !== 'TUTUP') { regForm.jalur = 'mutasi'; regForm.kelasTarget = ''; }"
+                            :disabled="config.STATUS_MUTASI === 'TUTUP'"
+                            :class="[
+                              regForm.jalur === 'mutasi' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 bg-white text-slate-700',
+                              config.STATUS_MUTASI === 'TUTUP' ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'hover:border-slate-300'
+                            ]"
+                            class="p-2.5 border rounded-xl text-center text-xs font-medium transition relative">
+                      <span>Mutasi</span>
+                      <span class="block text-[9px] font-bold mt-0.5" :class="config.STATUS_MUTASI === 'TUTUP' ? 'text-red-500' : 'text-emerald-600'" x-text="config.STATUS_MUTASI || 'BUKA'"></span>
                     </button>
-                    <button type="button" @click="regForm.jalur = 'inden'; regForm.kelasTarget = ''"
-                            :class="regForm.jalur === 'inden' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3 border rounded-xl text-center text-xs font-medium transition">
-                      Inden
+
+                    <button type="button" @click="if(config.STATUS_INDEN !== 'TUTUP') { regForm.jalur = 'inden'; regForm.kelasTarget = ''; }"
+                            :disabled="config.STATUS_INDEN === 'TUTUP'"
+                            :class="[
+                              regForm.jalur === 'inden' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 bg-white text-slate-700',
+                              config.STATUS_INDEN === 'TUTUP' ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'hover:border-slate-300'
+                            ]"
+                            class="p-2.5 border rounded-xl text-center text-xs font-medium transition relative">
+                      <span>Inden</span>
+                      <span class="block text-[9px] font-bold mt-0.5" :class="config.STATUS_INDEN === 'TUTUP' ? 'text-red-500' : 'text-emerald-600'" x-text="config.STATUS_INDEN || 'BUKA'"></span>
                     </button>
                   </div>
                 </div>
@@ -370,22 +557,50 @@
                   <div class="grid grid-cols-2 gap-3">
                     <button type="button" @click="regForm.jenjang = 'SMP'; if(regForm.jalur==='mutasi') regForm.kelasTarget='Kelas 7'"
                             :class="regForm.jenjang === 'SMP' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3.5 border rounded-xl text-left transition flex items-center space-x-3">
-                      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">SMP</div>
-                      <div>
-                        <div class="text-xs font-bold">SMP Al-Umm</div>
-                        <div class="text-[10px] text-slate-500">Sekolah Menengah Pertama</div>
+                            class="p-3 border rounded-xl text-left transition flex items-center justify-between">
+                      <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">SMP</div>
+                        <div>
+                          <div class="text-xs font-bold">SMP Al-Umm</div>
+                          <div class="text-[10px] text-slate-500">Tingkat Menengah</div>
+                        </div>
                       </div>
                     </button>
+
                     <button type="button" @click="regForm.jenjang = 'MA'; if(regForm.jalur==='mutasi') regForm.kelasTarget='Kelas 10'"
                             :class="regForm.jenjang === 'MA' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3.5 border rounded-xl text-left transition flex items-center space-x-3">
-                      <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">MA</div>
-                      <div>
-                        <div class="text-xs font-bold">MA Al-Umm</div>
-                        <div class="text-[10px] text-slate-500">Madrasah Aliyah</div>
+                            class="p-3 border rounded-xl text-left transition flex items-center justify-between">
+                      <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">MA</div>
+                        <div>
+                          <div class="text-xs font-bold">MA Al-Umm</div>
+                          <div class="text-[10px] text-slate-500">Madrasah Aliyah</div>
+                        </div>
                       </div>
                     </button>
+                  </div>
+
+                  <!-- Quick Status Grid for Gender & Jenjang -->
+                  <div class="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <span class="block text-[11px] font-semibold text-slate-600">Status Pendaftaran Per Satuan Pendidikan:</span>
+                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
+                        <span class="font-medium text-slate-700">SMP Putra (Pa)</span>
+                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_SMP_PA === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_SMP_PA || 'BUKA'"></span>
+                      </div>
+                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
+                        <span class="font-medium text-slate-700">SMP Putri (Pi)</span>
+                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_SMP_PI === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_SMP_PI || 'BUKA'"></span>
+                      </div>
+                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
+                        <span class="font-medium text-slate-700">MA Putra (Pa)</span>
+                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_MA_PA === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_MA_PA || 'BUKA'"></span>
+                      </div>
+                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
+                        <span class="font-medium text-slate-700">MA Putri (Pi)</span>
+                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_MA_PI === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_MA_PI || 'BUKA'"></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -456,9 +671,20 @@
                   <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Kelamin *</label>
                     <select x-model="regForm.gender" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                      <option value="LAKI-LAKI">LAKI-LAKI</option>
-                      <option value="PEREMPUAN">PEREMPUAN</option>
+                      <option value="LAKI-LAKI">LAKI-LAKI (PUTRA)</option>
+                      <option value="PEREMPUAN">PEREMPUAN (PUTRI)</option>
                     </select>
+                  </div>
+
+                  <!-- WARNING JIKA COMBINATION TERDAPAT STATUS TUTUP -->
+                  <div class="sm:col-span-2" x-show="getSelectedTrackStatus() === 'TUTUP'">
+                    <div class="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-2 text-red-700 text-xs">
+                      <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5"></i>
+                      <div>
+                        <strong class="font-bold">Pendaftaran Ditutup!</strong>
+                        <p class="mt-0.5">Pendaftaran untuk jenjang <span x-text="regForm.jenjang"></span> (<span x-text="regForm.gender === 'LAKI-LAKI' ? 'Putra' : 'Putri'"></span>) saat ini sedang <strong class="uppercase">DITUTUP</strong>.</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div class="sm:col-span-2">
@@ -686,9 +912,11 @@
         showPassword: false,
         activeSlide: 0,
         slidesTimer: null,
+        showAdminModal: false,
 
         // Data dari backend
         config: {},
+        adminConfig: {},
         slides: [],
 
         // Custom Toast Modal
@@ -806,8 +1034,70 @@
           this.regForm.noWA = clean;
         },
 
+        getSelectedTrackStatus: function() {
+          var cfg = this.config || {};
+          var isPutra = (this.regForm.gender === 'LAKI-LAKI');
+          if (this.regForm.jenjang === 'SMP') {
+            return isPutra ? (cfg.STATUS_SMP_PA || 'BUKA') : (cfg.STATUS_SMP_PI || 'BUKA');
+          } else if (this.regForm.jenjang === 'MA') {
+            return isPutra ? (cfg.STATUS_MA_PA || 'BUKA') : (cfg.STATUS_MA_PI || 'BUKA');
+          }
+          return 'BUKA';
+        },
+
+        openAdminModal: function() {
+          this.adminConfig = Object.assign({}, this.config);
+          this.showAdminModal = true;
+          setTimeout(function() {
+            if (window.lucide) window.lucide.createIcons();
+          }, 100);
+        },
+
+        saveAdminConfig: function() {
+          var self = this;
+          self.isSubmitting = true;
+          self.isPageBlocking = true;
+          self.loadingMessage = 'Menyimpan konfigurasi Buka/Tutup...';
+
+          fetch(self.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'updateConfig',
+              payload: { configs: self.adminConfig }
+            })
+          })
+          .then(function(res) { return res.text(); })
+          .then(function(text) {
+            var resData = JSON.parse(text);
+            if (resData.ok && resData.data) {
+              self.config = resData.data.config || {};
+              self.slides = resData.data.slides || [];
+              self.showAdminModal = false;
+              self.showToast('Berhasil Disimpan', 'Status pendaftaran & periode berhasil diperbarui.', 'success');
+            } else {
+              self.showToast('Gagal Menyimpan', resData.message || 'Gagal menyimpan konfigurasi.', 'error');
+            }
+          })
+          .catch(function(err) {
+            self.showToast('Kesalahan Koneksi', 'Tidak dapat memperbarui konfigurasi.', 'error');
+          })
+          .finally(function() {
+            self.isSubmitting = false;
+            self.isPageBlocking = false;
+          });
+        },
+
         nextStep: function(targetStep) {
           if (targetStep === 2) {
+            if (this.regForm.jalur === 'mutasi' && this.config.STATUS_MUTASI === 'TUTUP') {
+              this.showToast('Jalur Ditutup', 'Pendaftaran Jalur Mutasi saat ini sedang ditutup.', 'error');
+              return;
+            }
+            if (this.regForm.jalur === 'inden' && this.config.STATUS_INDEN === 'TUTUP') {
+              this.showToast('Jalur Ditutup', 'Pendaftaran Jalur Inden saat ini sedang ditutup.', 'error');
+              return;
+            }
             if (this.regForm.jalur === 'mutasi' && !this.regForm.kelasTarget) {
               this.showToast('Pilihan Belum Lengkap', 'Silakan pilih kelas mutasi target.', 'error');
               return;
@@ -818,6 +1108,10 @@
             }
             this.regStep = 2;
           } else if (targetStep === 3) {
+            if (this.getSelectedTrackStatus() === 'TUTUP') {
+              this.showToast('Pendaftaran Ditutup', 'Pendaftaran untuk jenjang & jenis kelamin yang dipilih saat ini sedang DITUTUP.', 'error');
+              return;
+            }
             if (!this.regForm.namaLengkap.trim()) {
               this.showToast('Validasi Gagal', 'Nama lengkap santri wajib diisi.', 'error');
               return;
