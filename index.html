@@ -1311,133 +1311,341 @@
                         <div class="flex flex-wrap border-b border-slate-200 gap-2 pb-2 text-xs">
                           <button type="button" @click="biodataTab = 'santri'"
                                   :class="biodataTab === 'santri' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3 py-1.5 rounded-xl transition">1. Data Santri</button>
+                                  class="px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span>1. Biodata Santri</span>
+                          </button>
                           <button type="button" @click="biodataTab = 'ayah'"
                                   :class="biodataTab === 'ayah' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3 py-1.5 rounded-xl transition">2. Data Ayah</button>
+                                  class="px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
+                            <i data-lucide="user-check" class="w-4 h-4"></i>
+                            <span>2. Biodata Ayah</span>
+                          </button>
                           <button type="button" @click="biodataTab = 'ibu'"
                                   :class="biodataTab === 'ibu' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3 py-1.5 rounded-xl transition">3. Data Ibu</button>
-                          <button type="button" @click="biodataTab = 'wali'"
-                                  :class="biodataTab === 'wali' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3 py-1.5 rounded-xl transition">4. Data Wali (Opsional)</button>
-                          <button type="button" @click="biodataTab = 'alamat'"
-                                  :class="biodataTab === 'alamat' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3 py-1.5 rounded-xl transition">5. Alamat & Kontak</button>
+                                  class="px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
+                            <i data-lucide="heart" class="w-4 h-4"></i>
+                            <span>3. Biodata Ibu</span>
+                          </button>
                         </div>
 
-                        <!-- SUB-TAB 1: DATA SANTRI -->
-                        <div x-show="biodataTab === 'santri'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">NIK Santri (16 Digit)</label>
-                            <input type="text" x-model="biodataForm.nik" placeholder="3507..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">NISN</label>
-                            <input type="text" x-model="biodataForm.nisn" placeholder="005..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir</label>
-                            <input type="text" x-model="biodataForm.tempatLahir" placeholder="Malang" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir</label>
-                            <input type="date" x-model="biodataForm.tglLahir" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Anak Ke-</label>
-                            <input type="number" x-model="biodataForm.anakKe" placeholder="1" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Jumlah Bersaudara</label>
-                            <input type="number" x-model="biodataForm.jmlSaudara" placeholder="3" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Ukuran Seragam</label>
-                            <select x-model="biodataForm.ukuranBaju" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                              <option value="S">S</option>
-                              <option value="M">M</option>
-                              <option value="L">L</option>
-                              <option value="XL">XL</option>
-                              <option value="XXL">XXL</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Riwayat Penyakit / Alergi</label>
-                            <input type="text" x-model="biodataForm.riwayatPenyakit" placeholder="Asma / Tidak ada" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                        <!-- SUB-TAB 1: BIODATA SANTRI -->
+                        <div x-show="biodataTab === 'santri'" class="space-y-4">
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-emerald-800 border-b border-slate-100 pb-2">Informasi Identitas & Akademik Santri</h4>
+                          
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="sm:col-span-2">
+                              <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Santri *</label>
+                              <input type="text" x-model="biodataForm.namaLengkap" @input="biodataForm.namaLengkap = biodataForm.namaLengkap.toUpperCase()" placeholder="NAMA LENGKAP" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 font-semibold uppercase">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Jenis Jenjang *</label>
+                              <select x-model="biodataForm.jenjang" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="SMP">SMP Al-Umm</option>
+                                <option value="MA">MA Al-Umm</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Minat Program</label>
+                              <input type="text" x-model="biodataForm.minatProgram" placeholder="Tahfidz / Bahasa / Sains" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Jenis Pendaftaran</label>
+                              <select x-model="biodataForm.jalur" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="reguler">Reguler</option>
+                                <option value="mutasi">Mutasi</option>
+                                <option value="inden">Inden</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kelas Dituju</label>
+                              <input type="text" x-model="biodataForm.kelasTarget" placeholder="Contoh: Kelas 7 / Kelas 10" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">NISN (Nomor Induk Siswa Nasional)</label>
+                              <input type="text" x-model="biodataForm.nisn" placeholder="10 Digit NISN" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">NIK (Nomor Induk Kependudukan)</label>
+                              <input type="text" x-model="biodataForm.nik" placeholder="16 Digit NIK Santri" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir</label>
+                              <input type="text" x-model="biodataForm.tempatLahir" placeholder="Kota / Tempat Lahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir</label>
+                              <input type="date" x-model="biodataForm.tglLahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Jenis Kelamin</label>
+                              <select x-model="biodataForm.gender" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="LAKI-LAKI">LAKI-LAKI (PUTRA)</option>
+                                <option value="PEREMPUAN">PEREMPUAN (PUTRI)</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Agama</label>
+                              <input type="text" x-model="biodataForm.agama" placeholder="Islam" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Anak Ke-</label>
+                              <input type="number" x-model="biodataForm.anakKe" placeholder="1" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Jumlah Saudara</label>
+                              <input type="number" x-model="biodataForm.jmlSaudara" placeholder="2" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">No. Kartu Keluarga (KK)</label>
+                              <input type="text" x-model="biodataForm.noKK" placeholder="16 Digit No. KK" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kewarganegaraan</label>
+                              <input type="text" x-model="biodataForm.kewarganegaraan" placeholder="WNI" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div class="sm:col-span-2">
+                              <label class="block font-semibold text-slate-700 mb-1">Alamat Tempat Tinggal</label>
+                              <textarea x-model="biodataForm.alamat" rows="2" placeholder="Nama Jalan, Nomor Rumah, Dusun/Gg..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">RT / RW</label>
+                              <div class="flex space-x-2">
+                                <input type="text" x-model="biodataForm.rt" placeholder="RT (001)" class="w-1/2 p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <input type="text" x-model="biodataForm.rw" placeholder="RW (002)" class="w-1/2 p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                              </div>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kelurahan / Desa</label>
+                              <input type="text" x-model="biodataForm.kelurahan" placeholder="Nama Kelurahan/Desa" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kecamatan</label>
+                              <input type="text" x-model="biodataForm.kecamatan" placeholder="Nama Kecamatan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kabupaten / Kota</label>
+                              <input type="text" x-model="biodataForm.kota" placeholder="Nama Kabupaten/Kota" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Provinsi</label>
+                              <input type="text" x-model="biodataForm.provinsi" placeholder="Nama Provinsi" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kode Pos</label>
+                              <input type="text" x-model="biodataForm.kodePos" placeholder="Contoh: 65141" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Riwayat Penyakit</label>
+                              <input type="text" x-model="biodataForm.riwayatPenyakit" placeholder="Asma / Alergi / Tidak Ada" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Email Santri/Wali</label>
+                              <input type="email" x-model="biodataForm.email" placeholder="contoh@gmail.com" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">No. Whatsapp Santri/Wali</label>
+                              <input type="text" x-model="biodataForm.noWA" placeholder="08123456789" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Sekolah Asal</label>
+                              <input type="text" x-model="biodataForm.asalSekolah" @input="biodataForm.asalSekolah = biodataForm.asalSekolah.toUpperCase()" placeholder="SDN 1 MALANG / MI AL-HIDAYAH" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 uppercase font-semibold">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Jenis Sekolah Asal</label>
+                              <select x-model="biodataForm.jenisSekolah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="SD/MI">SD / MI</option>
+                                <option value="SMP/MTs">SMP / MTs</option>
+                                <option value="PKBM/Homeschooling">PKBM / Homeschooling</option>
+                                <option value="Lainnya">Lainnya</option>
+                              </select>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                              <label class="block font-semibold text-slate-700 mb-1">Alamat Sekolah Asal</label>
+                              <textarea x-model="biodataForm.alamatSekolah" rows="2" placeholder="Alamat lengkap sekolah asal..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
+                            </div>
                           </div>
                         </div>
 
-                        <!-- SUB-TAB 2: DATA AYAH -->
-                        <div x-show="biodataTab === 'ayah'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          <div class="sm:col-span-2">
-                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ayah (+ Gelar)</label>
-                            <input type="text" x-model="biodataForm.namaAyah" placeholder="Ahmad Sanusi, S.Pd." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">NIK Ayah</label>
-                            <input type="text" x-model="biodataForm.nikAyah" placeholder="3507..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ayah</label>
-                            <input type="text" x-model="biodataForm.pekerjaanAyah" placeholder="PNS / Swasta / Wiraswasta" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Penghasilan Bulanan</label>
-                            <select x-model="biodataForm.penghasilanAyah" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                              <option value="< 2 Juta">&lt; Rp 2.000.000</option>
-                              <option value="2 - 5 Juta">Rp 2.000.000 - Rp 5.000.000</option>
-                              <option value="5 - 10 Juta">Rp 5.000.000 - Rp 10.000.000</option>
-                              <option value="> 10 Juta">&gt; Rp 10.000.000</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">No. WA / Telepon Ayah</label>
-                            <input type="text" x-model="biodataForm.waAyah" placeholder="08123..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                        <!-- SUB-TAB 2: BIODATA AYAH -->
+                        <div x-show="biodataTab === 'ayah'" class="space-y-4">
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-emerald-800 border-b border-slate-100 pb-2">Informasi Biodata Ayah Kandung</h4>
+
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">NIK Ayah (16 Digit)</label>
+                              <input type="text" x-model="biodataForm.nikAyah" placeholder="3507..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ayah (+ Gelar)</label>
+                              <input type="text" x-model="biodataForm.namaAyah" placeholder="Ahmad Sanusi, S.Pd." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 font-semibold">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir Ayah</label>
+                              <input type="text" x-model="biodataForm.tempatLahirAyah" placeholder="Kota / Tempat Lahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir Ayah</label>
+                              <input type="date" x-model="biodataForm.tglLahirAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div class="sm:col-span-2">
+                              <label class="block font-semibold text-slate-700 mb-1">Alamat Ayah</label>
+                              <textarea x-model="biodataForm.alamatAyah" rows="2" placeholder="Alamat domisili ayah..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">No. Handphone / WA Ayah</label>
+                              <input type="text" x-model="biodataForm.waAyah" placeholder="08123456789" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Status Ayah</label>
+                              <select x-model="biodataForm.statusAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="Masih Hidup">Masih Hidup</option>
+                                <option value="Meninggal">Meninggal Dunia</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ayah</label>
+                              <input type="text" x-model="biodataForm.pekerjaanAyah" placeholder="PNS / Wiraswasta / Karyawan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Pendidikan Terakhir Ayah</label>
+                              <select x-model="biodataForm.pendidikanAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="">Pilih Pendidikan</option>
+                                <option value="SD/MI">SD / MI</option>
+                                <option value="SMP/MTs">SMP / MTs</option>
+                                <option value="SMA/SMK/MA">SMA / SMK / MA</option>
+                                <option value="D3/S1">D3 / S1</option>
+                                <option value="S2/S3">S2 / S3</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kewarganegaraan Ayah</label>
+                              <input type="text" x-model="biodataForm.kewarganegaraanAyah" placeholder="WNI" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Penghasilan Perbulan Ayah</label>
+                              <select x-model="biodataForm.penghasilanAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="< 2 Juta">&lt; Rp 2.000.000</option>
+                                <option value="2 - 5 Juta">Rp 2.000.000 - Rp 5.000.000</option>
+                                <option value="5 - 10 Juta">Rp 5.000.000 - Rp 10.000.000</option>
+                                <option value="> 10 Juta">&gt; Rp 10.000.000</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
 
-                        <!-- SUB-TAB 3: DATA IBU -->
-                        <div x-show="biodataTab === 'ibu'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          <div class="sm:col-span-2">
-                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ibu (+ Gelar)</label>
-                            <input type="text" x-model="biodataForm.namaIbu" placeholder="Siti Aminah, S.Ag." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">NIK Ibu</label>
-                            <input type="text" x-model="biodataForm.nikIbu" placeholder="3507..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ibu</label>
-                            <input type="text" x-model="biodataForm.pekerjaanIbu" placeholder="Ibu Rumah Tangga / Guru" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                        </div>
+                        <!-- SUB-TAB 3: BIODATA IBU -->
+                        <div x-show="biodataTab === 'ibu'" class="space-y-4">
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-emerald-800 border-b border-slate-100 pb-2">Informasi Biodata Ibu Kandung</h4>
 
-                        <!-- SUB-TAB 4: DATA WALI -->
-                        <div x-show="biodataTab === 'wali'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          <div class="sm:col-span-2">
-                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Wali (Jika ada)</label>
-                            <input type="text" x-model="biodataForm.namaWali" placeholder="Kosongi jika tidak ada" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                        </div>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">NIK Ibu (16 Digit)</label>
+                              <input type="text" x-model="biodataForm.nikIbu" placeholder="3507..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
 
-                        <!-- SUB-TAB 5: ALAMAT -->
-                        <div x-show="biodataTab === 'alamat'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          <div class="sm:col-span-2">
-                            <label class="block font-semibold text-slate-700 mb-1">Alamat Rumah Lengkap</label>
-                            <textarea x-model="biodataForm.alamat" rows="2" placeholder="Jl. Mawar No. 12..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Kota / Kabupaten</label>
-                            <input type="text" x-model="biodataForm.kota" placeholder="Malang" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Provinsi</label>
-                            <input type="text" x-model="biodataForm.provinsi" placeholder="Jawa Timur" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                          </div>
-                          <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Kontak Darurat (Nama & No WA)</label>
-                            <input type="text" x-model="biodataForm.kontakDarurat" placeholder="Paman - 0812345..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ibu (+ Gelar)</label>
+                              <input type="text" x-model="biodataForm.namaIbu" placeholder="Siti Aminah, S.Ag." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 font-semibold">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir Ibu</label>
+                              <input type="text" x-model="biodataForm.tempatLahirIbu" placeholder="Kota / Tempat Lahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir Ibu</label>
+                              <input type="date" x-model="biodataForm.tglLahirIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div class="sm:col-span-2">
+                              <label class="block font-semibold text-slate-700 mb-1">Alamat Ibu</label>
+                              <textarea x-model="biodataForm.alamatIbu" rows="2" placeholder="Alamat domisili ibu..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">No. Handphone / WA Ibu</label>
+                              <input type="text" x-model="biodataForm.waIbu" placeholder="08123456789" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Status Ibu</label>
+                              <select x-model="biodataForm.statusIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="Masih Hidup">Masih Hidup</option>
+                                <option value="Meninggal">Meninggal Dunia</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ibu</label>
+                              <input type="text" x-model="biodataForm.pekerjaanIbu" placeholder="Ibu Rumah Tangga / Guru / Karyawan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Pendidikan Terakhir Ibu</label>
+                              <select x-model="biodataForm.pendidikanIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="">Pilih Pendidikan</option>
+                                <option value="SD/MI">SD / MI</option>
+                                <option value="SMP/MTs">SMP / MTs</option>
+                                <option value="SMA/SMK/MA">SMA / SMK / MA</option>
+                                <option value="D3/S1">D3 / S1</option>
+                                <option value="S2/S3">S2 / S3</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kewarganegaraan Ibu</label>
+                              <input type="text" x-model="biodataForm.kewarganegaraanIbu" placeholder="WNI" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Penghasilan Perbulan Ibu</label>
+                              <select x-model="biodataForm.penghasilanIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                                <option value="Tidak Berpenghasilan">Tidak Berpenghasilan / IRT</option>
+                                <option value="< 2 Juta">&lt; Rp 2.000.000</option>
+                                <option value="2 - 5 Juta">Rp 2.000.000 - Rp 5.000.000</option>
+                                <option value="5 - 10 Juta">Rp 5.000.000 - Rp 10.000.000</option>
+                                <option value="> 10 Juta">&gt; Rp 10.000.000</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
 
@@ -1446,7 +1654,7 @@
                           <button type="button" @click="saveBiodata()" :disabled="isSubmitting"
                                   class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition flex items-center space-x-1.5">
                             <i data-lucide="save" class="w-4 h-4"></i>
-                            <span>Simpan Biodata Santri</span>
+                            <span>Simpan Seluruh Biodata</span>
                           </button>
                         </div>
 
@@ -1914,11 +2122,9 @@
         },
 
         biodataForm: {
-          nik: '', nisn: '', tempatLahir: '', tglLahir: '', anakKe: 1, jmlSaudara: 1, ukuranBaju: 'M', riwayatPenyakit: '',
-          namaAyah: '', nikAyah: '', pekerjaanAyah: '', penghasilanAyah: '< 2 Juta', waAyah: '',
-          namaIbu: '', nikIbu: '', pekerjaanIbu: '',
-          namaWali: '',
-          alamat: '', kota: '', provinsi: '', kontakDarurat: ''
+          namaLengkap: '', jenjang: '', minatProgram: '', jalur: '', kelasTarget: '', nisn: '', tempatLahir: '', tglLahir: '', gender: 'LAKI-LAKI', anakKe: 1, jmlSaudara: 1, agama: 'Islam', noKK: '', nik: '', alamat: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kota: '', provinsi: '', kodePos: '', kewarganegaraan: 'WNI', riwayatPenyakit: '', email: '', noWA: '', asalSekolah: '', jenisSekolah: 'SD/MI', alamatSekolah: '',
+          nikAyah: '', namaAyah: '', tempatLahirAyah: '', tglLahirAyah: '', alamatAyah: '', waAyah: '', statusAyah: 'Masih Hidup', pekerjaanAyah: '', pendidikanAyah: '', kewarganegaraanAyah: 'WNI', penghasilanAyah: '< 2 Juta',
+          nikIbu: '', namaIbu: '', tempatLahirIbu: '', tglLahirIbu: '', alamatIbu: '', waIbu: '', statusIbu: 'Masih Hidup', pekerjaanIbu: '', pendidikanIbu: '', kewarganegaraanIbu: 'WNI', penghasilanIbu: '< 2 Juta'
         },
 
         docsMap: {},
@@ -2469,6 +2675,13 @@
 
               // Populate biodataForm if saved
               try {
+                self.biodataForm.namaLengkap = user.fullName || '';
+                self.biodataForm.jenjang = user.jenjang || '';
+                self.biodataForm.jalur = user.jalur || '';
+                self.biodataForm.noWA = user.noWA || '';
+                self.biodataForm.email = user.email || '';
+                self.biodataForm.asalSekolah = user.asalSekolah || '';
+
                 if (user.biodataJson) {
                   var parsedBio = JSON.parse(user.biodataJson);
                   if (parsedBio && typeof parsedBio === 'object') {
