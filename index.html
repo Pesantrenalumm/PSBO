@@ -864,7 +864,6 @@
         </div>
       </template>
     </div>
-    </template>
 
     <!-- ============================================================= -->
     <!-- VIEW SECTION B: PARTICIPANT DASHBOARD (When LOGGED IN)        -->
@@ -2081,14 +2080,14 @@
         onFileSelected(event, category, key) {
           var file = event.target.files[0];
           if (!file) return;
-          if (file.size > 2  1024  1024) {
+          if (file.size > 2 * 1024 * 1024) {
             this.showToast('Ukuran file melebihi 2 MB! Mohon pilih file yang lebih kecil.', 'error');
             event.target.value = '';
             return;
           }
           var sizeFormatted = '';
-          if (file.size >= 1024  1024) {
-            sizeFormatted = (file.size / (1024  1024)).toFixed(2) + ' MB';
+          if (file.size >= 1024 * 1024) {
+            sizeFormatted = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
           } else {
             sizeFormatted = Math.round(file.size / 1024) + ' KB';
           }
