@@ -1705,8 +1705,9 @@
                                       <span>Lihat Berkas</span>
                                     </a>
                                     <button type="button" @click="replaceDocMode[doc.key] = true" 
-                                            class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs transition">
-                                      Ganti
+                                            class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs transition flex items-center space-x-1">
+                                      <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                      <span>Ganti</span>
                                     </button>
                                   </div>
                                 </div>
@@ -1723,11 +1724,11 @@
                                     <div class="p-2 rounded-xl text-[11px] font-medium"
                                          :class="selectedFiles[doc.key].isValid ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'">
                                       <div class="flex items-center justify-between">
-                                        <span>Ukuran terpilih: <strong x-text="selectedFiles[doc.key].sizeStr"></strong></span>
-                                        <span class="font-bold" x-text="selectedFiles[doc.key].isValid ? '✅ Sesuai (< 2MB)' : '❌ Melebihi 2MB'"></span>
+                                        <span>Ukuran file: <strong x-text="selectedFiles[doc.key].sizeStr"></strong></span>
+                                        <span class="font-bold" x-text="selectedFiles[doc.key].isValid ? '✅ Ukuran Sesuai (< 2MB)' : '❌ Melebihi 2MB'"></span>
                                       </div>
                                       <template x-if="!selectedFiles[doc.key].isValid">
-                                        <p class="text-[10px] text-red-600 mt-0.5">File terlalu besar! Silakan perkecil atau kompres file terlebih dahulu.</p>
+                                        <p class="text-[10px] text-red-600 mt-0.5 font-bold">⚠️ Ukuran file melebihi 2 MB! Silakan kompres atau pilih file yang lebih kecil.</p>
                                       </template>
                                     </div>
                                   </template>
@@ -1739,7 +1740,7 @@
                                       <template x-if="!uploadingDoc[doc.key]">
                                         <span class="flex items-center space-x-1.5">
                                           <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                                          <span>Unggah ke Drive</span>
+                                          <span>Unggah Berkas</span>
                                         </span>
                                       </template>
                                       <template x-if="uploadingDoc[doc.key]">
@@ -1748,7 +1749,7 @@
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                           </svg>
-                                          <span>Mengunggah...</span>
+                                          <span>Mengunggah ke Drive...</span>
                                         </span>
                                       </template>
                                     </button>
@@ -2492,7 +2493,7 @@
             var docs = JSON.parse(this.currentUser.documentsJson || '{}');
             var count = 0;
             for (var k in docs) { if (docs[k] && docs[k].url) count++; }
-            return count + '/9';
+            return count + '/' + (this.docList ? this.docList.length : 9);
           } catch(e) { return '0/9'; }
         },
 
@@ -2500,7 +2501,7 @@
           if (stepNum === 1) return 'bg-emerald-700 text-white font-bold';
           var paySt = this.getPaymentStatusLabel();
           if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-700 text-white font-bold' : (paySt === 'MENUNGGU VERIFIKASI' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-200 text-slate-600');
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
+          if (stepNum === 3) return this.getDocsCountText() === '9/9' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
           if (stepNum === 4) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
           return 'bg-slate-200 text-slate-600';
         },
@@ -2516,7 +2517,7 @@
         getTimelineStepClass: function(stepNum) {
           var paySt = this.getPaymentStatusLabel();
           if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : (paySt === 'MENUNGGU VERIFIKASI' ? 'bg-amber-50 border-amber-300 text-amber-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400');
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
+          if (stepNum === 3) return this.getDocsCountText() === '9/9' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
           if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
           if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
           if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
@@ -2526,7 +2527,7 @@
         getTimelineStepIcon: function(stepNum) {
           var paySt = this.getPaymentStatusLabel();
           if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'check-circle' : 'credit-card';
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'check-circle' : 'file-text';
+          if (stepNum === 3) return this.getDocsCountText() === '9/9' ? 'check-circle' : 'file-text';
           if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'award' : 'lock';
           if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'check-circle' : 'lock';
           if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'check-circle' : 'lock';
@@ -2536,7 +2537,7 @@
         getTimelineStepLabel: function(stepNum) {
           var paySt = this.getPaymentStatusLabel();
           if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'Lunas ✅' : (paySt === 'MENUNGGU VERIFIKASI' ? 'Verifikasi ⏳' : 'Belum Bayar 🔒');
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'Lengkap ✅' : 'Proses ⏳';
+          if (stepNum === 3) return this.getDocsCountText() === '9/9' ? 'Lengkap ✅' : 'Proses ⏳';
           if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'Siap Cetak ✅' : 'Terkunci 🔒';
           if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'LULUS ✅' : 'Proses ⏳';
           if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'Tersedia ✅' : 'Terkunci 🔒';
