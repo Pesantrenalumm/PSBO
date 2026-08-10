@@ -1,2807 +1,630 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PSB Pondok Pesantren Al-Umm</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Alpine.js CDN -->
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <style>
-    [x-cloak] { display: none !important; }
-    
-    /* Custom Scrollbar for TNC */
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
+const SPREADSHEET_ID = '1X-h2nQMS-GKKLRa4S7_ZuPTv3F38slhRca8uDaecA_Y';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAVUkA0HuE4sip2fPT5dE2Se4JZ5RrT9mkHEaasKanuYG7dItwGRWvO9dC9AXqBJb68g/exec';
+
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('PSB Pondok Pesantren Al-Umm')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function doPost(e) {
+  try {
+    var body = {};
+    if (e && e.postData && e.postData.contents) {
+      body = JSON.parse(e.postData.contents);
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 4px;
+    var action = body.action || '';
+    var payload = body.payload || {};
+    var result;
+
+    if (action === 'getInitialData') {
+      result = getInitialData();
+    } else if (action === 'login') {
+      result = handleLogin(payload);
+    } else if (action === 'register') {
+      result = handleRegister(payload);
+    } else if (action === 'updateConfig') {
+      result = updateConfig(payload);
+    } else if (action === 'getCandidates') {
+      result = getCandidates(payload);
+    } else if (action === 'changePassword') {
+      result = handleChangePassword(payload);
+    } else if (action === 'updateBiodata') {
+      result = handleUpdateBiodata(payload);
+    } else if (action === 'submitPayment') {
+      result = handleSubmitPayment(payload);
+    } else if (action === 'uploadDocument') {
+      result = handleUploadDocument(payload);
+    } else if (action === 'uploadDocumentFile') {
+      result = handleUploadDocumentFile(payload);
+    } else if (action === 'setupDb') {
+      result = setupDatabase();
+    } else {
+      throw new Error('Action tidak dikenal: ' + action);
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #059669;
-      border-radius: 4px;
+
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, data: serializeForClient(result) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, message: err.message || 'Terjadi kesalahan sistem.' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getDb() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function serializeForClient(obj) {
+  if (obj === null || obj === undefined) return null;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) {
+    return obj.map(function(item) { return serializeForClient(item); });
+  }
+  if (typeof obj === 'object') {
+    var res = {};
+    for (var key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        res[key] = serializeForClient(obj[key]);
+      }
     }
+    return res;
+  }
+  return obj;
+}
 
-    /* Print Styles for Proof Card */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #print-area, #print-area * {
-        visibility: visible;
-      }
-      #print-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-      .no-print {
-        display: none !important;
+function safeCellValue(val) {
+  if (val === null || val === undefined) return '';
+  var str = String(val);
+  if (/^[=\+\-@]/.test(str)) {
+    return "'" + str;
+  }
+  return str;
+}
+
+function hashPassword(password) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(password));
+  return digest.map(function(byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('');
+}
+
+function setupDatabase() {
+  var ss = getDb();
+  
+  // 1. Tab Config
+  var configSheet = ss.getSheetByName('Config');
+  if (!configSheet) configSheet = ss.insertSheet('Config');
+  configSheet.getRange(1, 1, 1, 3).setValues([['Key', 'Value', 'Description']]);
+  
+  var existingKeys = {};
+  var configData = configSheet.getDataRange().getValues();
+  for (var k = 1; k < configData.length; k++) {
+    if (configData[k][0]) existingKeys[String(configData[k][0]).trim()] = true;
+  }
+
+  var defaultConfigList = [
+    ['TAHUN_AJARAN', '2025/2026', 'Tahun Ajaran Aktif'],
+    ['BROCHURE_URL', 'https://example.com/brosur-psb-al-umm.pdf', 'Link Brosur PDF'],
+    ['HELPDESK_WA', '6281234567890', 'Nomor WA Helpdesk'],
+    ['HELPDESK_LABEL', '+62 812-3456-7890', 'Label WA'],
+    ['PERIODE_AKTIF', 'Gelombang 1', 'Periode Pendaftaran Aktif'],
+    ['PERIODE_EARLY_BIRD', 'TUTUP', 'Status Periode Early Bird'],
+    ['PERIODE_GEL1', 'BUKA', 'Status Periode Gelombang 1'],
+    ['PERIODE_GEL2', 'MENDATANG', 'Status Periode Gelombang 2'],
+    ['PERIODE_SUSULAN', 'MENDATANG', 'Status Periode Susulan'],
+    ['STATUS_SMP_PA', 'BUKA', 'Status Pendaftaran SMP Putra'],
+    ['STATUS_SMP_PI', 'BUKA', 'Status Pendaftaran SMP Putri'],
+    ['STATUS_MA_PA', 'BUKA', 'Status Pendaftaran MA Putra'],
+    ['STATUS_MA_PI', 'BUKA', 'Status Pendaftaran MA Putri'],
+    ['STATUS_MUTASI', 'BUKA', 'Status Jalur Mutasi'],
+    ['STATUS_INDEN', 'BUKA', 'Status Jalur Inden'],
+    ['PARENT_FOLDER_ID', '', 'ID Folder Induk Google Drive untuk Berkas Santri']
+  ];
+
+  for (var c = 0; c < defaultConfigList.length; c++) {
+    if (!existingKeys[defaultConfigList[c][0]]) {
+      configSheet.appendRow(defaultConfigList[c]);
+    }
+  }
+
+  // 2. Tab InfoSlides
+  var slidesSheet = ss.getSheetByName('InfoSlides');
+  if (!slidesSheet) slidesSheet = ss.insertSheet('InfoSlides');
+  slidesSheet.getRange(1, 1, 1, 4).setValues([['ID', 'Title', 'Content', 'Badge']]);
+  if (slidesSheet.getLastRow() <= 1) {
+    slidesSheet.appendRow(['SLIDE-1', 'Pendaftaran PSB TA 2025/2026 Resmi Dibuka!', 'Segera daftarkan putra-putri Anda di Pondok Pesantren Al-Umm. Kuota terbatas untuk Gelombang 1.', 'Informasi']);
+    slidesSheet.appendRow(['SLIDE-2', 'Program Unggulan Tahfidh & Bahasa', 'Fasilitas asrama kondusif dengan kurikulum terpadu Kemenag/Diknas & Pesantren Modern.', 'Unggulan']);
+    slidesSheet.appendRow(['SLIDE-3', 'Beasiswa Prestasi & Yatim', 'Tersedia potongan infak dan beasiswa pendaftaran bagi calon santri berprestasi.', 'Beasiswa']);
+  }
+
+  // 3. Tab Users
+  var usersSheet = ss.getSheetByName('Users');
+  if (!usersSheet) usersSheet = ss.insertSheet('Users');
+  usersSheet.getRange(1, 1, 1, 21).setValues([[
+    'ID', 'Username', 'PasswordHash', 'RawPassword', 'FullName', 'Role', 
+    'Jalur', 'Jenjang', 'KelasTarget', 'AsalSekolah', 'NoWA', 'Email', 
+    'NISN', 'Gender', 'Status', 'CreatedAt', 'IsDefaultPassword', 
+    'BiodataJson', 'PaymentsJson', 'DocumentsJson', 'SelectionStatus'
+  ]]);
+
+  // Buat default admin jika belum ada
+  if (usersSheet.getLastRow() <= 1) {
+    var adminPass = 'admin123';
+    usersSheet.appendRow([
+      'USR-ADMIN', 
+      'admin@alumm.sch.id', 
+      hashPassword(adminPass), 
+      adminPass, 
+      'Administrator PSB', 
+      'ADMIN', 
+      '-', '-', '-', '-', "'081234567890", 'admin@alumm.sch.id', 
+      '-', 'Laki-laki', 'AKTIF', new Date().toISOString()
+    ]);
+  }
+
+  return { message: 'Database PSB Al-Umm berhasil disiapkan.' };
+}
+
+function getInitialData() {
+  setupDatabase();
+  var ss = getDb();
+  
+  // Read Config
+  var configSheet = ss.getSheetByName('Config');
+  var configData = configSheet.getDataRange().getValues();
+  var configMap = {};
+  for (var i = 1; i < configData.length; i++) {
+    if (configData[i][0]) {
+      configMap[String(configData[i][0]).trim()] = String(configData[i][1] || '').trim();
+    }
+  }
+
+  // Read InfoSlides
+  var slidesSheet = ss.getSheetByName('InfoSlides');
+  var slidesData = slidesSheet.getDataRange().getValues();
+  var slidesList = [];
+  for (var j = 1; j < slidesData.length; j++) {
+    if (slidesData[j][0]) {
+      slidesList.push({
+        id: String(slidesData[j][0]),
+        title: String(slidesData[j][1]),
+        content: String(slidesData[j][2]),
+        badge: String(slidesData[j][3])
+      });
+    }
+  }
+
+  return {
+    config: configMap,
+    slides: slidesList
+  };
+}
+
+function handleLogin(payload) {
+  var username = String(payload.username || '').trim().toLowerCase();
+  var password = String(payload.password || '').trim();
+
+  if (!username || !password) {
+    throw new Error('Mohon isi NISN/Email/No WA dan kata sandi.');
+  }
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  var data = usersSheet.getDataRange().getValues();
+  var inputHash = hashPassword(password);
+
+  for (var i = 1; i < data.length; i++) {
+    var dbUsername = String(data[i][1] || '').trim().toLowerCase();
+    var dbNoWA = String(data[i][10] || '').replace(/[^0-9]/g, '');
+    var dbNISN = String(data[i][12] || '').trim().toLowerCase();
+    var dbHash = String(data[i][2] || '').trim();
+    var cleanInput = username.replace(/[^0-9]/g, '');
+
+    var isMatchUser = (username === dbUsername) || (cleanInput !== '' && cleanInput === dbNoWA) || (username === dbNISN);
+
+    if (isMatchUser) {
+      if (dbHash === inputHash || password === String(data[i][3])) {
+        var isDef = String(data[i][16] || 'TRUE').toUpperCase();
+        return {
+          id: String(data[i][0]),
+          username: String(data[i][1]),
+          fullName: String(data[i][4]),
+          role: String(data[i][5]),
+          jalur: String(data[i][6]),
+          jenjang: String(data[i][7]),
+          kelasTarget: String(data[i][8] || ''),
+          asalSekolah: String(data[i][9] || ''),
+          noWA: String(data[i][10] || '').replace(/^'/, ''),
+          email: String(data[i][11] || ''),
+          nisn: String(data[i][12] || '').replace(/^'/, ''),
+          gender: String(data[i][13] || ''),
+          status: String(data[i][14] || 'TERDAFTAR'),
+          createdAt: String(data[i][15] || ''),
+          isDefaultPassword: (isDef === 'TRUE' || isDef === '1'),
+          biodataJson: String(data[i][17] || '{}'),
+          paymentsJson: String(data[i][18] || '{}'),
+          documentsJson: String(data[i][19] || '{}'),
+          selectionStatus: String(data[i][20] || 'BELUM DIPROSES')
+        };
+      } else {
+        throw new Error('Kata sandi yang Anda masukkan salah.');
       }
     }
-  </style>
-</head>
-<body class="bg-[#0e1424] font-sans text-slate-800 antialiased min-h-screen flex flex-col" x-data="psbApp()" x-init="initApp()">
-
-  <!-- Toast Notification Custom Modal -->
-  <div x-cloak x-show="toast.show" 
-       x-transition:enter="transition ease-out duration-300 transform"
-       x-transition:enter-start="opacity-0 translate-y-2"
-       x-transition:enter-end="opacity-100 translate-y-0"
-       x-transition:leave="transition ease-in duration-200 transform"
-       x-transition:leave-start="opacity-100 translate-y-0"
-       x-transition:leave-end="opacity-0 translate-y-2"
-       class="fixed top-5 right-5 z-50 max-w-sm w-full bg-white shadow-xl rounded-xl border border-slate-200 p-4 flex items-start space-x-3">
-    <div :class="toast.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'" class="p-2 rounded-lg flex-shrink-0">
-      <i :data-lucide="toast.type === 'error' ? 'alert-circle' : 'check-circle-2'" class="w-5 h-5"></i>
-    </div>
-    <div class="flex-1 pr-2">
-      <h4 class="text-sm font-semibold text-slate-900" x-text="toast.title"></h4>
-      <p class="text-xs text-slate-600 mt-0.5" x-text="toast.message"></p>
-    </div>
-    <button @click="toast.show = false" class="text-slate-400 hover:text-slate-600">
-      <i data-lucide="x" class="w-4 h-4"></i>
-    </button>
-  </div>
-
-  <!-- MODAL ADMIN CONTROL BUKA/TUTUP JALUR & PERIODE -->
-  <div x-cloak x-show="showAdminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white max-w-lg w-full rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8">
-      <div class="bg-emerald-800 text-white p-4 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="sliders" class="w-5 h-5 text-emerald-300"></i>
-          <h3 class="font-bold text-sm">Pengaturan Buka/Tutup & Periode PSB</h3>
-        </div>
-        <button type="button" @click="showAdminModal = false" class="text-emerald-200 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
-        <!-- PERIODE PENDAFTARAN AKTIF -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Periode Pendaftaran Aktif Saat Ini</label>
-          <select x-model="adminConfig.PERIODE_AKTIF" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-600">
-            <option value="Early Bird">Early Bird</option>
-            <option value="Gelombang 1">Gelombang 1</option>
-            <option value="Gelombang 2">Gelombang 2</option>
-            <option value="Susulan">Susulan</option>
-          </select>
-        </div>
-
-        <!-- STATUS PERIODE INDIVIDUAL -->
-        <div class="border-t border-slate-200 pt-3">
-          <h4 class="text-xs font-bold text-slate-800 uppercase mb-2">Status Masing-Masing Periode</h4>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <label class="block text-[10px] font-semibold text-slate-600">Early Bird</label>
-              <select x-model="adminConfig.PERIODE_EARLY_BIRD" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-                <option value="MENDATANG">MENDATANG</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[10px] font-semibold text-slate-600">Gelombang 1</label>
-              <select x-model="adminConfig.PERIODE_GEL1" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-                <option value="MENDATANG">MENDATANG</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[10px] font-semibold text-slate-600">Gelombang 2</label>
-              <select x-model="adminConfig.PERIODE_GEL2" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-                <option value="MENDATANG">MENDATANG</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[10px] font-semibold text-slate-600">Susulan</label>
-              <select x-model="adminConfig.PERIODE_SUSULAN" class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-                <option value="MENDATANG">MENDATANG</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- STATUS BUKA/TUTUP SATUAN & JALUR -->
-        <div class="border-t border-slate-200 pt-3">
-          <h4 class="text-xs font-bold text-slate-800 uppercase mb-2">Buka/Tutup Satuan Pendidikan & Jalur</h4>
-          <div class="space-y-2 text-xs">
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-              <span class="font-medium text-slate-700">SMP Putra (SMP Pa)</span>
-              <select x-model="adminConfig.STATUS_SMP_PA" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_SMP_PA === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-              </select>
-            </div>
-
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-              <span class="font-medium text-slate-700">SMP Putri (SMP Pi)</span>
-              <select x-model="adminConfig.STATUS_SMP_PI" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_SMP_PI === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-              </select>
-            </div>
-
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-              <span class="font-medium text-slate-700">MA Putra (MA Pa)</span>
-              <select x-model="adminConfig.STATUS_MA_PA" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_MA_PA === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-              </select>
-            </div>
-
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-              <span class="font-medium text-slate-700">MA Putri (MA Pi)</span>
-              <select x-model="adminConfig.STATUS_MA_PI" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_MA_PI === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-              </select>
-            </div>
-
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-              <span class="font-medium text-slate-700">Jalur Mutasi</span>
-              <select x-model="adminConfig.STATUS_MUTASI" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_MUTASI === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-              </select>
-            </div>
-
-            <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-              <span class="font-medium text-slate-700">Jalur Inden</span>
-              <select x-model="adminConfig.STATUS_INDEN" class="p-1.5 rounded-lg border text-xs font-bold" :class="adminConfig.STATUS_INDEN === 'TUTUP' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'">
-                <option value="BUKA">BUKA</option>
-                <option value="TUTUP">TUTUP</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end space-x-2">
-        <button type="button" @click="showAdminModal = false" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold">
-          Batal
-        </button>
-        <button type="button" @click="saveAdminConfig()" :disabled="isSubmitting" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow flex items-center space-x-1.5">
-          <i data-lucide="save" class="w-4 h-4"></i>
-          <span>Simpan Perubahan</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading Full Overlay (Blocker operations) -->
-  <div x-cloak x-show="isPageBlocking" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center space-y-3">
-      <svg class="animate-spin h-10 w-10 text-emerald-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-sm font-medium text-slate-700" x-text="loadingMessage">Memproses data...</span>
-    </div>
-  </div>
-
-  <!-- MAIN CONTAINER -->
-  <main class="flex-1 flex flex-col" :class="mode !== 'dashboard' ? 'items-center justify-center p-3 sm:p-6 md:p-10' : 'p-0 w-full min-h-screen'">
-    <div class="w-full bg-white flex flex-col transition-all duration-300"
-         :class="mode !== 'dashboard' ? 'max-w-6xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 min-h-[640px] md:flex-row' : 'min-h-screen rounded-none shadow-none border-none'">
-      
-      <!-- ================= 1. MOBILE TOP HEADER (Khusus Mobile & Tablet) ================= -->
-      <div x-show="mode !== 'dashboard'" class="md:hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-5 relative overflow-hidden border-b border-emerald-800">
-        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
-        <div class="relative z-10 flex flex-col space-y-3">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-emerald-600/60 backdrop-blur border border-emerald-400/30 rounded-xl flex items-center justify-center text-emerald-200 shadow-inner">
-              <i data-lucide="graduation-cap" class="w-6 h-6"></i>
-            </div>
-            <div>
-              <h1 class="font-bold text-base leading-tight text-white tracking-wide">AL-UMM</h1>
-              <p class="text-[11px] text-emerald-200/80 font-medium">Pondok Pesantren &amp; Madrasah</p>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="inline-flex items-center space-x-2 bg-emerald-700/50 border border-emerald-500/30 rounded-full px-3 py-1 text-[11px] text-emerald-100 font-medium">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>PSB Tahun Ajaran <strong x-text="config.TAHUN_AJARAN || '2025/2026'"></strong></span>
-            </div>
-            <div class="inline-flex items-center space-x-1.5 bg-amber-400 border border-amber-300 text-amber-950 font-bold px-3 py-1 rounded-full text-[11px] shadow-sm">
-              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-              <span x-text="config.PERIODE_AKTIF || 'Gelombang 1'"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= 2. DESKTOP LEFT PANEL (Khusus Layar Komputer / Desktop) ================= -->
-      <div x-show="mode !== 'dashboard'" class="hidden md:flex md:w-5/12 bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-6 sm:p-8 flex-col justify-between relative overflow-hidden transition-all duration-500">
-        <!-- Pattern background overlay -->
-        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
-
-        <!-- HEADER / LOGO DESKTOP -->
-        <div class="relative z-10">
-          <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 bg-emerald-600/60 backdrop-blur border border-emerald-400/30 rounded-2xl flex items-center justify-center text-emerald-200 shadow-inner">
-              <i data-lucide="graduation-cap" class="w-7 h-7"></i>
-            </div>
-            <div>
-              <h1 class="font-bold text-lg leading-tight text-white tracking-wide">AL-UMM</h1>
-              <p class="text-xs text-emerald-200/80 font-medium">Pondok Pesantren &amp; Madrasah</p>
-            </div>
-          </div>
-
-          <!-- TA Indicator & Badge Periode Aktif -->
-          <div class="mt-4 flex flex-wrap items-center gap-2">
-            <div class="inline-flex items-center space-x-2 bg-emerald-700/50 border border-emerald-500/30 rounded-full px-3 py-1 text-xs text-emerald-100 font-medium">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>PSB Tahun Ajaran <strong x-text="config.TAHUN_AJARAN || '2025/2026'"></strong></span>
-            </div>
-            <div class="inline-flex items-center space-x-1.5 bg-amber-400 border border-amber-300 text-amber-950 font-bold px-3 py-1 rounded-full text-xs shadow-sm">
-              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-              <span x-text="config.PERIODE_AKTIF || 'Gelombang 1'"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- CONTENT PANEL DESKTOP -->
-        <template x-if="mode === 'login'">
-          <div class="my-8 relative z-10 transition-all duration-300">
-            <template x-if="loadingInitial">
-              <div class="animate-pulse space-y-3">
-                <div class="h-4 bg-emerald-700/50 rounded w-1/3"></div>
-                <div class="h-6 bg-emerald-700/50 rounded w-3/4"></div>
-                <div class="h-12 bg-emerald-700/50 rounded w-full"></div>
-              </div>
-            </template>
-
-            <template x-if="!loadingInitial && slides.length > 0">
-              <div class="space-y-4">
-                <span class="inline-block px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider bg-amber-400 text-amber-950" x-text="slides[activeSlide].badge"></span>
-                <h2 class="text-xl sm:text-2xl font-bold leading-snug text-white" x-text="slides[activeSlide].title"></h2>
-                <p class="text-xs sm:text-sm text-emerald-100/80 leading-relaxed" x-text="slides[activeSlide].content"></p>
-                
-                <div class="flex items-center space-x-2 pt-2">
-                  <template x-for="(slide, index) in slides" :key="index">
-                    <button @click="activeSlide = index" 
-                            class="h-1.5 rounded-full transition-all duration-300"
-                            :class="activeSlide === index ? 'w-6 bg-emerald-300' : 'w-2 bg-emerald-700 hover:bg-emerald-600'"></button>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </template>
-
-        <template x-if="mode === 'register'">
-          <div class="my-8 relative z-10 space-y-6 transition-all duration-300">
-            <div>
-              <h2 class="text-xl font-bold text-white">Tahapan Pendaftaran</h2>
-              <p class="text-xs text-emerald-200/80 mt-1">Lengkapi data santri baru dengan mudah</p>
-            </div>
-
-            <div class="space-y-4">
-              <button type="button" @click="regStep = 1" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all"
-                   :class="regStep === 1 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200 hover:opacity-100'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
-                     :class="regStep === 1 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">1</div>
-                <div>
-                  <h4 class="text-xs font-semibold">Jalur &amp; Jenjang</h4>
-                  <p class="text-[10px] text-emerald-200/80">Pilihan program studi</p>
-                </div>
-              </button>
-
-              <button type="button" @click="nextStep(2)" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all"
-                   :class="regStep === 2 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200 hover:opacity-100'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
-                     :class="regStep === 2 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">2</div>
-                <div>
-                  <h4 class="text-xs font-semibold">Biodata &amp; NISN</h4>
-                  <p class="text-[10px] text-emerald-200/80">Identitas santri &amp; wali</p>
-                </div>
-              </button>
-
-              <button type="button" @click="nextStep(3)" class="w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all"
-                   :class="regStep === 3 ? 'bg-emerald-700/60 border border-emerald-400/40 text-white shadow' : 'opacity-60 text-emerald-200 hover:opacity-100'">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
-                     :class="regStep === 3 ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 border border-emerald-600 text-white'">3</div>
-                <div>
-                  <h4 class="text-xs font-semibold">Persetujuan Syarat</h4>
-                  <p class="text-[10px] text-emerald-200/80">Konfirmasi data &amp; ketentuan</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- FOOTER DESKTOP BUTTONS -->
-        <div class="relative z-10 pt-4 border-t border-emerald-700/50 flex flex-col sm:flex-row gap-2">
-          <a :href="config.BROCHURE_URL || '#'" target="_blank" 
-             class="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
-            <i data-lucide="file-down" class="w-4 h-4 text-emerald-300"></i>
-            <span>Brosur</span>
-          </a>
-          <a :href="'https://wa.me/' + (config.HELPDESK_WA || '6281234567890')" target="_blank"
-             class="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
-            <i data-lucide="message-circle" class="w-4 h-4 text-emerald-300"></i>
-            <span>Helpdesk</span>
-          </a>
-        </div>
-      </div>
-
-
-      <!-- ================= 3. AREA UTAMA FORM (LOGIN / REGISTRASI / HASIL) ================= -->
-      <div class="w-full flex flex-col bg-white relative transition-all duration-300"
-           :class="mode === 'dashboard' ? 'p-0 min-h-screen justify-start' : 'md:w-7/12 p-6 sm:p-10 justify-center min-h-[640px]'">
-        
-        <!-- SKELETON LOADING STATE FOR FORM INITIALIZATION -->
-        <template x-if="loadingInitial">
-          <div class="animate-pulse space-y-6">
-            <div class="h-8 bg-slate-200 rounded w-1/2"></div>
-            <div class="space-y-4">
-              <div class="h-10 bg-slate-200 rounded"></div>
-              <div class="h-10 bg-slate-200 rounded"></div>
-              <div class="h-12 bg-slate-300 rounded"></div>
-            </div>
-          </div>
-        </template>
-
-        <!-- MAIN VIEW ENGINE -->
-        <template x-if="!loadingInitial">
-          <div>
-
-            <!-- ================= VIEW 1: LOGIN FORM ================= -->
-            <div x-show="mode === 'login'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-              <div class="mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">Masuk Portal PSB</h2>
-                <p class="text-sm text-slate-500 mt-1">Masuk untuk calon santri terdaftar atau Administrator</p>
-              </div>
-
-              <form @submit.prevent="submitLogin()" class="space-y-4">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">No WhatsApp / Email / NISN</label>
-                  <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                      <i data-lucide="user" class="w-4 h-4"></i>
-                    </span>
-                    <input type="text" x-model="loginForm.username" required
-                           placeholder="Contoh: 081234567890" 
-                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none transition">
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Kata Sandi</label>
-                  <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                      <i data-lucide="lock" class="w-4 h-4"></i>
-                    </span>
-                    <input :type="showPassword ? 'text' : 'password'" x-model="loginForm.password" required
-                           placeholder="Masukkan kata sandi" 
-                           class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none transition">
-                    <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                      <i :data-lucide="showPassword ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
-                    </button>
-                  </div>
-                  <p class="text-[11px] text-slate-400 mt-1">* Password default peserta adalah 4 angka terakhir nomor WhatsApp.</p>
-                </div>
-
-                <button type="submit" :disabled="isSubmitting"
-                        class="w-full py-3 px-4 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl font-semibold text-sm shadow-lg shadow-emerald-700/20 transition flex items-center justify-center space-x-2 disabled:opacity-50">
-                  <template x-if="!isSubmitting">
-                    <span class="flex items-center space-x-2">
-                      <span>Masuk Sekarang</span>
-                      <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </span>
-                  </template>
-                  <template x-if="isSubmitting">
-                    <span class="flex items-center space-x-2">
-                      <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Memverifikasi...</span>
-                    </span>
-                  </template>
-                </button>
-              </form>
-
-              <div class="mt-6 pt-6 border-t border-slate-200 text-center">
-                <p class="text-xs text-slate-600">Belum memiliki akun pendaftaran?</p>
-                <button @click="switchMode('register')" 
-                        class="mt-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 inline-flex items-center space-x-1">
-                  <span>Buat Akun Santri Baru</span>
-                  <i data-lucide="user-plus" class="w-4 h-4"></i>
-                </button>
-              </div>
-            </div>
-
-
-            <!-- ================= VIEW 2: FORMULIR PENDAFTARAN 3 STEP ================= -->
-            <div x-show="mode === 'register'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-              
-              <!-- VISUAL PROGRESS BAR STEPPER (Khusus Tampil di HP & Tablet) -->
-              <div class="md:hidden mb-6 border-b border-slate-200 pb-4">
-                <div class="flex items-center justify-between relative px-2">
-                  <div class="absolute left-6 right-6 top-4 -translate-y-1/2 h-1 bg-slate-200 -z-0"></div>
-                  <div class="absolute left-6 top-4 -translate-y-1/2 h-1 bg-emerald-600 transition-all duration-300 -z-0"
-                       :style="'width: ' + ((regStep - 1) * 50) + '%'"></div>
-
-                  <!-- Step 1 Indicator -->
-                  <button type="button" @click="regStep = 1" class="flex flex-col items-center z-10 bg-white px-1 focus:outline-none">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
-                         :class="regStep >= 1 ? 'bg-emerald-700 text-white shadow-md ring-4 ring-emerald-100' : 'bg-slate-200 text-slate-500'">1</div>
-                    <span class="text-[11px] font-bold mt-1" :class="regStep >= 1 ? 'text-emerald-800' : 'text-slate-400'">1. Jalur</span>
-                  </button>
-
-                  <!-- Step 2 Indicator -->
-                  <button type="button" @click="nextStep(2)" class="flex flex-col items-center z-10 bg-white px-1 focus:outline-none">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
-                         :class="regStep >= 2 ? 'bg-emerald-700 text-white shadow-md ring-4 ring-emerald-100' : 'bg-slate-200 text-slate-500'">2</div>
-                    <span class="text-[11px] font-bold mt-1" :class="regStep >= 2 ? 'text-emerald-800' : 'text-slate-400'">2. Biodata</span>
-                  </button>
-
-                  <!-- Step 3 Indicator -->
-                  <button type="button" @click="nextStep(3)" class="flex flex-col items-center z-10 bg-white px-1 focus:outline-none">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
-                         :class="regStep === 3 ? 'bg-emerald-700 text-white shadow-md ring-4 ring-emerald-100' : 'bg-slate-200 text-slate-500'">3</div>
-                    <span class="text-[11px] font-bold mt-1" :class="regStep === 3 ? 'text-emerald-800' : 'text-slate-400'">3. Syarat</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- STEP 1: PILIH JALUR & JENJANG -->
-              <div x-show="regStep === 1" class="space-y-5">
-                <div>
-                  <h3 class="text-xl font-bold text-slate-800">Langkah 1: Pilih Jalur & Jenjang</h3>
-                  <p class="text-xs text-slate-500">Pilih program pendidikan yang sesuai</p>
-                </div>
-
-                <!-- Jalur selection -->
-                <div class="space-y-2">
-                  <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">A. Jalur Pendaftaran</label>
-                  <div class="grid grid-cols-3 gap-2">
-                    <button type="button" @click="regForm.jalur = 'reguler'; regForm.kelasTarget = ''"
-                            :class="regForm.jalur === 'reguler' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-2.5 border rounded-xl text-center text-xs font-medium transition relative">
-                      <span>Reguler</span>
-                      <span class="block text-[9px] text-emerald-600 font-bold mt-0.5">BUKA</span>
-                    </button>
-
-                    <button type="button" @click="if(config.STATUS_MUTASI !== 'TUTUP') { regForm.jalur = 'mutasi'; regForm.kelasTarget = ''; }"
-                            :disabled="config.STATUS_MUTASI === 'TUTUP'"
-                            :class="[
-                              regForm.jalur === 'mutasi' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 bg-white text-slate-700',
-                              config.STATUS_MUTASI === 'TUTUP' ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'hover:border-slate-300'
-                            ]"
-                            class="p-2.5 border rounded-xl text-center text-xs font-medium transition relative">
-                      <span>Mutasi</span>
-                      <span class="block text-[9px] font-bold mt-0.5" :class="config.STATUS_MUTASI === 'TUTUP' ? 'text-red-500' : 'text-emerald-600'" x-text="config.STATUS_MUTASI || 'BUKA'"></span>
-                    </button>
-
-                    <button type="button" @click="if(config.STATUS_INDEN !== 'TUTUP') { regForm.jalur = 'inden'; regForm.kelasTarget = ''; }"
-                            :disabled="config.STATUS_INDEN === 'TUTUP'"
-                            :class="[
-                              regForm.jalur === 'inden' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 bg-white text-slate-700',
-                              config.STATUS_INDEN === 'TUTUP' ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'hover:border-slate-300'
-                            ]"
-                            class="p-2.5 border rounded-xl text-center text-xs font-medium transition relative">
-                      <span>Inden</span>
-                      <span class="block text-[9px] font-bold mt-0.5" :class="config.STATUS_INDEN === 'TUTUP' ? 'text-red-500' : 'text-emerald-600'" x-text="config.STATUS_INDEN || 'BUKA'"></span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Jenjang Selection -->
-                <div class="space-y-2">
-                  <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">B. Jenjang Pendidikan</label>
-                  <div class="grid grid-cols-2 gap-3">
-                    <button type="button" @click="regForm.jenjang = 'SMP'; if(regForm.jalur==='mutasi') regForm.kelasTarget='Kelas 7'"
-                            :class="regForm.jenjang === 'SMP' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3 border rounded-xl text-left transition flex items-center justify-between">
-                      <div class="flex items-center space-x-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">SMP</div>
-                        <div>
-                          <div class="text-xs font-bold">SMP Al-Umm</div>
-                          <div class="text-[10px] text-slate-500">Tingkat Menengah</div>
-                        </div>
-                      </div>
-                    </button>
-
-                    <button type="button" @click="regForm.jenjang = 'MA'; if(regForm.jalur==='mutasi') regForm.kelasTarget='Kelas 10'"
-                            :class="regForm.jenjang === 'MA' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'"
-                            class="p-3 border rounded-xl text-left transition flex items-center justify-between">
-                      <div class="flex items-center space-x-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">MA</div>
-                        <div>
-                          <div class="text-xs font-bold">MA Al-Umm</div>
-                          <div class="text-[10px] text-slate-500">Madrasah Aliyah</div>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-
-                  <!-- Quick Status Grid for Gender & Jenjang -->
-                  <div class="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span class="block text-[11px] font-semibold text-slate-600">Status Pendaftaran Per Satuan Pendidikan:</span>
-                    <div class="grid grid-cols-2 gap-2 text-[10px]">
-                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
-                        <span class="font-medium text-slate-700">SMP Putra (Pa)</span>
-                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_SMP_PA === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_SMP_PA || 'BUKA'"></span>
-                      </div>
-                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
-                        <span class="font-medium text-slate-700">SMP Putri (Pi)</span>
-                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_SMP_PI === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_SMP_PI || 'BUKA'"></span>
-                      </div>
-                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
-                        <span class="font-medium text-slate-700">MA Putra (Pa)</span>
-                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_MA_PA === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_MA_PA || 'BUKA'"></span>
-                      </div>
-                      <div class="flex items-center justify-between p-1.5 bg-white border border-slate-200 rounded-lg">
-                        <span class="font-medium text-slate-700">MA Putri (Pi)</span>
-                        <span class="px-1.5 py-0.5 rounded font-bold" :class="config.STATUS_MA_PI === 'TUTUP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="config.STATUS_MA_PI || 'BUKA'"></span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Sub Options per Jalur -->
-                <!-- Mutasi Kelas Target -->
-                <template x-if="regForm.jalur === 'mutasi'">
-                  <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <label class="block text-xs font-semibold text-slate-700">Pilih Kelas Mutasi Target:</label>
-                    <select x-model="regForm.kelasTarget" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-emerald-600">
-                      <template x-if="regForm.jenjang === 'SMP'">
-                        <optgroup label="Pilihan Mutasi SMP">
-                          <option value="Kelas 7">Kelas 7 (Semester Genap)</option>
-                          <option value="Kelas 8">Kelas 8</option>
-                          <option value="Kelas 9">Kelas 9</option>
-                        </optgroup>
-                      </template>
-                      <template x-if="regForm.jenjang === 'MA'">
-                        <optgroup label="Pilihan Mutasi MA">
-                          <option value="Kelas 10">Kelas 10 (Semester Genap)</option>
-                          <option value="Kelas 11">Kelas 11</option>
-                          <option value="Kelas 12">Kelas 12</option>
-                        </optgroup>
-                      </template>
-                    </select>
-                  </div>
-                </template>
-
-                <!-- Inden Kelas Sekarang -->
-                <template x-if="regForm.jalur === 'inden'">
-                  <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <label class="block text-xs font-semibold text-slate-700">Kelas berapa calon santri sekarang?</label>
-                    <input type="text" x-model="regForm.kelasTarget" placeholder="Contoh: SD/MI Kelas 4 atau 5"
-                           class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-600 outline-none">
-                  </div>
-                </template>
-
-                <!-- Navigasi Step 1 -->
-                <div class="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <button type="button" @click="switchMode('login')" class="text-xs font-medium text-slate-500 hover:text-slate-700">
-                    &larr; Batal / Kembali ke Login
-                  </button>
-                  <button type="button" @click="nextStep(2)" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition">
-                    Lanjut ke Biodata &rarr;
-                  </button>
-                </div>
-              </div>
-
-              <!-- STEP 2: BIODATA & NISN -->
-              <div x-show="regStep === 2" class="space-y-4">
-                <div>
-                  <h3 class="text-xl font-bold text-slate-800">Langkah 2: Biodata & NISN</h3>
-                  <p class="text-xs text-slate-500">Isi identitas diri calon santri secara akurat</p>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div class="sm:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Santri *</label>
-                    <input type="text" x-model="regForm.namaLengkap" @input="regForm.namaLengkap = regForm.namaLengkap.toUpperCase()" required placeholder="NAMA LENGKAP SESUAI IJAZAH/AKTA"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">NISN (Opsional)</label>
-                    <input type="text" x-model="regForm.nisn" placeholder="10 DIGIT NISN"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Kelamin *</label>
-                    <select x-model="regForm.gender" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                      <option value="LAKI-LAKI">LAKI-LAKI (PUTRA)</option>
-                      <option value="PEREMPUAN">PEREMPUAN (PUTRI)</option>
-                    </select>
-                  </div>
-
-                  <!-- WARNING JIKA COMBINATION TERDAPAT STATUS TUTUP -->
-                  <div class="sm:col-span-2" x-show="getSelectedTrackStatus() === 'TUTUP'">
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-2 text-red-700 text-xs">
-                      <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5"></i>
-                      <div>
-                        <strong class="font-bold">Pendaftaran Ditutup!</strong>
-                        <p class="mt-0.5">Pendaftaran untuk jenjang <span x-text="regForm.jenjang"></span> (<span x-text="regForm.gender === 'LAKI-LAKI' ? 'Putra' : 'Putri'"></span>) saat ini sedang <strong class="uppercase">DITUTUP</strong>.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="sm:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Asal Sekolah *</label>
-                    <input type="text" x-model="regForm.asalSekolah" @input="regForm.asalSekolah = regForm.asalSekolah.toUpperCase()" placeholder="CONTOH: SD NEGERI 1 MALANG / MI AL-HIDAYAH"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor WhatsApp *</label>
-                    <input type="text" x-model="regForm.noWA" @input="formatWAInput()" placeholder="081234567890"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                    <p class="text-[10px] text-emerald-600 mt-0.5">* Digunakan sebagai Username & Password otomatis</p>
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Email Aktif *</label>
-                    <input type="email" x-model="regForm.email" placeholder="contoh@gmail.com"
-                           class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                  </div>
-                </div>
-
-                <!-- Navigasi Step 2 -->
-                <div class="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <button type="button" @click="regStep = 1" class="text-xs font-medium text-slate-500 hover:text-slate-700">
-                    &larr; Kembali
-                  </button>
-                  <button type="button" @click="nextStep(3)" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition">
-                    Lanjut ke Persetujuan &rarr;
-                  </button>
-                </div>
-              </div>
-
-              <!-- STEP 3: PERSETUJUAN -->
-              <div x-show="regStep === 3" class="space-y-4">
-                <div>
-                  <h3 class="text-xl font-bold text-slate-800">Langkah 3: Syarat & Ketentuan</h3>
-                  <p class="text-xs text-slate-500">Baca dan setujui ketentuan pendaftaran PSB</p>
-                </div>
-
-                <!-- Scrollable TNC -->
-                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-36 overflow-y-auto text-[11px] text-slate-600 space-y-2 custom-scrollbar">
-                  <h4 class="font-bold text-slate-800">Syarat & Ketentuan Pendaftaran PSB Al-Umm:</h4>
-                  <ol class="list-decimal pl-4 space-y-1">
-                    <li>Pendaftaran dinyatakan valid apabila seluruh isian formulir sesuai dengan identitas resmi.</li>
-                    <li>Calon santri bersedia mengikuti ujian seleksi tes baca Al-Qur'an, akademik, dan wawancara.</li>
-                    <li>Data akun pendaftaran akan dikirimkan ke email peserta yang terdaftar.</li>
-                    <li>Segala bentuk kecurangan atau pemalsuan data dapat membatalkan keikutsertaan seleksi.</li>
-                  </ol>
-                </div>
-
-                <!-- Checkboxes -->
-                <div class="space-y-2 pt-1">
-                  <label class="flex items-start space-x-2.5 cursor-pointer">
-                    <input type="checkbox" x-model="regForm.agreeTnc" class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                    <span class="text-xs text-slate-700 leading-tight">Saya telah membaca & menyetujui seluruh Syarat dan Ketentuan pendaftaran.</span>
-                  </label>
-
-                  <label class="flex items-start space-x-2.5 cursor-pointer">
-                    <input type="checkbox" x-model="regForm.agreeSelection" class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                    <span class="text-xs text-slate-700 leading-tight">Saya bersedia & siap mengikuti seluruh rangkaian proses seleksi hingga selesai.</span>
-                  </label>
-
-                  <label class="flex items-start space-x-2.5 cursor-pointer">
-                    <input type="checkbox" x-model="regForm.agreeDataValid" class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                    <span class="text-xs text-slate-700 leading-tight">Saya menyatakan data yang diisi adalah benar & dapat dipertanggungjawabkan.</span>
-                  </label>
-                </div>
-
-                <!-- Navigasi Step 3 Submit -->
-                <div class="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <button type="button" @click="regStep = 2" class="text-xs font-medium text-slate-500 hover:text-slate-700">
-                    &larr; Kembali
-                  </button>
-                  <button type="button" @click="submitRegister()" :disabled="isSubmitting"
-                          class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-700/20 transition flex items-center space-x-2 disabled:opacity-50">
-                    <template x-if="!isSubmitting">
-                      <span>Kirim Pendaftaran</span>
-                    </template>
-                    <template x-if="isSubmitting">
-                      <span class="flex items-center space-x-1.5">
-                        <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Menyimpan...</span>
-                      </span>
-                    </template>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-
-            <!-- ================= VIEW 3: SUKSES PENDAFTARAN & CETAK AKUN ================= -->
-            <div x-show="mode === 'success'" x-transition:enter="transition ease-out duration-300" class="space-y-5">
-              <div class="text-center">
-                <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <i data-lucide="check-circle" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-slate-800">Pendaftaran Akun Berhasil!</h3>
-                <p class="text-xs text-slate-500 mt-1">Simpan informasi akun di bawah ini untuk masuk ke sistem PSB.</p>
-              </div>
-
-              <!-- CARD AKUN PRINTABLE -->
-              <div id="print-area" class="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-500/30 rounded-2xl p-5 space-y-4 shadow-sm">
-                <div class="flex justify-between items-center border-b border-emerald-200 pb-3">
-                  <div>
-                    <h4 class="font-bold text-emerald-950 text-base">KARTU AKUN PSB AL-UMM</h4>
-                    <p class="text-[10px] text-emerald-700">Tahun Ajaran <span x-text="config.TAHUN_AJARAN"></span></p>
-                  </div>
-                  <span class="px-2.5 py-1 bg-emerald-700 text-white rounded-full font-mono text-[10px] font-bold" x-text="createdUser.id"></span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span class="text-slate-500 text-[10px] uppercase font-semibold block">Nama Santri</span>
-                    <strong class="text-slate-800 font-bold" x-text="createdUser.namaLengkap"></strong>
-                  </div>
-                  <div>
-                    <span class="text-slate-500 text-[10px] uppercase font-semibold block">Jalur & Jenjang</span>
-                    <strong class="text-slate-800 font-bold" x-text="createdUser.jalur.toUpperCase() + ' - ' + createdUser.jenjang"></strong>
-                  </div>
-                  <div class="col-span-2 bg-white p-3 rounded-xl border border-emerald-200 grid grid-cols-2 gap-2">
-                    <div>
-                      <span class="text-slate-400 text-[10px] uppercase font-semibold block">Username (No WA)</span>
-                      <strong class="text-emerald-700 font-mono text-sm" x-text="createdUser.username"></strong>
-                    </div>
-                    <div>
-                      <span class="text-slate-400 text-[10px] uppercase font-semibold block">Password Login</span>
-                      <strong class="text-emerald-700 font-mono text-sm" x-text="createdUser.password"></strong>
-                    </div>
-                  </div>
-                </div>
-
-                <p class="text-[10px] text-slate-500 italic text-center">
-                  * Konfirmasi pendaftaran telah dikirim ke email <span class="font-semibold text-slate-700" x-text="createdUser.email"></span>.
-                </p>
-              </div>
-
-              <!-- ACTION BUTTONS -->
-              <div class="flex flex-col sm:flex-row gap-3 pt-2 no-print">
-                <button type="button" @click="printAccountCard()" 
-                        class="flex-1 py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition flex items-center justify-center space-x-2">
-                  <i data-lucide="printer" class="w-4 h-4"></i>
-                  <span>Cetak / Simpan PDF</span>
-                </button>
-                <button type="button" @click="switchMode('login')" 
-                        class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-2">
-                  <i data-lucide="log-in" class="w-4 h-4"></i>
-                  <span>Lanjut ke Halaman Login</span>
-                </button>
-              </div>
-            </div>
-
-
-            <!-- ================= VIEW 4: DASHBOARD (ADMIN / PESERTA) ================= -->
-            <div x-show="mode === 'dashboard'" x-transition:enter="transition ease-out duration-300" class="w-full min-h-screen flex flex-col">
-              
-              <!-- PESERTA DASHBOARD CONTAINER -->
-              <template x-if="currentUser && currentUser.role !== 'ADMIN'">
-                <div class="flex flex-col md:flex-row min-h-screen w-full relative">
-                  
-                  <!-- MOBILE TOP HEADER (BAR DENGAN HAMBURGER) -->
-                  <div class="md:hidden bg-slate-900 text-white p-3.5 flex items-center justify-between border-b border-slate-800 sticky top-0 z-30 shadow-md">
-                    <div class="flex items-center space-x-3">
-                      <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 focus:outline-none transition">
-                        <i data-lucide="menu" class="w-5 h-5"></i>
-                      </button>
-                      <div class="flex items-center space-x-2">
-                        <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                          <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                        </div>
-                        <span class="text-xs font-bold text-white tracking-wide">PORTAL SANTRI</span>
-                      </div>
-                    </div>
-                    <div class="text-[11px] font-semibold text-emerald-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700" x-text="currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Santri'"></div>
-                  </div>
-
-                  <!-- BACKDROP OVERLAY UNTUK DRAWER MOBILE -->
-                  <div x-cloak x-show="mobileMenuOpen" 
-                       x-transition:enter="transition-opacity ease-linear duration-300"
-                       x-transition:enter-start="opacity-0"
-                       x-transition:enter-end="opacity-100"
-                       x-transition:leave="transition-opacity ease-linear duration-300"
-                       x-transition:leave-start="opacity-100"
-                       x-transition:leave-end="opacity-0"
-                       @click="mobileMenuOpen = false" 
-                       class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"></div>
-
-                  <!-- FIRST-TIME LOGIN PASSWORD CHANGE MODAL BLOCKER -->
-                  <div x-cloak x-show="currentUser && currentUser.isDefaultPassword" 
-                       class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div class="bg-white max-w-md w-full rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 text-left">
-                      <div class="flex items-center space-x-3 text-amber-600">
-                        <div class="p-3 bg-amber-100 rounded-xl">
-                          <i data-lucide="shield-alert" class="w-7 h-7"></i>
-                        </div>
-                        <div>
-                          <h3 class="font-bold text-lg text-slate-800 leading-tight">Ganti Kata Sandi Wajib</h3>
-                          <p class="text-xs text-slate-500">Pertama Kali Login - Keamanan Akun</p>
-                        </div>
-                      </div>
-
-                      <p class="text-xs text-slate-600 leading-relaxed bg-amber-50 p-3 rounded-xl border border-amber-200">
-                        Anda saat ini menggunakan kata sandi bawaan (4 digit terakhir WhatsApp). Demi keamanan data, Anda <strong>wajib mengganti kata sandi</strong> sebelum mengakses dashboard.
-                      </p>
-
-                      <form @submit.prevent="submitFirstPasswordChange()" class="space-y-3">
-                        <div>
-                          <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru (Min. 6 Karakter)</label>
-                          <input type="password" x-model="firstPassForm.newPass" required placeholder="Masukkan kata sandi baru"
-                                 class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 outline-none">
-                        </div>
-
-                        <div>
-                          <label class="block text-xs font-semibold text-slate-700 mb-1">Konfirmasi Kata Sandi Baru</label>
-                          <input type="password" x-model="firstPassForm.confirmPass" required placeholder="Ulangi kata sandi baru"
-                                 class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 outline-none">
-                        </div>
-
-                        <button type="submit" :disabled="isSubmitting" 
-                                class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center justify-center space-x-2">
-                          <template x-if="!isSubmitting">
-                            <span>Simpan & Lanjutkan Dashboard</span>
-                          </template>
-                          <template x-if="isSubmitting">
-                            <span>Memproses...</span>
-                          </template>
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-
-                  <!-- SIDEBAR PESERTA (MOBILE DRAWER SISI KIRI & DESKTOP STICKY SIDEBAR) -->
-                  <div class="bg-slate-900 text-slate-300 flex-shrink-0 transition-all duration-300 flex flex-col justify-between border-r border-slate-800 fixed inset-y-0 left-0 z-50 md:sticky md:top-0 md:z-auto md:min-h-screen"
-                       :class="[
-                         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-                         sidebarExpanded ? 'md:w-64' : 'md:w-20',
-                         'w-64'
-                       ]">
-                    
-                    <div>
-                      <!-- Sidebar Header & Toggle Button -->
-                      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-                        <div :class="sidebarExpanded ? 'flex' : 'flex md:hidden'" class="items-center space-x-2.5">
-                          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                            <i data-lucide="user-check" class="w-4 h-4"></i>
-                          </div>
-                          <div>
-                            <h4 class="text-xs font-bold text-white tracking-wide">PORTAL SANTRI</h4>
-                            <p class="text-[10px] text-emerald-400">PSB Al-Umm</p>
-                          </div>
-                        </div>
-
-                        <!-- Tombol Tutup Drawer Mobile -->
-                        <button type="button" @click="mobileMenuOpen = false" class="md:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
-                          <i data-lucide="x" class="w-4 h-4"></i>
-                        </button>
-
-                        <!-- Tombol Toggle Mini/Full Sidebar Desktop -->
-                        <button type="button" @click="sidebarExpanded = !sidebarExpanded" 
-                                class="hidden md:flex p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
-                          <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-4 h-4"></i>
-                        </button>
-                      </div>
-
-                      <!-- Nav Items -->
-                      <nav class="p-2 space-y-1">
-                        <!-- Menu 1: Home -->
-                        <button type="button" @click="setDashTab('home')"
-                                :class="dashTab === 'home' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
-                          <i data-lucide="home" class="w-5 h-5 flex-shrink-0"></i>
-                          <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Beranda Utama</span>
-                          <span x-show="!sidebarExpanded" class="hidden md:block absolute left-16 bg-slate-800 text-white text-[10px] px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 z-50 transition pointer-events-none whitespace-nowrap">Beranda</span>
-                        </button>
-
-                        <!-- Menu 2: Pembayaran -->
-                        <button type="button" @click="setDashTab('pembayaran')"
-                                :class="dashTab === 'pembayaran' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
-                          <div class="flex items-center space-x-3 min-w-0">
-                            <i data-lucide="credit-card" class="w-5 h-5 flex-shrink-0"></i>
-                            <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Pembayaran</span>
-                          </div>
-                          <span class="text-[9px] px-1.5 py-0.5 rounded font-bold" 
-                                :class="[!sidebarExpanded ? 'md:hidden' : '', getPaymentStatusBadgeClass()]" x-text="getPaymentStatusLabel()"></span>
-                        </button>
-
-                        <!-- Menu 3: Biodata -->
-                        <button type="button" @click="setDashTab('biodata')"
-                                :class="dashTab === 'biodata' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
-                          <div class="flex items-center space-x-3 min-w-0">
-                            <i data-lucide="user-edit" class="w-5 h-5 flex-shrink-0"></i>
-                            <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Biodata Santri</span>
-                          </div>
-                          <span class="text-[9px] bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-bold" :class="!sidebarExpanded ? 'md:hidden' : ''" x-text="getBiodataProgressText()"></span>
-                        </button>
-
-                        <!-- Menu 4: Upload Berkas -->
-                        <button type="button" @click="setDashTab('berkas')"
-                                :class="dashTab === 'berkas' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
-                          <div class="flex items-center space-x-3 min-w-0">
-                            <i data-lucide="folder-up" class="w-5 h-5 flex-shrink-0"></i>
-                            <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Upload Berkas</span>
-                          </div>
-                          <span class="text-[9px] bg-slate-800 text-amber-400 px-1.5 py-0.5 rounded font-bold" :class="!sidebarExpanded ? 'md:hidden' : ''" x-text="getDocsCountText()"></span>
-                        </button>
-
-                        <!-- Menu 5: Ujian Seleksi -->
-                        <button type="button" @click="setDashTab('ujian')"
-                                :class="dashTab === 'ujian' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
-                          <i data-lucide="file-text" class="w-5 h-5 flex-shrink-0"></i>
-                          <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Ujian Tes Seleksi</span>
-                        </button>
-
-                        <!-- Menu 6: Pengumuman -->
-                        <button type="button" @click="setDashTab('pengumuman')"
-                                :class="dashTab === 'pengumuman' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
-                          <div class="flex items-center space-x-3 min-w-0">
-                            <i data-lucide="megaphone" class="w-5 h-5 flex-shrink-0"></i>
-                            <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Pengumuman</span>
-                          </div>
-                          <span x-show="currentUser.selectionStatus === 'LULUS'" class="text-[9px] bg-emerald-500 text-slate-950 font-bold px-1.5 py-0.5 rounded" :class="!sidebarExpanded ? 'md:hidden' : ''">LULUS</span>
-                        </button>
-
-                        <!-- Menu 7: Grup WA -->
-                        <button type="button" @click="setDashTab('grupwa')"
-                                :class="dashTab === 'grupwa' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
-                          <i data-lucide="message-square" class="w-5 h-5 flex-shrink-0 text-emerald-400"></i>
-                          <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Grup WhatsApp</span>
-                        </button>
-
-                        <!-- Menu 8: Pengaturan -->
-                        <button type="button" @click="setDashTab('pengaturan')"
-                                :class="dashTab === 'pengaturan' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
-                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
-                          <i data-lucide="settings" class="w-5 h-5 flex-shrink-0"></i>
-                          <span class="truncate" :class="!sidebarExpanded ? 'md:hidden' : ''">Pengaturan Akun</span>
-                        </button>
-                      </nav>
-                    </div>
-
-                    <!-- Sidebar Footer Logout -->
-                    <div class="p-3 border-t border-slate-800">
-                      <button type="button" @click="logout()" 
-                              class="w-full flex items-center space-x-3 p-2.5 rounded-xl text-red-400 hover:bg-red-950/50 hover:text-red-300 transition text-xs">
-                        <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
-                        <span class="font-medium" :class="!sidebarExpanded ? 'md:hidden' : ''">Keluar Sesi</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- MAIN DASHBOARD CONTENT AREA -->
-                  <div class="flex-1 bg-slate-50 p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto min-h-screen">
-                    
-                    <!-- TOP HEADER SANTRI INFO -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white font-bold text-lg flex items-center justify-center shadow">
-                          <span x-text="currentUser.fullName ? currentUser.fullName.charAt(0) : 'S'"></span>
-                        </div>
-                        <div>
-                          <div class="flex items-center space-x-2">
-                            <h3 class="font-bold text-slate-800 text-base" x-text="currentUser.fullName"></h3>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600" x-text="currentUser.jalur + ' - ' + currentUser.jenjang"></span>
-                          </div>
-                          <p class="text-xs text-slate-500 font-mono mt-0.5">ID: <strong class="text-slate-700" x-text="currentUser.id"></strong> | WA: <span x-text="currentUser.noWA"></span></p>
-                        </div>
-                      </div>
-
-                      <!-- Status Stepper Badge Indicator -->
-                      <div class="flex items-center space-x-1 text-[11px] font-semibold bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(1)">1. Akun</span>
-                        <span class="text-slate-300">&rarr;</span>
-                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(2)">2. Biaya</span>
-                        <span class="text-slate-300">&rarr;</span>
-                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(3)">3. Berkas</span>
-                        <span class="text-slate-300">&rarr;</span>
-                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(4)">4. Seleksi</span>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 1: BERANDA UTAMA ================= -->
-                    <div x-show="dashTab === 'home'" class="space-y-6">
-                      <!-- Contextual Banner Banner -->
-                      <div class="bg-emerald-900 text-white p-5 rounded-2xl shadow-md relative overflow-hidden flex items-start space-x-4 border border-emerald-800">
-                        <div class="p-3 bg-emerald-800 rounded-xl flex-shrink-0 text-emerald-300">
-                          <i data-lucide="info" class="w-6 h-6"></i>
-                        </div>
-                        <div class="space-y-1">
-                          <h4 class="font-bold text-sm text-emerald-100">Status Pendaftaran Anda Saat Ini</h4>
-                          <p class="text-xs text-emerald-200/90 leading-relaxed" x-text="getHomeContextualBannerText()"></p>
-                        </div>
-                      </div>
-
-                      <!-- Timelined Progress Bar (6 Tahap) -->
-                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Tahapan Pendaftaran (Alur PSB)</h4>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center text-xs">
-                          
-                          <!-- Step 1 -->
-                          <div class="p-3 rounded-xl border space-y-1 bg-emerald-50 border-emerald-300 text-emerald-900 font-medium">
-                            <i data-lucide="check-circle" class="w-5 h-5 mx-auto text-emerald-600"></i>
-                            <div class="font-bold text-[11px]">1. Registrasi Akun</div>
-                            <span class="text-[9px] text-emerald-700 font-bold">Selesai ✅</span>
-                          </div>
-
-                          <!-- Step 2 -->
-                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(2)">
-                            <i :data-lucide="getTimelineStepIcon(2)" class="w-5 h-5 mx-auto"></i>
-                            <div class="font-bold text-[11px]">2. Bayar Formulir</div>
-                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(2)"></span>
-                          </div>
-
-                          <!-- Step 3 -->
-                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(3)">
-                            <i :data-lucide="getTimelineStepIcon(3)" class="w-5 h-5 mx-auto"></i>
-                            <div class="font-bold text-[11px]">3. Biodata & Berkas</div>
-                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(3)"></span>
-                          </div>
-
-                          <!-- Step 4 -->
-                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(4)">
-                            <i :data-lucide="getTimelineStepIcon(4)" class="w-5 h-5 mx-auto"></i>
-                            <div class="font-bold text-[11px]">4. Kartu & Ujian</div>
-                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(4)"></span>
-                          </div>
-
-                          <!-- Step 5 -->
-                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(5)">
-                            <i :data-lucide="getTimelineStepIcon(5)" class="w-5 h-5 mx-auto"></i>
-                            <div class="font-bold text-[11px]">5. Pengumuman</div>
-                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(5)"></span>
-                          </div>
-
-                          <!-- Step 6 -->
-                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(6)">
-                            <i :data-lucide="getTimelineStepIcon(6)" class="w-5 h-5 mx-auto"></i>
-                            <div class="font-bold text-[11px]">6. Daftar Ulang</div>
-                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(6)"></span>
-                          </div>
-
-                        </div>
-                      </div>
-
-                      <!-- Kartu Ringkasan Santri & Quick Action -->
-                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="md:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                          <h4 class="text-xs font-bold uppercase text-slate-700">Ringkasan Data Santri</h4>
-                          <div class="grid grid-cols-2 gap-3 text-xs">
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Jalur Pendaftaran</span>
-                              <strong class="text-slate-800" x-text="currentUser.jalur"></strong>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Jenjang Studi</span>
-                              <strong class="text-slate-800" x-text="currentUser.jenjang"></strong>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Asal Sekolah</span>
-                              <strong class="text-slate-800" x-text="currentUser.asalSekolah || '-'"></strong>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Hasil Seleksi</span>
-                              <strong class="text-emerald-700 uppercase" x-text="currentUser.selectionStatus || 'BELUM DIPROSES'"></strong>
-                            </div>
-                          </div>
-
-                          <div class="pt-2 flex flex-wrap gap-2">
-                            <button type="button" @click="printAccountCard()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
-                              <i data-lucide="printer" class="w-4 h-4"></i>
-                              <span>Cetak Bukti Registrasi</span>
-                            </button>
-                            <button type="button" @click="setDashTab('ujian')" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
-                              <i data-lucide="award" class="w-4 h-4"></i>
-                              <span>Download Kartu Ujian</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <!-- Widget Pengumuman Penting -->
-                        <div class="bg-amber-50/80 border border-amber-200 p-5 rounded-2xl shadow-sm space-y-3">
-                          <div class="flex items-center space-x-2 text-amber-900">
-                            <i data-lucide="bell" class="w-5 h-5 text-amber-700"></i>
-                            <h4 class="font-bold text-xs uppercase tracking-wider">Pengumuman Panitia</h4>
-                          </div>
-                          <p class="text-xs text-amber-950 leading-relaxed">
-                            Harap menyelesaikan verifikasi pembayaran formulir agar jadwal ujian tes seleksi dapat diproses oleh panitia.
-                          </p>
-                          <div class="pt-2 border-t border-amber-200 text-[10px] text-amber-800 font-semibold">
-                            Pusat Bantuan WA: <a :href="'https://wa.me/' + (config.HELPDESK_WA || '6281234567890')" target="_blank" class="underline text-amber-950" x-text="config.HELPDESK_LABEL || 'Helpdesk PSB'"></a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 2: PEMBAYARAN ================= -->
-                    <div x-show="dashTab === 'pembayaran'" class="space-y-6">
-                      <!-- Sub Tab Navigation -->
-                      <div class="flex border-b border-slate-200 space-x-4">
-                        <button type="button" @click="paymentTab = 'pendaftaran'"
-                                :class="paymentTab === 'pendaftaran' ? 'border-emerald-600 text-emerald-800 border-b-2 font-bold' : 'text-slate-500 hover:text-slate-700 font-medium'"
-                                class="pb-3 text-xs transition">
-                          Tab A: Biaya Pendaftaran / Formulir
-                        </button>
-                        <button type="button" @click="paymentTab = 'daftarUlang'"
-                                :class="paymentTab === 'daftarUlang' ? 'border-emerald-600 text-emerald-800 border-b-2 font-bold' : 'text-slate-500 hover:text-slate-700 font-medium'"
-                                class="pb-3 text-xs transition">
-                          Tab B: Biaya Daftar Ulang (Lulus)
-                        </button>
-                      </div>
-
-                      <!-- TAB A: PEMBAYARAN PENDAFTARAN -->
-                      <div x-show="paymentTab === 'pendaftaran'" class="space-y-5">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <!-- Bank Rekening Info -->
-                          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <div class="flex items-center space-x-3 text-emerald-800">
-                              <div class="p-2.5 bg-emerald-100 rounded-xl">
-                                <i data-lucide="landmark" class="w-6 h-6"></i>
-                              </div>
-                              <div>
-                                <h4 class="font-bold text-sm">Rekening Pembayaran Resmi</h4>
-                                <p class="text-[11px] text-slate-500">Biaya Formulir: <strong>Rp 250.000,-</strong></p>
-                              </div>
-                            </div>
-
-                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-                              <span class="text-[10px] text-slate-400 font-bold uppercase block">Bank Syariah Indonesia (BSI)</span>
-                              <div class="flex items-center justify-between font-mono font-bold text-emerald-800 text-sm">
-                                <span>7123-4567-89</span>
-                                <span class="text-[10px] font-sans font-normal text-slate-500">a.n. YPP Al-Umm PSB</span>
-                              </div>
-                            </div>
-
-                            <div class="text-[11px] text-slate-600 space-y-1">
-                              <p class="font-bold text-slate-800">Instruksi Transfer:</p>
-                              <ol class="list-decimal pl-4 space-y-0.5">
-                                <li>Transfer tepat sesuai nominal Rp 250.000.</li>
-                                <li>Simpan bukti/struk transfer bank/e-wallet.</li>
-                                <li>Isi form upload di sebelah kanan ini.</li>
-                              </ol>
-                            </div>
-                          </div>
-
-                          <!-- Form Upload Bukti Pendaftaran -->
-                          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <h4 class="font-bold text-xs uppercase text-slate-700">Form Konfirmasi Pembayaran Formulir</h4>
-                            
-                            <form @submit.prevent="submitRegPayment()" class="space-y-3">
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nominal Transfer (Rp)</label>
-                                <input type="number" x-model="regPayForm.nominal" required placeholder="250000"
-                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-600">
-                              </div>
-
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Transfer</label>
-                                <input type="date" x-model="regPayForm.transferDate" required
-                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-600">
-                              </div>
-
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pemilik Rekening / Pengirim</label>
-                                <input type="text" x-model="regPayForm.ownerName" required placeholder="NAMA SESUAI STRUK"
-                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase outline-none focus:ring-2 focus:ring-emerald-600">
-                              </div>
-
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Link / URL Struk Bukti Transfer (Google Drive / Imgur)</label>
-                                <input type="url" x-model="regPayForm.proofUrl" required placeholder="https://..."
-                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-600">
-                              </div>
-
-                              <button type="submit" :disabled="isSubmitting"
-                                      class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition">
-                                <span x-text="isSubmitting ? 'Kirim...' : 'Kirim Bukti Pembayaran'"></span>
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-
-                        <!-- Status Verification Card & Digital Invoice -->
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                          <h4 class="text-xs font-bold uppercase text-slate-700">Status Verifikasi Pembayaran Formulir</h4>
-                          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                            <div>
-                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Status Saat Ini</span>
-                              <span class="font-bold uppercase text-sm" :class="getPaymentStatusColorClass()" x-text="getPaymentStatusLabel()"></span>
-                            </div>
-                            <template x-if="getPaymentStatusLabel() === 'TERVERIFIKASI'">
-                              <button type="button" @click="showInvoiceModal = true" class="px-3 py-1.5 bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center space-x-1">
-                                <i data-lucide="file-check" class="w-4 h-4"></i>
-                                <span>Unduh Invoice Digital</span>
-                              </button>
-                            </template>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- TAB B: PEMBAYARAN DAFTAR ULANG -->
-                      <div x-show="paymentTab === 'daftarUlang'" class="space-y-5">
-                        <template x-if="currentUser.selectionStatus !== 'LULUS'">
-                          <div class="bg-amber-50 border border-amber-200 p-6 rounded-2xl text-center space-y-2">
-                            <i data-lucide="lock" class="w-8 h-8 text-amber-600 mx-auto"></i>
-                            <h4 class="font-bold text-amber-900 text-sm">Menu Belum Terbuka</h4>
-                            <p class="text-xs text-amber-800">Rincian Pembayaran Daftar Ulang hanya tersedia bagi calon santri yang telah dinyatakan <strong>LULUS SELEKSI</strong>.</p>
-                          </div>
-                        </template>
-
-                        <template x-if="currentUser.selectionStatus === 'LULUS'">
-                          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <h4 class="font-bold text-sm text-slate-800">Rincian Komponen Biaya Daftar Ulang</h4>
-                            <div class="border border-slate-200 rounded-xl overflow-hidden text-xs">
-                              <table class="w-full text-left">
-                                <thead class="bg-slate-100 font-bold text-slate-600 text-[10px] uppercase">
-                                  <tr>
-                                    <th class="p-2.5">Komponen Biaya</th>
-                                    <th class="p-2.5 text-right">Nominal</th>
-                                  </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200">
-                                  <tr><td class="p-2.5">SPP Bulan Pertama</td><td class="p-2.5 text-right font-mono">Rp 1.200.000</td></tr>
-                                  <tr><td class="p-2.5">Uang Pangkal / Gedung</td><td class="p-2.5 text-right font-mono">Rp 6.500.000</td></tr>
-                                  <tr><td class="p-2.5">Seragam LENGKAP (5 Stel)</td><td class="p-2.5 text-right font-mono">Rp 1.800.000</td></tr>
-                                  <tr><td class="p-2.5">Fasilitas Asrama & Perlengkapan</td><td class="p-2.5 text-right font-mono">Rp 2.500.000</td></tr>
-                                  <tr><td class="p-2.5">Kitab Modul & Al-Qur'an</td><td class="p-2.5 text-right font-mono">Rp 800.000</td></tr>
-                                  <tr class="bg-emerald-50 font-bold text-emerald-950">
-                                    <td class="p-2.5">TOTAL BIAYA DAFTAR ULANG</td>
-                                    <td class="p-2.5 text-right font-mono text-sm">Rp 12.800.000</td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-
-                            <p class="text-xs text-slate-500 italic">* Skema cicilan diperbolehkan maksimal 3 kali pembayaran sesuai persetujuan panitia keuangan.</p>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 3: BIODATA SANTRI & ORTU ================= -->
-                    <div x-show="dashTab === 'biodata'" class="space-y-6">
-                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-                        
-                        <!-- Sub-tab Accordion Bar -->
-                        <div class="flex flex-wrap border-b border-slate-200 gap-2 pb-2 text-xs">
-                          <button type="button" @click="biodataTab = 'santri'"
-                                  :class="biodataTab === 'santri' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
-                            <i data-lucide="user" class="w-4 h-4"></i>
-                            <span>1. Biodata Santri</span>
-                          </button>
-                          <button type="button" @click="biodataTab = 'ayah'"
-                                  :class="biodataTab === 'ayah' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
-                            <i data-lucide="user-check" class="w-4 h-4"></i>
-                            <span>2. Biodata Ayah</span>
-                          </button>
-                          <button type="button" @click="biodataTab = 'ibu'"
-                                  :class="biodataTab === 'ibu' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">
-                            <i data-lucide="heart" class="w-4 h-4"></i>
-                            <span>3. Biodata Ibu</span>
-                          </button>
-                        </div>
-
-                        <!-- SUB-TAB 1: BIODATA SANTRI -->
-                        <div x-show="biodataTab === 'santri'" class="space-y-4">
-                          <h4 class="font-bold text-xs uppercase tracking-wider text-emerald-800 border-b border-slate-100 pb-2">Informasi Identitas & Akademik Santri</h4>
-                          
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div class="sm:col-span-2">
-                              <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Santri *</label>
-                              <input type="text" x-model="biodataForm.namaLengkap" @input="biodataForm.namaLengkap = biodataForm.namaLengkap.toUpperCase()" placeholder="NAMA LENGKAP" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 font-semibold uppercase">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Jenis Jenjang *</label>
-                              <select x-model="biodataForm.jenjang" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="SMP">SMP Al-Umm</option>
-                                <option value="MA">MA Al-Umm</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Jenis Pendaftaran</label>
-                              <select x-model="biodataForm.jalur" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="reguler">Reguler</option>
-                                <option value="mutasi">Mutasi</option>
-                                <option value="inden">Inden</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kelas Dituju</label>
-                              <input type="text" x-model="biodataForm.kelasTarget" placeholder="Contoh: Kelas 7 / Kelas 10" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">NISN (Nomor Induk Siswa Nasional)</label>
-                              <input type="text" x-model="biodataForm.nisn" placeholder="10 Digit NISN" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">NIK (Nomor Induk Kependudukan)</label>
-                              <input type="text" x-model="biodataForm.nik" placeholder="16 Digit NIK Santri" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir</label>
-                              <input type="text" x-model="biodataForm.tempatLahir" placeholder="Kota / Tempat Lahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir</label>
-                              <input type="date" x-model="biodataForm.tglLahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Jenis Kelamin</label>
-                              <select x-model="biodataForm.gender" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="LAKI-LAKI">LAKI-LAKI (PUTRA)</option>
-                                <option value="PEREMPUAN">PEREMPUAN (PUTRI)</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Agama</label>
-                              <input type="text" x-model="biodataForm.agama" placeholder="Islam" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Anak Ke-</label>
-                              <input type="number" x-model="biodataForm.anakKe" placeholder="1" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Jumlah Saudara</label>
-                              <input type="number" x-model="biodataForm.jmlSaudara" placeholder="2" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">No. Kartu Keluarga (KK)</label>
-                              <input type="text" x-model="biodataForm.noKK" placeholder="16 Digit No. KK" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kewarganegaraan</label>
-                              <input type="text" x-model="biodataForm.kewarganegaraan" placeholder="WNI" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div class="sm:col-span-2">
-                              <label class="block font-semibold text-slate-700 mb-1">Alamat Tempat Tinggal</label>
-                              <textarea x-model="biodataForm.alamat" rows="2" placeholder="Nama Jalan, Nomor Rumah, Dusun/Gg..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">RT / RW</label>
-                              <div class="flex space-x-2">
-                                <input type="text" x-model="biodataForm.rt" placeholder="RT (001)" class="w-1/2 p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <input type="text" x-model="biodataForm.rw" placeholder="RW (002)" class="w-1/2 p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                              </div>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kelurahan / Desa</label>
-                              <input type="text" x-model="biodataForm.kelurahan" placeholder="Nama Kelurahan/Desa" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kecamatan</label>
-                              <input type="text" x-model="biodataForm.kecamatan" placeholder="Nama Kecamatan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kabupaten / Kota</label>
-                              <input type="text" x-model="biodataForm.kota" placeholder="Nama Kabupaten/Kota" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Provinsi</label>
-                              <input type="text" x-model="biodataForm.provinsi" placeholder="Nama Provinsi" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kode Pos</label>
-                              <input type="text" x-model="biodataForm.kodePos" placeholder="Contoh: 65141" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Riwayat Penyakit</label>
-                              <input type="text" x-model="biodataForm.riwayatPenyakit" placeholder="Asma / Alergi / Tidak Ada" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Email Santri/Wali</label>
-                              <input type="email" x-model="biodataForm.email" placeholder="contoh@gmail.com" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">No. Whatsapp Santri/Wali</label>
-                              <input type="text" x-model="biodataForm.noWA" placeholder="08123456789" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Sekolah Asal</label>
-                              <input type="text" x-model="biodataForm.asalSekolah" @input="biodataForm.asalSekolah = biodataForm.asalSekolah.toUpperCase()" placeholder="SDN 1 MALANG / MI AL-HIDAYAH" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 uppercase font-semibold">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Jenis Sekolah Asal</label>
-                              <select x-model="biodataForm.jenisSekolah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="SD/MI">SD / MI</option>
-                                <option value="SMP/MTs">SMP / MTs</option>
-                                <option value="PKBM/Homeschooling">PKBM / Homeschooling</option>
-                                <option value="Lainnya">Lainnya</option>
-                              </select>
-                            </div>
-
-                            <div class="sm:col-span-2">
-                              <label class="block font-semibold text-slate-700 mb-1">Alamat Sekolah Asal</label>
-                              <textarea x-model="biodataForm.alamatSekolah" rows="2" placeholder="Alamat lengkap sekolah asal..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- SUB-TAB 2: BIODATA AYAH -->
-                        <div x-show="biodataTab === 'ayah'" class="space-y-4">
-                          <h4 class="font-bold text-xs uppercase tracking-wider text-emerald-800 border-b border-slate-100 pb-2">Informasi Biodata Ayah Kandung</h4>
-
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">NIK Ayah (16 Digit)</label>
-                              <input type="text" x-model="biodataForm.nikAyah" placeholder="3507..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ayah (+ Gelar)</label>
-                              <input type="text" x-model="biodataForm.namaAyah" placeholder="Ahmad Sanusi, S.Pd." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 font-semibold">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir Ayah</label>
-                              <input type="text" x-model="biodataForm.tempatLahirAyah" placeholder="Kota / Tempat Lahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir Ayah</label>
-                              <input type="date" x-model="biodataForm.tglLahirAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div class="sm:col-span-2">
-                              <label class="block font-semibold text-slate-700 mb-1">Alamat Ayah</label>
-                              <textarea x-model="biodataForm.alamatAyah" rows="2" placeholder="Alamat domisili ayah..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">No. Handphone / WA Ayah</label>
-                              <input type="text" x-model="biodataForm.waAyah" placeholder="08123456789" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Status Ayah</label>
-                              <select x-model="biodataForm.statusAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="Masih Hidup">Masih Hidup</option>
-                                <option value="Meninggal">Meninggal Dunia</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ayah</label>
-                              <input type="text" x-model="biodataForm.pekerjaanAyah" placeholder="PNS / Wiraswasta / Karyawan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Pendidikan Terakhir Ayah</label>
-                              <select x-model="biodataForm.pendidikanAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="">Pilih Pendidikan</option>
-                                <option value="SD/MI">SD / MI</option>
-                                <option value="SMP/MTs">SMP / MTs</option>
-                                <option value="SMA/SMK/MA">SMA / SMK / MA</option>
-                                <option value="D3/S1">D3 / S1</option>
-                                <option value="S2/S3">S2 / S3</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kewarganegaraan Ayah</label>
-                              <input type="text" x-model="biodataForm.kewarganegaraanAyah" placeholder="WNI" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Penghasilan Perbulan Ayah</label>
-                              <select x-model="biodataForm.penghasilanAyah" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="< 2 Juta">&lt; Rp 2.000.000</option>
-                                <option value="2 - 5 Juta">Rp 2.000.000 - Rp 5.000.000</option>
-                                <option value="5 - 10 Juta">Rp 5.000.000 - Rp 10.000.000</option>
-                                <option value="> 10 Juta">&gt; Rp 10.000.000</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- SUB-TAB 3: BIODATA IBU -->
-                        <div x-show="biodataTab === 'ibu'" class="space-y-4">
-                          <h4 class="font-bold text-xs uppercase tracking-wider text-emerald-800 border-b border-slate-100 pb-2">Informasi Biodata Ibu Kandung</h4>
-
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">NIK Ibu (16 Digit)</label>
-                              <input type="text" x-model="biodataForm.nikIbu" placeholder="3507..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ibu (+ Gelar)</label>
-                              <input type="text" x-model="biodataForm.namaIbu" placeholder="Siti Aminah, S.Ag." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600 font-semibold">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir Ibu</label>
-                              <input type="text" x-model="biodataForm.tempatLahirIbu" placeholder="Kota / Tempat Lahir" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir Ibu</label>
-                              <input type="date" x-model="biodataForm.tglLahirIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div class="sm:col-span-2">
-                              <label class="block font-semibold text-slate-700 mb-1">Alamat Ibu</label>
-                              <textarea x-model="biodataForm.alamatIbu" rows="2" placeholder="Alamat domisili ibu..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">No. Handphone / WA Ibu</label>
-                              <input type="text" x-model="biodataForm.waIbu" placeholder="08123456789" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Status Ibu</label>
-                              <select x-model="biodataForm.statusIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="Masih Hidup">Masih Hidup</option>
-                                <option value="Meninggal">Meninggal Dunia</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ibu</label>
-                              <input type="text" x-model="biodataForm.pekerjaanIbu" placeholder="Ibu Rumah Tangga / Guru / Karyawan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Pendidikan Terakhir Ibu</label>
-                              <select x-model="biodataForm.pendidikanIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="">Pilih Pendidikan</option>
-                                <option value="SD/MI">SD / MI</option>
-                                <option value="SMP/MTs">SMP / MTs</option>
-                                <option value="SMA/SMK/MA">SMA / SMK / MA</option>
-                                <option value="D3/S1">D3 / S1</option>
-                                <option value="S2/S3">S2 / S3</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kewarganegaraan Ibu</label>
-                              <input type="text" x-model="biodataForm.kewarganegaraanIbu" placeholder="WNI" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Penghasilan Perbulan Ibu</label>
-                              <select x-model="biodataForm.penghasilanIbu" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                                <option value="Tidak Berpenghasilan">Tidak Berpenghasilan / IRT</option>
-                                <option value="< 2 Juta">&lt; Rp 2.000.000</option>
-                                <option value="2 - 5 Juta">Rp 2.000.000 - Rp 5.000.000</option>
-                                <option value="5 - 10 Juta">Rp 5.000.000 - Rp 10.000.000</option>
-                                <option value="> 10 Juta">&gt; Rp 10.000.000</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Save Action Button -->
-                        <div class="pt-4 border-t border-slate-200 flex justify-end">
-                          <button type="button" @click="saveBiodata()" :disabled="isSubmitting"
-                                  class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition flex items-center space-x-1.5">
-                            <i data-lucide="save" class="w-4 h-4"></i>
-                            <span>Simpan Seluruh Biodata</span>
-                          </button>
-                        </div>
-
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 4: UPLOAD BERKAS ================= -->
-                    <div x-show="dashTab === 'berkas'" class="space-y-6">
-                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700">Checklist Dokumen Persyaratan</h4>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <template x-for="doc in docList" :key="doc.key">
-                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                              <div class="flex items-center justify-between">
-                                <span class="font-bold text-slate-800" x-text="doc.label"></span>
-                                <span class="px-2 py-0.5 rounded font-bold text-[10px]" :class="getDocStatusBadgeClass(doc.key)" x-text="getDocStatusLabel(doc.key)"></span>
-                              </div>
-                              <p class="text-[11px] text-slate-500" x-text="doc.desc"></p>
-
-                              <div class="pt-2 flex items-center space-x-2">
-                                <input type="url" :value="getDocUrl(doc.key)" 
-                                       @change="updateDocUrl(doc.key, $event.target.value)"
-                                       placeholder="Paste Link Google Drive / Image URL..."
-                                       class="flex-1 p-2 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-600">
-                                <button type="button" @click="saveDoc(doc.key)" class="px-3 py-2 bg-emerald-700 text-white rounded-xl font-semibold text-xs hover:bg-emerald-800 transition">
-                                  Simpan
-                                </button>
-                              </div>
-                            </div>
-                          </template>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 5: UJIAN SELEKSI ================= -->
-                    <div x-show="dashTab === 'ujian'" class="space-y-6">
-                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-                          <div>
-                            <h4 class="font-bold text-sm text-slate-800">Jadwal & Kartu Ujian Seleksi</h4>
-                            <p class="text-xs text-slate-500">PSB Pondok Pesantren Al-Umm</p>
-                          </div>
-                          <button type="button" @click="printAccountCard()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                            <span>Cetak Kartu Ujian Digital</span>
-                          </button>
-                        </div>
-
-                        <!-- Schedule & Venue -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Tanggal Ujian</span>
-                            <strong class="text-slate-800 text-sm">15 Maret 2025</strong>
-                          </div>
-                          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Sesi / Waktu</span>
-                            <strong class="text-slate-800 text-sm">Sesi 1 (08.00 - 11.30 WIB)</strong>
-                          </div>
-                          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Lokasi Ujian</span>
-                            <strong class="text-slate-800 text-sm">Gedung Utama Al-Umm</strong>
-                          </div>
-                        </div>
-
-                        <!-- Subjects & Dresscode -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                            <h5 class="font-bold text-slate-800">Materi & Jenis Tes:</h5>
-                            <ul class="list-disc pl-4 space-y-1 text-slate-600">
-                              <li>Tes Baca Tulis Al-Qur'an (BTQ) & Hafalan.</li>
-                              <li>Tes Potensi Akademik (Matematika, B. Indo, Agama).</li>
-                              <li>Wawancara Calon Santri & Wali Santri.</li>
-                            </ul>
-                          </div>
-
-                          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                            <h5 class="font-bold text-slate-800">Tata Tertib & Busana Ujian:</h5>
-                            <ul class="list-disc pl-4 space-y-1 text-slate-600">
-                              <li><strong>Putra:</strong> Kemeja putih, celana kain hitam, peci hitam.</li>
-                              <li><strong>Putri:</strong> Gamis/rok panjang, jilbab putih.</li>
-                              <li>Membawa Kartu Ujian Cetak, alat tulis, & Al-Qur'an.</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 6: PENGUMUMAN KELULUSAN ================= -->
-                    <div x-show="dashTab === 'pengumuman'" class="space-y-6">
-                      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
-                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-                             :class="currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
-                          <i data-lucide="award" class="w-8 h-8"></i>
-                        </div>
-
-                        <div>
-                          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Hasil Seleksi PSB</span>
-                          <h3 class="text-2xl font-extrabold uppercase mt-1" 
-                              :class="currentUser.selectionStatus === 'LULUS' ? 'text-emerald-700' : 'text-slate-700'"
-                              x-text="currentUser.selectionStatus || 'BELUM DIPROSES'"></h3>
-                        </div>
-
-                        <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-                          <template x-if="currentUser.selectionStatus === 'LULUS'">
-                            <span>Selamat! Anda dinyatakan <strong>LULUS SELEKSI</strong> sebagai Calon Santri Baru Pondok Pesantren Al-Umm. Silakan cetak SK Kelulusan dan lakukan pembayaran daftar ulang.</span>
-                          </template>
-                          <template x-if="currentUser.selectionStatus !== 'LULUS'">
-                            <span>Hasil seleksi saat ini sedang dalam proses rekapitulasi tim penguji. Pengumuman resmi akan diupdate secara berkala.</span>
-                          </template>
-                        </p>
-
-                        <div class="pt-3 flex flex-wrap justify-center gap-3">
-                          <button type="button" @click="printAccountCard()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                            <span>Cetak SK Kelulusan Digital</span>
-                          </button>
-
-                          <template x-if="currentUser.selectionStatus === 'LULUS'">
-                            <button type="button" @click="setDashTab('pembayaran'); paymentTab = 'daftarUlang';" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
-                              <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
-                              <span>Lanjut Pembayaran Daftar Ulang</span>
-                            </button>
-                          </template>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 7: GRUP WHATSAPP ================= -->
-                    <div x-show="dashTab === 'grupwa'" class="space-y-6">
-                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div>
-                          <h4 class="font-bold text-sm text-slate-800">Tautan Grup WhatsApp Resmi</h4>
-                          <p class="text-xs text-slate-500">Silakan bergabung ke grup sesuai dengan jalur dan status pendaftaran Anda.</p>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                          <!-- Grup 1: Santri Baru -->
-                          <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-3 flex flex-col justify-between">
-                            <div class="space-y-1">
-                              <div class="flex items-center space-x-2 text-emerald-800 font-bold">
-                                <i data-lucide="users" class="w-5 h-5"></i>
-                                <span>Grup Santri Baru</span>
-                              </div>
-                              <p class="text-[11px] text-emerald-900">Khusus pendaftar Jalur Reguler & Mutasi seluruh jenjang.</p>
-                            </div>
-                            <a href="https://chat.whatsapp.com/example-santri-baru" target="_blank" class="w-full py-2 bg-emerald-700 text-white text-center rounded-xl font-bold hover:bg-emerald-800 transition block">
-                              Gabung Grup WA &rarr;
-                            </a>
-                          </div>
-
-                          <!-- Grup 2: Santri Inden -->
-                          <div class="p-4 bg-teal-50 rounded-2xl border border-teal-200 space-y-3 flex flex-col justify-between">
-                            <div class="space-y-1">
-                              <div class="flex items-center space-x-2 text-teal-800 font-bold">
-                                <i data-lucide="clock" class="w-5 h-5"></i>
-                                <span>Grup Santri Inden</span>
-                              </div>
-                              <p class="text-[11px] text-teal-900">Khusus pendaftar Jalur Inden persiapan tahun mendatang.</p>
-                            </div>
-                            <a href="https://chat.whatsapp.com/example-santri-inden" target="_blank" class="w-full py-2 bg-teal-700 text-white text-center rounded-xl font-bold hover:bg-teal-800 transition block">
-                              Gabung Grup WA &rarr;
-                            </a>
-                          </div>
-
-                          <!-- Grup 3: Kelas Dinamis -->
-                          <div class="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-3 flex flex-col justify-between">
-                            <div class="space-y-1">
-                              <div class="flex items-center space-x-2 text-blue-800 font-bold">
-                                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
-                                <span x-text="getDynamicWaGroupName()"></span>
-                              </div>
-                              <p class="text-[11px] text-blue-900">Khusus bagi santri yang dinyatakan diterima sesuai jenjang.</p>
-                            </div>
-                            <a href="https://chat.whatsapp.com/example-grup-kelas" target="_blank" class="w-full py-2 bg-blue-700 text-white text-center rounded-xl font-bold hover:bg-blue-800 transition block">
-                              Gabung Grup WA Kelas &rarr;
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- ================= MENU 8: PENGATURAN ================= -->
-                    <div x-show="dashTab === 'pengaturan'" class="space-y-6">
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        
-                        <!-- Change Password Form -->
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
-                          <h4 class="font-bold text-sm text-slate-800">Ubah Kata Sandi (Password)</h4>
-                          
-                          <form @submit.prevent="changePasswordNormal()" class="space-y-3">
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Kata Sandi Baru</label>
-                              <input type="password" x-model="normPassForm.newPass" required placeholder="Minimal 6 karakter" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-                            <div>
-                              <label class="block font-semibold text-slate-700 mb-1">Konfirmasi Kata Sandi Baru</label>
-                              <input type="password" x-model="normPassForm.confirmPass" required placeholder="Ulangi kata sandi" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
-                            </div>
-                            <button type="submit" :disabled="isSubmitting" class="w-full py-2.5 bg-emerald-700 text-white rounded-xl font-bold hover:bg-emerald-800 transition">
-                              Update Kata Sandi
-                            </button>
-                          </form>
-                        </div>
-
-                        <!-- Session Log -->
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
-                          <h4 class="font-bold text-sm text-slate-800">Riwayat Login Sesi</h4>
-                          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-slate-600">
-                            <div class="flex justify-between font-bold text-slate-800">
-                              <span>Login Sesi Aktif</span>
-                              <span class="text-emerald-700">Online</span>
-                            </div>
-                            <p class="text-[10px]">Perangkat: Web Browser (Mobile/Desktop)</p>
-                            <p class="text-[10px]">ID Sesi: <span x-text="currentUser.id"></span></p>
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              </template>
-
-              <!-- ADMIN DASHBOARD CONTAINER -->
-              <template x-if="currentUser && currentUser.role === 'ADMIN'">
-                <div class="space-y-5 p-6 sm:p-8">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
-                    <div>
-                      <div class="flex items-center space-x-2">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-md">Administrator</span>
-                        <span class="text-[10px] text-slate-400 font-mono" x-text="currentUser.fullName"></span>
-                      </div>
-                      <h3 class="text-xl font-bold text-slate-800 mt-1">Dashboard Pengelola PSB</h3>
-                    </div>
-
-                    <div class="flex items-center space-x-2">
-                      <button type="button" @click="openAdminModal()" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow flex items-center space-x-1.5 transition">
-                        <i data-lucide="sliders" class="w-4 h-4"></i>
-                        <span>Buka/Tutup & Periode</span>
-                      </button>
-                      <button type="button" @click="logout()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
-                        <i data-lucide="log-out" class="w-4 h-4"></i>
-                        <span>Keluar</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Statistics cards -->
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
-                      <span class="text-[10px] font-bold text-emerald-800 uppercase block">Total Pendaftar</span>
-                      <span class="text-xl font-extrabold text-emerald-950" x-text="candidates.length"></span>
-                    </div>
-                    <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl">
-                      <span class="text-[10px] font-bold text-blue-800 uppercase block">Jenjang SMP</span>
-                      <span class="text-xl font-extrabold text-blue-950" x-text="candidates.filter(c => c.jenjang === 'SMP').length"></span>
-                    </div>
-                    <div class="bg-teal-50 border border-teal-200 p-3 rounded-xl col-span-2 sm:col-span-1">
-                      <span class="text-[10px] font-bold text-teal-800 uppercase block">Jenjang MA</span>
-                      <span class="text-xl font-extrabold text-teal-950" x-text="candidates.filter(c => c.jenjang === 'MA').length"></span>
-                    </div>
-                  </div>
-
-                  <!-- Table & Search -->
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                      <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Daftar Calon Santri</h4>
-                      <button type="button" @click="fetchCandidates()" class="text-xs text-emerald-700 font-semibold hover:underline flex items-center space-x-1">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                        <span>Refresh</span>
-                      </button>
-                    </div>
-
-                    <div class="relative">
-                      <input type="text" x-model="candidateSearch" placeholder="Cari pendaftar (nama, ID, WA, asal sekolah)..."
-                             class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-600 outline-none">
-                      <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                    </div>
-
-                    <!-- Table container -->
-                    <div class="border border-slate-200 rounded-xl overflow-x-auto max-h-60 custom-scrollbar">
-                      <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] sticky top-0">
-                          <tr>
-                            <th class="p-2.5">ID / Nama</th>
-                            <th class="p-2.5">Jalur & Jenjang</th>
-                            <th class="p-2.5">Asal Sekolah</th>
-                            <th class="p-2.5">WhatsApp</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200">
-                          <template x-for="c in filteredCandidates()" :key="c.id">
-                            <tr class="hover:bg-slate-50 transition">
-                              <td class="p-2.5">
-                                <div class="font-bold text-slate-800" x-text="c.fullName"></div>
-                                <div class="text-[10px] text-slate-400 font-mono" x-text="c.id"></div>
-                              </td>
-                              <td class="p-2.5">
-                                <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-700" x-text="c.jalur + ' - ' + c.jenjang"></span>
-                              </td>
-                              <td class="p-2.5 text-slate-600" x-text="c.asalSekolah || '-'"></td>
-                              <td class="p-2.5 font-mono text-slate-700" x-text="c.noWA || '-'"></td>
-                            </tr>
-                          </template>
-                          <template x-if="filteredCandidates().length === 0">
-                            <tr>
-                              <td colspan="4" class="p-4 text-center text-slate-400 text-xs">Belum ada data pendaftar.</td>
-                            </tr>
-                          </template>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </template>
-
-            </div>
-
-          </div>
-        </template>
-
-      </div>
-
-      <!-- ================= 4. MOBILE BOTTOM PANEL (Khusus Mobile & Tablet) ================= -->
-      <div x-show="mode !== 'dashboard'" class="md:hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 text-white p-5 sm:p-6 relative overflow-hidden border-t border-emerald-800 space-y-5">
-        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
-
-        <div class="relative z-10">
-          <template x-if="mode === 'login'">
-            <div class="space-y-3">
-              <template x-if="!loadingInitial && slides.length > 0">
-                <div class="space-y-3">
-                  <span class="inline-block px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider bg-amber-400 text-amber-950" x-text="slides[activeSlide].badge"></span>
-                  <h3 class="text-lg font-bold leading-snug text-white" x-text="slides[activeSlide].title"></h3>
-                  <p class="text-xs text-emerald-100/80 leading-relaxed" x-text="slides[activeSlide].content"></p>
-                  
-                  <div class="flex items-center space-x-2 pt-1">
-                    <template x-for="(slide, index) in slides" :key="index">
-                      <button @click="activeSlide = index" 
-                              class="h-1.5 rounded-full transition-all duration-300"
-                              :class="activeSlide === index ? 'w-6 bg-emerald-300' : 'w-2 bg-emerald-700'"></button>
-                    </template>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </template>
-
-          <template x-if="mode === 'register'">
-            <div class="space-y-2">
-              <h3 class="text-xs font-semibold text-emerald-200">Petunjuk Pendaftaran:</h3>
-              <p class="text-xs text-emerald-100/80 leading-relaxed">
-                Orang tua/wali santri dapat mendaftarkan lebih dari 1 calon santri menggunakan Nomor WhatsApp dan Email yang sama.
-              </p>
-            </div>
-          </template>
-        </div>
-
-        <!-- FOOTER BUTTONS (Stack Vertikal di Mobile) -->
-        <div class="relative z-10 pt-3 border-t border-emerald-700/50 flex flex-col gap-2.5">
-          <a :href="config.BROCHURE_URL || '#'" target="_blank" 
-             class="w-full inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
-            <i data-lucide="file-down" class="w-4 h-4 text-emerald-300"></i>
-            <span>Brosur PSB</span>
-          </a>
-          <a :href="'https://wa.me/' + (config.HELPDESK_WA || '6281234567890')" target="_blank"
-             class="w-full inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-600/50 text-xs font-medium text-emerald-100 transition shadow-sm">
-            <i data-lucide="message-circle" class="w-4 h-4 text-emerald-300"></i>
-            <span>Helpdesk WA</span>
-          </a>
-        </div>
-      </div>
-
-    </div>
-  </main>
-
-  <script>
-    function psbApp() {
-      return {
-        SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyAVUkA0HuE4sip2fPT5dE2Se4JZ5RrT9mkHEaasKanuYG7dItwGRWvO9dC9AXqBJb68g/exec',
-        mode: 'login', // 'login', 'register', 'success'
-        regStep: 1,
-        loadingInitial: true,
-        isSubmitting: false,
-        isPageBlocking: false,
-        loadingMessage: 'Memproses...',
-        showPassword: false,
-        activeSlide: 0,
-        slidesTimer: null,
-
-        // Data dari backend
-        config: {},
-        slides: [],
-
-        // Custom Toast Modal
-        toast: {
-          show: false,
-          type: 'info',
-          title: '',
-          message: ''
-        },
-
-        // Forms
-        loginForm: {
-          username: '',
-          password: ''
-        },
-
-        regForm: {
-          jalur: 'reguler',
-          jenjang: 'SMP',
-          kelasTarget: '',
-          namaLengkap: '',
-          nisn: '',
-          gender: 'Laki-laki',
-          asalSekolah: '',
-          noWA: '',
-          email: '',
-          agreeTnc: false,
-          agreeSelection: false,
-          agreeDataValid: false
-        },
-
-        createdUser: {
-          id: '',
-          username: '',
-          password: '',
-          namaLengkap: '',
-          jalur: '',
-          jenjang: '',
-          email: ''
-        },
-
-        currentUser: null,
-        candidates: [],
-        candidateSearch: '',
-        adminConfig: {},
-        showAdminModal: false,
-
-        // Participant Dashboard States
-        sidebarExpanded: true,
-        mobileMenuOpen: false,
-        dashTab: 'home', // 'home', 'pembayaran', 'biodata', 'berkas', 'ujian', 'pengumuman', 'grupwa', 'pengaturan'
-        paymentTab: 'pendaftaran', // 'pendaftaran', 'daftarUlang'
-        biodataTab: 'santri', // 'santri', 'ayah', 'ibu', 'wali', 'alamat'
-        showInvoiceModal: false,
-
-        firstPassForm: {
-          newPass: '',
-          confirmPass: ''
-        },
-
-        normPassForm: {
-          newPass: '',
-          confirmPass: ''
-        },
-
-        regPayForm: {
-          nominal: 250000,
-          transferDate: '',
-          ownerName: '',
-          proofUrl: ''
-        },
-
-        biodataForm: {
-          namaLengkap: '', jenjang: '', jalur: '', kelasTarget: '', nisn: '', tempatLahir: '', tglLahir: '', gender: 'LAKI-LAKI', anakKe: 1, jmlSaudara: 1, agama: 'Islam', noKK: '', nik: '', alamat: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kota: '', provinsi: '', kodePos: '', kewarganegaraan: 'WNI', riwayatPenyakit: '', email: '', noWA: '', asalSekolah: '', jenisSekolah: 'SD/MI', alamatSekolah: '',
-          nikAyah: '', namaAyah: '', tempatLahirAyah: '', tglLahirAyah: '', alamatAyah: '', waAyah: '', statusAyah: 'Masih Hidup', pekerjaanAyah: '', pendidikanAyah: '', kewarganegaraanAyah: 'WNI', penghasilanAyah: '< 2 Juta',
-          nikIbu: '', namaIbu: '', tempatLahirIbu: '', tglLahirIbu: '', alamatIbu: '', waIbu: '', statusIbu: 'Masih Hidup', pekerjaanIbu: '', pendidikanIbu: '', kewarganegaraanIbu: 'WNI', penghasilanIbu: '< 2 Juta'
-        },
-
-        docsMap: {},
-        docList: [
-          { key: 'foto', label: 'Pas Foto Formal', desc: 'Background Merah/Biru (JPG/PNG)' },
-          { key: 'kk', label: 'Kartu Keluarga (KK)', desc: 'Scan / Foto jernih KK' },
-          { key: 'akta', label: 'Akta Kelahiran', desc: 'Scan / Foto Akta' },
-          { key: 'ijazah', label: 'Ijazah / SKL / Rapor', desc: 'Dokumen pendidikan terakhir' },
-          { key: 'ktp', label: 'KTP Orang Tua', desc: 'Scan KTP Ayah / Ibu' },
-          { key: 'sehat', label: 'Surat Keterangan Sehat', desc: 'Dari Dokter / Puskesmas' }
-        ],
-
-        setDashTab: function(tabKey) {
-          this.dashTab = tabKey;
-          this.mobileMenuOpen = false;
-          setTimeout(function() {
-            if (window.lucide) window.lucide.createIcons();
-          }, 100);
-        },
-
-        submitFirstPasswordChange: function() {
-          var self = this;
-          if (!self.firstPassForm.newPass || self.firstPassForm.newPass.length < 6) {
-            self.showToast('Password Kurang', 'Kata sandi minimal 6 karakter.', 'error');
-            return;
-          }
-          if (self.firstPassForm.newPass !== self.firstPassForm.confirmPass) {
-            self.showToast('Tidak Cocok', 'Konfirmasi kata sandi tidak sama.', 'error');
-            return;
-          }
-
-          self.isSubmitting = true;
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'changePassword',
-              payload: {
-                userId: self.currentUser.id,
-                newPassword: self.firstPassForm.newPass
-              }
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok) {
-              self.currentUser.isDefaultPassword = false;
-              self.showToast('Berhasil', 'Kata sandi berhasil diperbarui.', 'success');
-            } else {
-              self.showToast('Gagal', resData.message || 'Gagal mengubah password.', 'error');
-            }
-          })
-          .catch(function() {
-            self.showToast('Error', 'Kesalahan jaringan.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-          });
-        },
-
-        changePasswordNormal: function() {
-          var self = this;
-          if (!self.normPassForm.newPass || self.normPassForm.newPass.length < 6) {
-            self.showToast('Password Kurang', 'Kata sandi minimal 6 karakter.', 'error');
-            return;
-          }
-          if (self.normPassForm.newPass !== self.normPassForm.confirmPass) {
-            self.showToast('Tidak Cocok', 'Konfirmasi kata sandi tidak sama.', 'error');
-            return;
-          }
-
-          self.isSubmitting = true;
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'changePassword',
-              payload: {
-                userId: self.currentUser.id,
-                newPassword: self.normPassForm.newPass
-              }
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok) {
-              self.normPassForm.newPass = '';
-              self.normPassForm.confirmPass = '';
-              self.showToast('Berhasil', 'Kata sandi akun berhasil diubah.', 'success');
-            } else {
-              self.showToast('Gagal', resData.message || 'Gagal mengubah password.', 'error');
-            }
-          })
-          .catch(function() {
-            self.showToast('Error', 'Kesalahan jaringan.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-          });
-        },
-
-        submitRegPayment: function() {
-          var self = this;
-          self.isSubmitting = true;
-          var updatedPayments = {};
-          try {
-            updatedPayments = JSON.parse(self.currentUser.paymentsJson || '{}');
-          } catch(e) {}
-
-          updatedPayments.pendaftaran = {
-            nominal: self.regPayForm.nominal,
-            transferDate: self.regPayForm.transferDate,
-            ownerName: self.regPayForm.ownerName,
-            proofUrl: self.regPayForm.proofUrl,
-            status: 'VERIFIKASI_ADMIN'
-          };
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'submitPayment',
-              payload: {
-                userId: self.currentUser.id,
-                payments: updatedPayments
-              }
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok) {
-              self.currentUser.paymentsJson = JSON.stringify(updatedPayments);
-              self.showToast('Berhasil Dikirim', 'Bukti pembayaran menunggu verifikasi admin.', 'success');
-            } else {
-              self.showToast('Gagal', resData.message || 'Gagal menyimpan.', 'error');
-            }
-          })
-          .catch(function() {
-            self.showToast('Error', 'Kesalahan jaringan.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-          });
-        },
-
-        saveBiodata: function() {
-          var self = this;
-          self.isSubmitting = true;
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'updateBiodata',
-              payload: {
-                userId: self.currentUser.id,
-                biodata: self.biodataForm
-              }
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok) {
-              if (self.biodataForm.namaLengkap) {
-                self.currentUser.fullName = self.biodataForm.namaLengkap;
-              }
-              self.currentUser.biodataJson = JSON.stringify(self.biodataForm);
-              self.showToast('Berhasil Disimpan', 'Data biodata santri & orang tua tersimpan.', 'success');
-            } else {
-              self.showToast('Gagal', resData.message || 'Gagal menyimpan biodata.', 'error');
-            }
-          })
-          .catch(function() {
-            self.showToast('Error', 'Kesalahan jaringan.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-          });
-        },
-
-        saveDoc: function(docKey) {
-          var self = this;
-          var url = self.docsMap[docKey] || '';
-          if (!url) {
-            self.showToast('URL Kosong', 'Tempelkan URL/Link dokumen.', 'error');
-            return;
-          }
-
-          var updatedDocs = {};
-          try {
-            updatedDocs = JSON.parse(self.currentUser.documentsJson || '{}');
-          } catch(e) {}
-
-          updatedDocs[docKey] = {
-            url: url,
-            status: 'VERIFIKASI_ADMIN'
-          };
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'uploadDocument',
-              payload: {
-                userId: self.currentUser.id,
-                documents: updatedDocs
-              }
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok) {
-              self.currentUser.documentsJson = JSON.stringify(updatedDocs);
-              self.showToast('Berhasil', 'Dokumen disimpan untuk verifikasi panitia.', 'success');
-            } else {
-              self.showToast('Gagal', resData.message || 'Gagal menyimpan dokumen.', 'error');
-            }
-          });
-        },
-
-        getDocUrl: function(docKey) {
-          try {
-            var docs = JSON.parse(this.currentUser.documentsJson || '{}');
-            return docs[docKey] ? (docs[docKey].url || '') : '';
-          } catch(e) { return ''; }
-        },
-
-        updateDocUrl: function(docKey, val) {
-          this.docsMap[docKey] = val;
-        },
-
-        getDocStatusLabel: function(docKey) {
-          try {
-            var docs = JSON.parse(this.currentUser.documentsJson || '{}');
-            if (!docs[docKey] || !docs[docKey].url) return '🔴 Belum Diunggah';
-            var st = docs[docKey].status || 'VERIFIKASI_ADMIN';
-            if (st === 'VALID') return '🟢 Disetujui';
-            if (st === 'DITOLAK') return '❌ Ditolak';
-            return '🟡 Verifikasi Panitia';
-          } catch(e) { return '🔴 Belum Diunggah'; }
-        },
-
-        getDocStatusBadgeClass: function(docKey) {
-          var label = this.getDocStatusLabel(docKey);
-          if (label.indexOf('Disetujui') !== -1) return 'bg-emerald-100 text-emerald-700';
-          if (label.indexOf('Ditolak') !== -1) return 'bg-red-100 text-red-700';
-          if (label.indexOf('Verifikasi') !== -1) return 'bg-amber-100 text-amber-700';
-          return 'bg-slate-200 text-slate-600';
-        },
-
-        getPaymentStatusLabel: function() {
-          try {
-            var p = JSON.parse(this.currentUser.paymentsJson || '{}');
-            if (p.pendaftaran && p.pendaftaran.status === 'LUNAS') return 'TERVERIFIKASI';
-            if (p.pendaftaran && p.pendaftaran.proofUrl) return 'MENUNGGU VERIFIKASI';
-            return 'BELUM BAYAR';
-          } catch(e) { return 'BELUM BAYAR'; }
-        },
-
-        getPaymentStatusBadgeClass: function() {
-          var st = this.getPaymentStatusLabel();
-          if (st === 'TERVERIFIKASI') return 'bg-emerald-500 text-slate-950 font-bold';
-          if (st === 'MENUNGGU VERIFIKASI') return 'bg-amber-400 text-amber-950 font-bold';
-          return 'bg-slate-700 text-slate-300';
-        },
-
-        getPaymentStatusColorClass: function() {
-          var st = this.getPaymentStatusLabel();
-          if (st === 'TERVERIFIKASI') return 'text-emerald-700';
-          if (st === 'MENUNGGU VERIFIKASI') return 'text-amber-600';
-          return 'text-red-600';
-        },
-
-        getBiodataProgressText: function() {
-          try {
-            var bio = JSON.parse(this.currentUser.biodataJson || '{}');
-            return bio.nik ? '100%' : '50%';
-          } catch(e) { return '50%'; }
-        },
-
-        getDocsCountText: function() {
-          try {
-            var docs = JSON.parse(this.currentUser.documentsJson || '{}');
-            var count = 0;
-            for (var k in docs) { if (docs[k] && docs[k].url) count++; }
-            return count + '/6';
-          } catch(e) { return '0/6'; }
-        },
-
-        getStepBadgeClass: function(stepNum) {
-          if (stepNum === 1) return 'bg-emerald-700 text-white font-bold';
-          var paySt = this.getPaymentStatusLabel();
-          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-700 text-white font-bold' : (paySt === 'MENUNGGU VERIFIKASI' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-200 text-slate-600');
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
-          if (stepNum === 4) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
-          return 'bg-slate-200 text-slate-600';
-        },
-
-        getHomeContextualBannerText: function() {
-          var paySt = this.getPaymentStatusLabel();
-          if (paySt === 'BELUM BAYAR') return 'Halo ' + this.currentUser.fullName + ', pendaftaran akun Anda berhasil. Silakan lakukan pembayaran biaya formulir pendaftaran di menu Pembayaran.';
-          if (paySt === 'MENUNGGU VERIFIKASI') return 'Pembayaran formulir Anda sedang dalam tahap verifikasi admin panitia. Sambil menunggu, silakan lengkapi Biodata & Upload Berkas.';
-          if (this.currentUser.selectionStatus === 'LULUS') return 'Selamat ' + this.currentUser.fullName + '! Anda dinyatakan LULUS SELEKSI. Silakan cek menu Pengumuman & Pembayaran Daftar Ulang.';
-          return 'Pembayaran formulir terverifikasi LUNAS! Langkah selanjutnya: Lengkapi Biodata Santri, Upload Berkas, & Cetak Kartu Ujian Seleksi.';
-        },
-
-        getTimelineStepClass: function(stepNum) {
-          var paySt = this.getPaymentStatusLabel();
-          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : (paySt === 'MENUNGGU VERIFIKASI' ? 'bg-amber-50 border-amber-300 text-amber-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400');
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
-          if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
-          if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
-          if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
-          return 'bg-slate-100 border-slate-200 text-slate-400';
-        },
-
-        getTimelineStepIcon: function(stepNum) {
-          var paySt = this.getPaymentStatusLabel();
-          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'check-circle' : 'credit-card';
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'check-circle' : 'file-text';
-          if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'award' : 'lock';
-          if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'check-circle' : 'lock';
-          if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'check-circle' : 'lock';
-          return 'lock';
-        },
-
-        getTimelineStepLabel: function(stepNum) {
-          var paySt = this.getPaymentStatusLabel();
-          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'Lunas ✅' : (paySt === 'MENUNGGU VERIFIKASI' ? 'Verifikasi ⏳' : 'Belum Bayar 🔒');
-          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'Lengkap ✅' : 'Proses ⏳';
-          if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'Siap Cetak ✅' : 'Terkunci 🔒';
-          if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'LULUS ✅' : 'Proses ⏳';
-          if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'Tersedia ✅' : 'Terkunci 🔒';
-          return 'Terkunci 🔒';
-        },
-
-        getDynamicWaGroupName: function() {
-          var j = (this.currentUser.jenjang || 'SMP').toUpperCase();
-          var g = (this.currentUser.gender || 'LAKI-LAKI').indexOf('LAKI') !== -1 ? 'Pa' : 'Pi';
-          var k = (j === 'SMP') ? 'Kelas 7' : 'Kelas 10';
-          return 'Grup ' + k + ' ' + g;
-        },
-
-        showToast: function(title, message, type) {
-          this.toast.title = title;
-          this.toast.message = message;
-          this.toast.type = type || 'info';
-          this.toast.show = true;
-          setTimeout(function() {
-            this.toast.show = false;
-          }.bind(this), 4000);
-        },
-
-        initApp: function() {
-          this.fetchInitialData();
-          setTimeout(function() {
-            if (window.lucide) window.lucide.createIcons();
-          }, 200);
-        },
-
-        fetchInitialData: function() {
-          var self = this;
-          self.loadingInitial = true;
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'getInitialData', payload: {} })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok && resData.data) {
-              self.config = resData.data.config || {};
-              self.slides = resData.data.slides || [];
-              self.startSlideshow();
-            } else {
-              self.showToast('Gagal Memuat Data', resData.message || 'Gagal memuat konfigurasi awal.', 'error');
-            }
-          })
-          .catch(function(err) {
-            self.showToast('Kesalahan Koneksi', 'Tidak dapat terhubung ke server PSB.', 'error');
-          })
-          .finally(function() {
-            self.loadingInitial = false;
-            setTimeout(function() {
-              if (window.lucide) window.lucide.createIcons();
-            }, 100);
-          });
-        },
-
-        startSlideshow: function() {
-          var self = this;
-          if (self.slidesTimer) clearInterval(self.slidesTimer);
-          if (self.slides.length > 1) {
-            self.slidesTimer = setInterval(function() {
-              self.activeSlide = (self.activeSlide + 1) % self.slides.length;
-            }, 5000);
-          }
-        },
-
-        switchMode: function(newMode) {
-          if (newMode === 'login' && this.createdUser && this.createdUser.username) {
-            this.loginForm.username = this.createdUser.username;
-            this.loginForm.password = this.createdUser.password;
-          }
-          this.mode = newMode;
-          this.regStep = 1;
-          setTimeout(function() {
-            if (window.lucide) window.lucide.createIcons();
-          }, 100);
-        },
-
-        formatWAInput: function() {
-          // Hanya angka
-          var clean = this.regForm.noWA.replace(/[^0-9]/g, '');
-          this.regForm.noWA = clean;
-        },
-
-        getSelectedTrackStatus: function() {
-          var cfg = this.config || {};
-          var isPutra = (this.regForm.gender === 'LAKI-LAKI');
-          if (this.regForm.jenjang === 'SMP') {
-            return isPutra ? (cfg.STATUS_SMP_PA || 'BUKA') : (cfg.STATUS_SMP_PI || 'BUKA');
-          } else if (this.regForm.jenjang === 'MA') {
-            return isPutra ? (cfg.STATUS_MA_PA || 'BUKA') : (cfg.STATUS_MA_PI || 'BUKA');
-          }
-          return 'BUKA';
-        },
-
-        openAdminModal: function() {
-          this.adminConfig = Object.assign({}, this.config);
-          this.showAdminModal = true;
-          setTimeout(function() {
-            if (window.lucide) window.lucide.createIcons();
-          }, 100);
-        },
-
-        saveAdminConfig: function() {
-          var self = this;
-          self.isSubmitting = true;
-          self.isPageBlocking = true;
-          self.loadingMessage = 'Menyimpan konfigurasi Buka/Tutup...';
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'updateConfig',
-              payload: { configs: self.adminConfig }
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok && resData.data) {
-              self.config = resData.data.config || {};
-              self.slides = resData.data.slides || [];
-              self.showAdminModal = false;
-              self.showToast('Berhasil Disimpan', 'Status pendaftaran & periode berhasil diperbarui.', 'success');
-            } else {
-              self.showToast('Gagal Menyimpan', resData.message || 'Gagal menyimpan konfigurasi.', 'error');
-            }
-          })
-          .catch(function(err) {
-            self.showToast('Kesalahan Koneksi', 'Tidak dapat memperbarui konfigurasi.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-            self.isPageBlocking = false;
-          });
-        },
-
-        nextStep: function(targetStep) {
-          if (targetStep === 2) {
-            if (this.regForm.jalur === 'mutasi' && this.config.STATUS_MUTASI === 'TUTUP') {
-              this.showToast('Jalur Ditutup', 'Pendaftaran Jalur Mutasi saat ini sedang ditutup.', 'error');
-              return;
-            }
-            if (this.regForm.jalur === 'inden' && this.config.STATUS_INDEN === 'TUTUP') {
-              this.showToast('Jalur Ditutup', 'Pendaftaran Jalur Inden saat ini sedang ditutup.', 'error');
-              return;
-            }
-            if (this.regForm.jalur === 'mutasi' && !this.regForm.kelasTarget) {
-              this.showToast('Pilihan Belum Lengkap', 'Silakan pilih kelas mutasi target.', 'error');
-              return;
-            }
-            if (this.regForm.jalur === 'inden' && !this.regForm.kelasTarget) {
-              this.showToast('Pilihan Belum Lengkap', 'Silakan isi kelas calon santri saat ini.', 'error');
-              return;
-            }
-            this.regStep = 2;
-          } else if (targetStep === 3) {
-            if (this.getSelectedTrackStatus() === 'TUTUP') {
-              this.showToast('Pendaftaran Ditutup', 'Pendaftaran untuk jenjang & jenis kelamin yang dipilih saat ini sedang DITUTUP.', 'error');
-              return;
-            }
-            if (!this.regForm.namaLengkap.trim()) {
-              this.showToast('Validasi Gagal', 'Nama lengkap santri wajib diisi.', 'error');
-              return;
-            }
-            if (!this.regForm.asalSekolah.trim()) {
-              this.showToast('Validasi Gagal', 'Asal sekolah wajib diisi.', 'error');
-              return;
-            }
-            if (!this.regForm.noWA.trim() || this.regForm.noWA.length < 9) {
-              this.showToast('Validasi Gagal', 'Nomor WhatsApp tidak valid (minimal 9 digit).', 'error');
-              return;
-            }
-            if (!this.regForm.email.trim() || this.regForm.email.indexOf('@') === -1) {
-              this.showToast('Validasi Gagal', 'Email tidak valid.', 'error');
-              return;
-            }
-            this.regStep = 3;
-          }
-          setTimeout(function() {
-            if (window.lucide) window.lucide.createIcons();
-          }, 100);
-        },
-
-        submitLogin: function() {
-          var self = this;
-          if (!self.loginForm.username || !self.loginForm.password) {
-            self.showToast('Input Lengkap', 'Isi username/WA dan password.', 'error');
-            return;
-          }
-
-          self.isSubmitting = true;
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'login',
-              payload: self.loginForm
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok && resData.data) {
-              var user = resData.data;
-              self.currentUser = user;
-              self.mode = 'dashboard';
-              self.dashTab = 'home';
-              self.showToast('Login Berhasil', 'Selamat datang, ' + user.fullName + ' (' + user.role + ')', 'success');
-
-              // Populate biodataForm if saved
-              try {
-                self.biodataForm.namaLengkap = user.fullName || '';
-                self.biodataForm.jenjang = user.jenjang || '';
-                self.biodataForm.jalur = user.jalur || '';
-                self.biodataForm.noWA = user.noWA || '';
-                self.biodataForm.email = user.email || '';
-                self.biodataForm.asalSekolah = user.asalSekolah || '';
-
-                if (user.biodataJson) {
-                  var parsedBio = JSON.parse(user.biodataJson);
-                  if (parsedBio && typeof parsedBio === 'object') {
-                    self.biodataForm = Object.assign({}, self.biodataForm, parsedBio);
-                  }
-                }
-              } catch(e) {}
-
-              if (user.role === 'ADMIN') {
-                self.fetchCandidates();
-              }
-            } else {
-              self.showToast('Gagal Login', resData.message || 'Kredensial salah.', 'error');
-            }
-          })
-          .catch(function(err) {
-            self.showToast('Kesalahan Sistem', 'Tidak dapat melakukan proses login.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-            setTimeout(function() {
-              if (window.lucide) window.lucide.createIcons();
-            }, 100);
-          });
-        },
-
-        logout: function() {
-          this.currentUser = null;
-          this.loginForm.password = '';
-          this.switchMode('login');
-          this.showToast('Logout', 'Anda telah keluar dari akun.', 'info');
-        },
-
-        fetchCandidates: function() {
-          var self = this;
-          self.isPageBlocking = true;
-          self.loadingMessage = 'Memuat daftar pendaftar...';
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'getCandidates', payload: {} })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok && resData.data) {
-              self.candidates = resData.data || [];
-            } else {
-              self.showToast('Gagal Memuat Data', resData.message || 'Gagal memuat pendaftar.', 'error');
-            }
-          })
-          .catch(function(err) {
-            self.showToast('Kesalahan Koneksi', 'Gagal terhubung ke server.', 'error');
-          })
-          .finally(function() {
-            self.isPageBlocking = false;
-            setTimeout(function() {
-              if (window.lucide) window.lucide.createIcons();
-            }, 100);
-          });
-        },
-
-        filteredCandidates: function() {
-          var self = this;
-          if (!self.candidateSearch || !self.candidateSearch.trim()) return self.candidates;
-          var q = self.candidateSearch.toLowerCase().trim();
-          return self.candidates.filter(function(item) {
-            return (item.fullName && item.fullName.toLowerCase().indexOf(q) !== -1) ||
-                   (item.id && item.id.toLowerCase().indexOf(q) !== -1) ||
-                   (item.noWA && item.noWA.indexOf(q) !== -1) ||
-                   (item.asalSekolah && item.asalSekolah.toLowerCase().indexOf(q) !== -1);
-          });
-        },
-
-        submitRegister: function() {
-          var self = this;
-          if (!self.regForm.agreeTnc || !self.regForm.agreeSelection || !self.regForm.agreeDataValid) {
-            self.showToast('Persetujuan Diperlukan', 'Centang ketiga pernyataan persetujuan pendaftaran.', 'error');
-            return;
-          }
-
-          self.isSubmitting = true;
-          self.isPageBlocking = true;
-          self.loadingMessage = 'Mendaftarkan akun & mengirimkan surel...';
-
-          fetch(self.SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'register',
-              payload: self.regForm
-            })
-          })
-          .then(function(res) { return res.text(); })
-          .then(function(text) {
-            var resData = JSON.parse(text);
-            if (resData.ok && resData.data) {
-              self.createdUser = resData.data;
-              self.mode = 'success';
-              self.showToast('Pendaftaran Berhasil', 'Akun berhasil dibuat.', 'success');
-            } else {
-              self.showToast('Gagal Mendaftar', resData.message || 'Gagal menyimpan data.', 'error');
-            }
-          })
-          .catch(function(err) {
-            self.showToast('Kesalahan Sistem', 'Terjadi kesalahan saat memproses pendaftaran.', 'error');
-          })
-          .finally(function() {
-            self.isSubmitting = false;
-            self.isPageBlocking = false;
-            setTimeout(function() {
-              if (window.lucide) window.lucide.createIcons();
-            }, 100);
-          });
-        },
-
-        printAccountCard: function() {
-          window.print();
+  }
+
+  throw new Error('Akun pendaftaran tidak ditemukan. Silakan periksa kembali atau buat akun baru.');
+}
+
+function handleRegister(payload) {
+  var jalur = String(payload.jalur || '').trim().toUpperCase();
+  var jenjang = String(payload.jenjang || '').trim().toUpperCase();
+  var kelasTarget = String(payload.kelasTarget || '').trim().toUpperCase();
+  var namaLengkap = String(payload.namaLengkap || '').trim().toUpperCase();
+  var nisn = String(payload.nisn || '').trim().toUpperCase();
+  var gender = String(payload.gender || '').trim().toUpperCase();
+  var asalSekolah = String(payload.asalSekolah || '').trim().toUpperCase();
+  var rawWA = String(payload.noWA || '').trim();
+  var email = String(payload.email || '').trim().toLowerCase();
+
+  if (!jalur || !jenjang || !namaLengkap || !rawWA || !email) {
+    throw new Error('Data pendaftaran belum lengkap. Silakan lengkapi formulir.');
+  }
+
+  // Validasi status Buka/Tutup Jalur & Jenjang
+  var initialData = getInitialData();
+  var cfg = initialData.config || {};
+
+  if (jalur === 'MUTASI' && cfg.STATUS_MUTASI === 'TUTUP') {
+    throw new Error('Pendaftaran Jalur Mutasi saat ini sedang DITUTUP.');
+  }
+  if (jalur === 'INDEN' && cfg.STATUS_INDEN === 'TUTUP') {
+    throw new Error('Pendaftaran Jalur Inden saat ini sedang DITUTUP.');
+  }
+
+  var isPutra = (gender === 'LAKI-LAKI');
+  if (jenjang === 'SMP') {
+    if (isPutra && cfg.STATUS_SMP_PA === 'TUTUP') throw new Error('Pendaftaran SMP Putra saat ini sedang DITUTUP.');
+    if (!isPutra && cfg.STATUS_SMP_PI === 'TUTUP') throw new Error('Pendaftaran SMP Putri saat ini sedang DITUTUP.');
+  } else if (jenjang === 'MA') {
+    if (isPutra && cfg.STATUS_MA_PA === 'TUTUP') throw new Error('Pendaftaran MA Putra saat ini sedang DITUTUP.');
+    if (!isPutra && cfg.STATUS_MA_PI === 'TUTUP') throw new Error('Pendaftaran MA Putri saat ini sedang DITUTUP.');
+  }
+
+  // Format WA agar '0' diawal tidak terhapus di spreadsheet
+  var cleanWA = rawWA.replace(/[^0-9]/g, '');
+  if (cleanWA.indexOf('62') === 0) {
+    cleanWA = '0' + cleanWA.substring(2);
+  }
+  if (cleanWA.indexOf('0') !== 0) {
+    cleanWA = '0' + cleanWA;
+  }
+
+  // Buat password otomatis dari 4 digit terakhir nomor WA
+  var last4 = cleanWA.length >= 4 ? cleanWA.slice(-4) : '1234';
+  var autoPassword = last4;
+  var passHash = hashPassword(autoPassword);
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+
+  var newId = 'PSB-' + String(new Date().getTime()).slice(-6);
+  var username = cleanWA; // default username menggunakan nomor WA
+  var formattedWAForSheet = "'" + cleanWA; // Tanda petik tunggal memastikan '0' tidak hilang
+  var formattedNISNForSheet = nisn ? "'" + nisn : '-';
+
+  var newRow = [
+    newId,
+    username,
+    passHash,
+    autoPassword,
+    safeCellValue(namaLengkap),
+    'PESERTA',
+    jalur,
+    jenjang,
+    kelasTarget || '-',
+    safeCellValue(asalSekolah),
+    formattedWAForSheet,
+    email,
+    formattedNISNForSheet,
+    gender,
+    'TERDAFTAR',
+    new Date().toISOString(),
+    'TRUE',
+    '{}',
+    '{}',
+    '{}',
+    'BELUM DIPROSES'
+  ];
+
+  usersSheet.appendRow(newRow);
+
+  // Kirim email konfirmasi otomatis
+  try {
+    var subject = 'Konfirmasi Pendaftaran PSB Pondok Pesantren Al-Umm';
+    var bodyText = 'Assalamu\'alaikum Wr. Wb.\n\n' +
+      'Selamat! Pendaftaran akun PSB Pondok Pesantren Al-Umm Anda telah berhasil.\n\n' +
+      'Rincian Akun Login Anda:\n' +
+      '-----------------------------------------\n' +
+      'ID Pendaftaran : ' + newId + '\n' +
+      'Nama Santri    : ' + namaLengkap + '\n' +
+      'Jalur & Jenjang: ' + jalur.toUpperCase() + ' - ' + jenjang.toUpperCase() + '\n' +
+      'Username (WA)  : ' + cleanWA + '\n' +
+      'Password Login : ' + autoPassword + '\n' +
+      '-----------------------------------------\n\n' +
+      'Silakan simpan informasi ini untuk keperluan login dan pemantauan status kelulusan.\n\n' +
+      'Wassalamu\'alaikum Wr. Wb.\n' +
+      'Panitia PSB Pondok Pesantren Al-Umm';
+
+    MailApp.sendEmail(email, subject, bodyText);
+  } catch (mailErr) {
+    // Abaikan jika pengiriman email gagal di environment test, proses pendaftaran tetap sukses
+  }
+
+  return {
+    id: newId,
+    username: cleanWA,
+    password: autoPassword,
+    namaLengkap: namaLengkap,
+    jalur: jalur,
+    jenjang: jenjang,
+    kelasTarget: kelasTarget,
+    noWA: cleanWA,
+    email: email
+  };
+}
+
+function updateConfig(payload) {
+  var configs = payload.configs || {};
+  var ss = getDb();
+  var configSheet = ss.getSheetByName('Config');
+  var data = configSheet.getDataRange().getValues();
+
+  for (var key in configs) {
+    if (Object.prototype.hasOwnProperty.call(configs, key)) {
+      var val = String(configs[key]);
+      var found = false;
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim() === key) {
+          configSheet.getRange(i + 1, 2).setValue(val);
+          found = true;
+          break;
         }
-      };
+      }
+      if (!found) {
+        configSheet.appendRow([key, val, 'Konfigurasi Sistem']);
+      }
     }
-  </script>
-</body>
-</html>
+  }
+
+  return getInitialData();
+}
+
+function getCandidates(payload) {
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  if (!usersSheet) return [];
+  var data = usersSheet.getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < data.length; i++) {
+    var role = String(data[i][5] || '').toUpperCase();
+    if (role !== 'ADMIN') {
+      list.push({
+        id: String(data[i][0] || ''),
+        username: String(data[i][1] || ''),
+        fullName: String(data[i][4] || ''),
+        role: role,
+        jalur: String(data[i][6] || ''),
+        jenjang: String(data[i][7] || ''),
+        kelasTarget: String(data[i][8] || ''),
+        asalSekolah: String(data[i][9] || ''),
+        noWA: String(data[i][10] || '').replace(/^'/, ''),
+        email: String(data[i][11] || ''),
+        nisn: String(data[i][12] || '').replace(/^'/, ''),
+        gender: String(data[i][13] || ''),
+        status: String(data[i][14] || 'TERDAFTAR'),
+        createdAt: String(data[i][15] || '')
+      });
+    }
+  }
+  return list;
+}
+
+function handleChangePassword(payload) {
+  var userId = String(payload.userId || '').trim();
+  var newPassword = String(payload.newPassword || '').trim();
+
+  if (!userId || !newPassword) {
+    throw new Error('Data kata sandi tidak lengkap.');
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error('Kata sandi baru minimal 6 karakter.');
+  }
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  var data = usersSheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === userId) {
+      var newHash = hashPassword(newPassword);
+      usersSheet.getRange(i + 1, 3).setValue(newHash);
+      usersSheet.getRange(i + 1, 4).setValue(newPassword);
+      usersSheet.getRange(i + 1, 17).setValue('FALSE');
+      return { message: 'Kata sandi berhasil diperbarui.' };
+    }
+  }
+  throw new Error('Pengguna tidak ditemukan.');
+}
+
+function handleUpdateBiodata(payload) {
+  var userId = String(payload.userId || '').trim();
+  var biodata = payload.biodata || {};
+
+  if (!userId) throw new Error('User ID tidak valid.');
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  var data = usersSheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === userId) {
+      if (biodata.namaLengkap) {
+        var cleanName = safeCellValue(String(biodata.namaLengkap).trim().toUpperCase());
+        usersSheet.getRange(i + 1, 5).setValue(cleanName);
+      }
+      usersSheet.getRange(i + 1, 18).setValue(JSON.stringify(biodata));
+      return { message: 'Data biodata berhasil disimpan.' };
+    }
+  }
+  throw new Error('Pengguna tidak ditemukan.');
+}
+
+function handleSubmitPayment(payload) {
+  var userId = String(payload.userId || '').trim();
+  var payments = payload.payments || {};
+
+  if (!userId) throw new Error('User ID tidak valid.');
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  var data = usersSheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === userId) {
+      usersSheet.getRange(i + 1, 19).setValue(JSON.stringify(payments));
+      return { message: 'Data pembayaran berhasil diperbarui.' };
+    }
+  }
+  throw new Error('Pengguna tidak ditemukan.');
+}
+
+function handleUploadDocument(payload) {
+  var userId = String(payload.userId || '').trim();
+  var documents = payload.documents || {};
+
+  if (!userId) throw new Error('User ID tidak valid.');
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  var data = usersSheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === userId) {
+      usersSheet.getRange(i + 1, 20).setValue(JSON.stringify(documents));
+      return { message: 'Dokumen berhasil diperbarui.' };
+    }
+  }
+  throw new Error('Pengguna tidak ditemukan.');
+}
+
+function authorizeDrive() {
+  var rootFolder = DriveApp.getRootFolder();
+  return 'Otorisasi Google Drive Aktif. Folder Utama: ' + rootFolder.getName();
+}
+
+function handleUploadDocumentFile(payload) {
+  var userId = String(payload.userId || '').trim();
+  var docKey = String(payload.docKey || '').trim();
+  var fileName = String(payload.fileName || 'file').trim();
+  var mimeType = String(payload.mimeType || 'application/octet-stream').trim();
+  var base64Data = String(payload.base64Data || '');
+
+  if (!userId || !docKey || !base64Data) {
+    throw new Error('Data unggahan berkas tidak lengkap.');
+  }
+
+  if (base64Data.indexOf(',') !== -1) {
+    base64Data = base64Data.split(',')[1];
+  }
+
+  var bytes = Utilities.base64Decode(base64Data);
+  if (bytes.length > 2 * 1024 * 1024) {
+    throw new Error('Ukuran file melebihi batas maksimal 2 MB.');
+  }
+
+  var ss = getDb();
+  var usersSheet = ss.getSheetByName('Users');
+  var data = usersSheet.getDataRange().getValues();
+
+  var userRowIndex = -1;
+  var userFullName = 'Santri';
+  var userDocsJson = '{}';
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === userId) {
+      userRowIndex = i + 1;
+      userFullName = String(data[i][4] || 'Santri').trim();
+      userDocsJson = String(data[i][19] || '{}');
+      break;
+    }
+  }
+
+  if (userRowIndex === -1) {
+    throw new Error('Pengguna tidak ditemukan.');
+  }
+
+  var configSheet = ss.getSheetByName('Config');
+  var configData = configSheet.getDataRange().getValues();
+  var parentFolderId = '';
+  for (var c = 1; c < configData.length; c++) {
+    if (String(configData[c][0]).trim() === 'PARENT_FOLDER_ID') {
+      parentFolderId = String(configData[c][1] || '').trim();
+      break;
+    }
+  }
+
+  var parentFolder;
+  if (parentFolderId) {
+    try {
+      parentFolder = DriveApp.getFolderById(parentFolderId);
+    } catch(err) {
+      parentFolder = DriveApp.getRootFolder();
+    }
+  } else {
+    parentFolder = DriveApp.getRootFolder();
+  }
+
+  var folderName = userId + ' - ' + userFullName;
+  var existingFolders = parentFolder.getFoldersByName(folderName);
+  var santriFolder;
+
+  if (existingFolders.hasNext()) {
+    santriFolder = existingFolders.next();
+  } else {
+    santriFolder = parentFolder.createFolder(folderName);
+  }
+
+  var blob = Utilities.newBlob(bytes, mimeType, docKey + '_' + fileName);
+  var file = santriFolder.createFile(blob);
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(e) {}
+
+  var docsMap = {};
+  try {
+    docsMap = JSON.parse(userDocsJson) || {};
+  } catch(e) {
+    docsMap = {};
+  }
+
+  docsMap[docKey] = {
+    url: file.getUrl(),
+    fileId: file.getId(),
+    fileName: fileName,
+    fileSizeFormatted: (bytes.length / (1024 * 1024)).toFixed(2) + ' MB',
+    uploadedAt: new Date().toISOString(),
+    status: 'VERIFIKASI_ADMIN'
+  };
+
+  var newDocsJsonStr = JSON.stringify(docsMap);
+  usersSheet.getRange(userRowIndex, 20).setValue(newDocsJsonStr);
+
+  return {
+    message: 'File berkas berhasil diunggah ke Google Drive.',
+    documentsJson: newDocsJsonStr,
+    docInfo: docsMap[docKey]
+  };
+}
