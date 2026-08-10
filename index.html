@@ -1180,25 +1180,118 @@
                           x-text="dashData.payments[paymentSubTab].status"></span>
                   </div>
 
-                  <!-- Upload Controls -->
+                  <!-- Revision Note Alert if exists -->
+                  <template x-if="dashData.payments[paymentSubTab].note && dashData.payments[paymentSubTab].status === 'REVISION'">
+                    <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1">
+                      <div class="font-bold flex items-center gap-1.5">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600"></i>
+                        <span>Catatan Revisi dari Panitia:</span>
+                      </div>
+                      <p x-text="dashData.payments[paymentSubTab].note"></p>
+                    </div>
+                  </template>
+
+                  <!-- Upload Controls Container -->
                   <div class="space-y-3">
-                    <template x-if="dashData.payments[paymentSubTab].proofUrl">
-                      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                        <span class="text-xs text-slate-700 font-mono truncate" x-text="dashData.payments[paymentSubTab].proofFileName || 'Bukti Transfer'"></span>
-                        <a :href="dashData.payments[paymentSubTab].proofUrl" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
-                          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                          <span>Lihat Bukti Tf</span>
-                        </a>
+                    
+                    <!-- 1. Staged File State (Selected, waiting upload execution) -->
+                    <template x-if="stagedPayments[paymentSubTab]">
+                      <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 font-bold">
+                              <i data-lucide="file-text" class="w-5 h-5"></i>
+                            </div>
+                            <div class="truncate">
+                              <div class="text-xs font-bold text-slate-900 truncate" x-text="stagedPayments[paymentSubTab].name"></div>
+                              <div class="text-[10px] text-amber-800 font-semibold" x-text="'Ukuran File: ' + stagedPayments[paymentSubTab].sizeFormatted"></div>
+                            </div>
+                          </div>
+                          <button type="button" 
+                                  @click="cancelStagedFile('payment', paymentSubTab)"
+                                  :disabled="uploadingState['payment_' + paymentSubTab]"
+                                  class="text-xs text-slate-500 hover:text-rose-600 font-semibold px-2 py-1 rounded hover:bg-white/50 transition">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                          </button>
+                        </div>
+
+                        <!-- Uploading Status Subtext -->
+                        <div x-show="uploadingState['payment_' + paymentSubTab]" class="p-2.5 rounded-lg bg-amber-100/80 border border-amber-300/50 text-[11px] text-amber-900 flex items-center gap-2">
+                          <div class="w-3.5 h-3.5 border-2 border-amber-700 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                          <span>Mohon tunggu sebentar, file sedang ditransfer ke Google Drive Panitia...</span>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                          <button type="button" 
+                                  @click="executeStagedUpload('payment', paymentSubTab)"
+                                  :disabled="uploadingState['payment_' + paymentSubTab]"
+                                  class="flex-1 py-2.5 px-4 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition disabled:opacity-60">
+                            <template x-if="uploadingState['payment_' + paymentSubTab]">
+                              <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span>Sedang Mengunggah Berkas...</span>
+                              </div>
+                            </template>
+                            <template x-if="!uploadingState['payment_' + paymentSubTab]">
+                              <div class="flex items-center gap-2">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                <span>Upload Berkas Ini</span>
+                              </div>
+                            </template>
+                          </button>
+
+                          <button type="button" 
+                                  @click="cancelStagedFile('payment', paymentSubTab)"
+                                  :disabled="uploadingState['payment_' + paymentSubTab]"
+                                  class="py-2.5 px-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition">
+                            Batal
+                          </button>
+                        </div>
                       </div>
                     </template>
 
-                    <label class="block">
-                      <input type="file" @change="handleFileUpload($event, 'payment', paymentSubTab.toUpperCase())" accept="image/*,.pdf" class="hidden" id="payInput">
-                      <button type="button" @click="document.getElementById('payInput').click()" :disabled="isSubmitting" class="w-full py-3.5 rounded-xl border-2 border-dashed border-slate-300 hover:border-brand-600 bg-slate-50/80 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition">
-                        <i data-lucide="upload-cloud" class="w-5 h-5 text-brand-700"></i>
-                        <span x-text="isSubmitting ? 'Mengunggah Berkas...' : 'Pilih File (Gambar/PDF <= 2MB)'"></span>
-                      </button>
-                    </label>
+                    <!-- 2. Already Uploaded State (File on Server & No File Staged) -->
+                    <template x-if="!stagedPayments[paymentSubTab] && dashData.payments[paymentSubTab].proofUrl">
+                      <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0">
+                              <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                            </div>
+                            <div class="truncate">
+                              <div class="text-xs font-bold text-slate-900 truncate" x-text="dashData.payments[paymentSubTab].proofFileName || 'Bukti Transfer'"></div>
+                              <div class="text-[10px] text-emerald-700 font-medium">Berkas Tersimpan di Server</div>
+                            </div>
+                          </div>
+                          
+                          <a :href="dashData.payments[paymentSubTab].proofUrl" target="_blank" class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>Lihat Berkas</span>
+                          </a>
+                        </div>
+
+                        <!-- Change File Option -->
+                        <div class="pt-1 border-t border-emerald-200/50 flex justify-end">
+                          <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs text-brand-700 hover:text-brand-800 font-bold">
+                            <input type="file" @change="onFileSelected($event, 'payment', paymentSubTab)" accept="image/*,.pdf" class="hidden">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            <span>Ganti Berkas</span>
+                          </label>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- 3. Initial State (No File Uploaded & No File Staged) -->
+                    <template x-if="!stagedPayments[paymentSubTab] && !dashData.payments[paymentSubTab].proofUrl">
+                      <label class="block">
+                        <input type="file" @change="onFileSelected($event, 'payment', paymentSubTab)" accept="image/*,.pdf" class="hidden" :id="'payInput-' + paymentSubTab">
+                        <button type="button" @click="document.getElementById('payInput-' + paymentSubTab).click()" class="w-full py-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-brand-600 bg-slate-50/80 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition">
+                          <i data-lucide="folder-open" class="w-5 h-5 text-brand-700"></i>
+                          <span>Pilih Berkas (< 2MB)</span>
+                        </button>
+                      </label>
+                    </template>
+
                   </div>
                 </div>
               </div>
@@ -1331,34 +1424,92 @@
               <!-- TAB 4: UPLOAD BERKAS                                 -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'upload_berkas'" class="space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <template x-for="(info, key) in docLabels" :key="key">
                     <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
                       <div>
                         <div class="flex items-center justify-between mb-1">
                           <span class="text-xs font-bold text-slate-900 truncate" x-text="info.title"></span>
-                          <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase"
-                                :class="dashData.documents[key] && dashData.documents[key].status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'"
+                          <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase border"
+                                :class="{
+                                  'bg-emerald-50 text-emerald-800 border-emerald-200': dashData.documents[key] && dashData.documents[key].status === 'VERIFIED',
+                                  'bg-amber-50 text-amber-800 border-amber-200': dashData.documents[key] && dashData.documents[key].status === 'PENDING',
+                                  'bg-rose-50 text-rose-800 border-rose-200': dashData.documents[key] && dashData.documents[key].status === 'REVISION',
+                                  'bg-slate-100 text-slate-500 border-slate-200': !dashData.documents[key] || dashData.documents[key].status === 'BELUM_UPLOAD'
+                                }"
                                 x-text="dashData.documents[key] ? dashData.documents[key].status : 'BELUM_UPLOAD'"></span>
                         </div>
-                        <p class="text-[10px] text-slate-500" x-text="info.desc"></p>
+                        <p class="text-[10px] text-slate-500 leading-tight" x-text="info.desc"></p>
                       </div>
 
+                      <!-- Revision Note if exists -->
+                      <template x-if="dashData.documents[key] && dashData.documents[key].note && dashData.documents[key].status === 'REVISION'">
+                        <div class="p-2 rounded-lg bg-rose-50 border border-rose-200 text-[10px] text-rose-900">
+                          <span class="font-bold">Catatan: </span>
+                          <span x-text="dashData.documents[key].note"></span>
+                        </div>
+                      </template>
+
+                      <!-- Action Area based on state -->
                       <div class="space-y-2 pt-2 border-t border-slate-100">
-                        <template x-if="dashData.documents[key] && dashData.documents[key].fileUrl">
-                          <a :href="dashData.documents[key].fileUrl" target="_blank" class="w-full py-1.5 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] flex items-center justify-center gap-1 border border-emerald-200">
-                            <i data-lucide="file-check" class="w-3.5 h-3.5 text-emerald-600"></i>
-                            <span>Lihat Berkas</span>
-                          </a>
+
+                        <!-- 1. Staged File State -->
+                        <template x-if="stagedDocs[key]">
+                          <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+                            <div class="text-[11px] font-bold text-slate-900 truncate" x-text="stagedDocs[key].name"></div>
+                            <div class="text-[10px] text-amber-800 font-semibold" x-text="stagedDocs[key].sizeFormatted"></div>
+                            
+                            <div x-show="uploadingState['doc_' + key]" class="text-[10px] text-amber-900 flex items-center gap-1.5 font-medium">
+                              <div class="w-3 h-3 border-2 border-amber-700 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                              <span>Mengunggah berkas...</span>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 pt-1">
+                              <button type="button" 
+                                      @click="executeStagedUpload('doc', key)"
+                                      :disabled="uploadingState['doc_' + key]"
+                                      class="flex-1 py-1.5 px-2 rounded-lg bg-brand-700 hover:bg-brand-800 text-white font-bold text-[10px] shadow flex items-center justify-center gap-1 disabled:opacity-60">
+                                <i data-lucide="upload" class="w-3 h-3" x-show="!uploadingState['doc_' + key]"></i>
+                                <span x-text="uploadingState['doc_' + key] ? 'Mengunggah...' : 'Upload'"></span>
+                              </button>
+                              <button type="button" 
+                                      @click="cancelStagedFile('doc', key)"
+                                      :disabled="uploadingState['doc_' + key]"
+                                      class="py-1.5 px-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-[10px]">
+                                Batal
+                              </button>
+                            </div>
+                          </div>
                         </template>
 
-                        <label class="block">
-                          <input type="file" @change="handleFileUpload($event, 'doc', key)" accept="image/*,.pdf" class="hidden" :id="'doc-' + key">
-                          <button type="button" @click="document.getElementById('doc-' + key).click()" :disabled="isSubmitting" class="w-full py-1.5 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center gap-1 border border-slate-200">
-                            <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-700"></i>
-                            <span>Upload (<=2MB)</span>
-                          </button>
-                        </label>
+                        <!-- 2. Already Uploaded State -->
+                        <template x-if="!stagedDocs[key] && dashData.documents[key] && dashData.documents[key].fileUrl">
+                          <div class="space-y-1.5">
+                            <a :href="dashData.documents[key].fileUrl" target="_blank" class="w-full py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 border border-emerald-200 transition">
+                              <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i>
+                              <span>Lihat Berkas</span>
+                            </a>
+                            <div class="text-center">
+                              <label class="cursor-pointer text-[10px] text-brand-700 hover:text-brand-800 font-bold inline-flex items-center gap-1">
+                                <input type="file" @change="onFileSelected($event, 'doc', key)" accept="image/*,.pdf" class="hidden">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                                <span>Ganti Berkas</span>
+                              </label>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- 3. Initial State (No File Uploaded & No File Staged) -->
+                        <template x-if="!stagedDocs[key] && (!dashData.documents[key] || !dashData.documents[key].fileUrl)">
+                          <label class="block">
+                            <input type="file" @change="onFileSelected($event, 'doc', key)" accept="image/*,.pdf" class="hidden" :id="'docInput-' + key">
+                            <button type="button" @click="document.getElementById('docInput-' + key).click()" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                              <i data-lucide="folder-open" class="w-4 h-4 text-brand-700"></i>
+                              <span>Pilih Berkas (< 2MB)</span>
+                            </button>
+                          </label>
+                        </template>
+
                       </div>
                     </div>
                   </template>
