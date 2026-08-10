@@ -172,20 +172,6 @@
                    x-transition:enter-start="opacity-0 -translate-x-4"
                    x-transition:enter-end="opacity-100 translate-x-0"
                    class="space-y-6">
-                <!-- Tag Periode Aktif & Promo Badge (Left Panel) -->
-                <div class="space-y-2">
-                  <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold tracking-wide uppercase shadow-lg border border-amber-300">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-slate-900 animate-spin" style="animation-duration: 8s;"></i>
-                    <span x-text="'PERIODE AKTIF: ' + (config.PERIODE_AKTIF || 'EARLY BIRD')"></span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border backdrop-blur-md"
-                         :class="getPeriodeStatus() === 'BUKA' ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40' : 'bg-rose-500/25 text-rose-200 border-rose-400/40'">
-                      <span class="w-2 h-2 rounded-full" :class="getPeriodeStatus() === 'BUKA' ? 'bg-emerald-400 animate-ping' : 'bg-rose-400'"></span>
-                      <span x-text="getPeriodeStatus() === 'BUKA' ? 'STATUS: PENDAFTARAN DIBUKA' : 'STATUS: PENDAFTARAN DITUTUP'"></span>
-                    </div>
-                  </div>
-                </div>
 
                 <h2 class="text-2xl md:text-3xl font-extrabold text-white leading-snug">
                   Tahun Ajaran <span class="text-amber-300" x-text="config.TAHUN_AJARAN || '2027/2028'"></span>
@@ -246,12 +232,8 @@
                        :class="registerStep === 1 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
                          :class="registerStep === 1 ? 'bg-amber-400 text-slate-900' : (registerStep > 1 ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white')">
-                      <template x-if="registerStep > 1">
-                        <i data-lucide="check" class="w-4 h-4"></i>
-                      </template>
-                      <template x-if="registerStep <= 1">
-                        <span>1</span>
-                      </template>
+                      <i data-lucide="check" class="w-4 h-4" x-show="registerStep > 1"></i>
+                      <span x-show="registerStep <= 1">1</span>
                     </div>
                     <div>
                       <div class="text-xs font-bold text-white">Jalur & Jenjang</div>
@@ -264,12 +246,8 @@
                        :class="registerStep === 2 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
                          :class="registerStep === 2 ? 'bg-amber-400 text-slate-900' : (registerStep > 2 ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white')">
-                      <template x-if="registerStep > 2">
-                        <i data-lucide="check" class="w-4 h-4"></i>
-                      </template>
-                      <template x-if="registerStep <= 2">
-                        <span>2</span>
-                      </template>
+                      <i data-lucide="check" class="w-4 h-4" x-show="registerStep > 2"></i>
+                      <span x-show="registerStep <= 2">2</span>
                     </div>
                     <div>
                       <div class="text-xs font-bold text-white">Data Singkat</div>
@@ -282,7 +260,8 @@
                        :class="registerStep === 3 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
                          :class="registerStep === 3 ? 'bg-amber-400 text-slate-900' : 'bg-white/20 text-white'">
-                      <span>3</span>
+                      <i data-lucide="check" class="w-4 h-4" x-show="registerStep > 3"></i>
+                      <span x-show="registerStep <= 3">3</span>
                     </div>
                     <div>
                       <div class="text-xs font-bold text-white">Persetujuan</div>
@@ -884,8 +863,660 @@
 
         </div>
       </template>
-
     </div>
+    </template>
+
+    <!-- ============================================================= -->
+    <!-- VIEW SECTION B: PARTICIPANT DASHBOARD (When LOGGED IN)        -->
+    <!-- ============================================================= -->
+    <template x-if="isLoggedIn">
+      <div class="min-h-screen flex flex-col bg-slate-900 text-slate-100">
+
+        <!-- FORCED PASSWORD CHANGE OVERLAY MODAL -->
+        <div x-show="currentUser && !currentUser.isPasswordChanged" 
+             class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white text-slate-800 rounded-3xl max-w-md w-full p-6 md:p-8 space-y-5 shadow-2xl border border-slate-200">
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+              <i data-lucide="key-round" class="w-8 h-8"></i>
+            </div>
+            <div class="text-center">
+              <h3 class="text-xl font-extrabold text-slate-900">Wajib Ganti Password</h3>
+              <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Demi keamanan akun pendaftaran Anda, silakan ganti password default awal dengan password baru pilihan Anda.
+              </p>
+            </div>
+            <form @submit.prevent="handleForceChangePassword()" class="space-y-4 pt-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Password Baru (Min 6 Karakter)</label>
+                <input type="password" x-model="passwordForm.newPassword" placeholder="••••••••" class="w-full py-2.5 px-3.5 rounded-xl text-xs glass-input text-slate-800" required>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Konfirmasi Password Baru</label>
+                <input type="password" x-model="passwordForm.confirmPassword" placeholder="••••••••" class="w-full py-2.5 px-3.5 rounded-xl text-xs glass-input text-slate-800" required>
+              </div>
+              <button type="submit" :disabled="isSubmitting" class="w-full py-3 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2">
+                <span x-text="isSubmitting ? 'Memproses...' : 'Simpan & Lanjutkan'"></span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- MAIN DASHBOARD SHELL (HEADER & SIDEBAR) -->
+        <div class="flex flex-1 min-h-screen relative">
+
+          <!-- STICKY SIDEBAR (DESKTOP) -->
+          <aside class="hidden md:flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 z-30"
+                 :class="sidebarExpanded ? 'w-64' : 'w-20'">
+            
+            <!-- Sidebar Header Brand -->
+            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+              <div class="flex items-center gap-3 overflow-hidden" x-show="sidebarExpanded">
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white flex-shrink-0">
+                  <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                </div>
+                <div class="truncate">
+                  <div class="font-bold text-sm leading-tight text-white truncate">AL-UMM PSB</div>
+                  <div class="text-[10px] text-emerald-400 font-medium">Portal Santri</div>
+                </div>
+              </div>
+              <button @click="sidebarExpanded = !sidebarExpanded; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                      class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white mx-auto">
+                <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <!-- Profile Mini Card -->
+            <div class="p-4 border-b border-slate-800/60 bg-slate-900/40" x-show="sidebarExpanded">
+              <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+              <div class="text-[10px] text-amber-400 font-mono mt-0.5" x-text="currentUser.regNo"></div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+              <template x-for="item in [
+                { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
+                { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
+                { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
+                { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
+                { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
+                { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
+                { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
+              ]" :key="item.id">
+                <button @click="activeTab = item.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        :class="activeTab === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                  <i :data-lucide="item.icon" class="w-5 h-5 flex-shrink-0"></i>
+                  <span x-show="sidebarExpanded" class="truncate" x-text="item.label"></span>
+                </button>
+              </template>
+
+              <!-- Helpdesk External WA Direct Link Button -->
+              <a :href="'https://wa.me/' + (dashData.config.HELPDESK_WA || '6281234567890') + '?text=Assalamu%27alaikum%20Helpdesk%20PSB%20Al-Umm%20(' + currentUser.regNo + ')'"
+                 target="_blank"
+                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-emerald-400 hover:bg-emerald-950/40 border border-emerald-800/40 transition mt-4">
+                <i data-lucide="message-square" class="w-5 h-5 flex-shrink-0"></i>
+                <span x-show="sidebarExpanded" class="truncate">Helpdesk WA</span>
+              </a>
+            </nav>
+
+            <!-- Logout Bottom Button -->
+            <div class="p-3 border-t border-slate-800">
+              <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition">
+                <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+                <span x-show="sidebarExpanded" class="truncate">Keluar Akun</span>
+              </button>
+            </div>
+
+          </aside>
+
+          <!-- MOBILE DRAWER SIDEBAR -->
+          <div x-show="sidebarMobileOpen" 
+               class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden"
+               @click="sidebarMobileOpen = false"></div>
+          
+          <aside x-show="sidebarMobileOpen" 
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="-translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="-translate-x-full"
+                 class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col justify-between md:hidden">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="font-bold text-sm text-white">PSB AL-UMM</div>
+                <button @click="sidebarMobileOpen = false" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+                <div class="text-[10px] text-amber-400 font-mono" x-text="currentUser.regNo"></div>
+              </div>
+              <nav class="space-y-1">
+                <template x-for="item in [
+                  { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
+                  { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
+                  { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
+                  { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
+                  { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
+                  { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
+                  { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
+                ]" :key="'mob-' + item.id">
+                  <button @click="activeTab = item.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                          :class="activeTab === item.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                    <i :data-lucide="item.icon" class="w-5 h-5"></i>
+                    <span x-text="item.label"></span>
+                  </button>
+                </template>
+              </nav>
+            </div>
+            <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+              <span>Keluar</span>
+            </button>
+          </aside>
+
+          <!-- TOP HEADER BAR & MAIN CONTENT WRAPPER -->
+          <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Top Navbar -->
+            <header class="h-16 border-b border-slate-800 bg-slate-950/60 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
+              <div class="flex items-center gap-3">
+                <button @click="sidebarMobileOpen = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                        class="md:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white">
+                  <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h2 class="text-sm md:text-base font-bold text-white capitalize" x-text="activeTab.replace('_', ' ')"></h2>
+              </div>
+
+              <!-- Status Badge Top Header -->
+              <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px]">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  <span class="text-slate-300 font-medium" x-text="currentUser.jalur + ' - ' + currentUser.jenjang"></span>
+                </div>
+                <button @click="fetchDashboardData()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white" title="Refresh Data">
+                  <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin' : ''"></i>
+                </button>
+              </div>
+            </header>
+
+            <!-- MAIN CONTENT DISPLAY BODY -->
+            <main class="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+
+              <!-- ==================================================== -->
+              <!-- TAB 1: HOME OVERVIEW                                 -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'home'" class="space-y-6">
+                <!-- Welcome Banner -->
+                <div class="p-6 rounded-3xl bg-gradient-to-r from-emerald-900 via-brand-800 to-teal-950 border border-emerald-700/40 relative overflow-hidden shadow-xl">
+                  <div class="relative z-10 space-y-2">
+                    <span class="px-2.5 py-1 rounded-full bg-white/10 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Dashboard Calon Santri</span>
+                    <h3 class="text-xl md:text-2xl font-extrabold text-white">
+                      Assalamu'alaikum, <span x-text="currentUser.namaLengkap"></span>!
+                    </h3>
+                    <p class="text-xs text-emerald-100/80 max-w-2xl leading-relaxed">
+                      Selamat datang di Portal Pendaftaran Santri Baru Pondok Pesantren Al-Umm. Silakan lengkapi tahapan pendaftaran di bawah ini.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Overall Progress Checklist Card -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="font-bold text-sm text-white">Progress Pendaftaran Anda</h4>
+                      <p class="text-xs text-slate-400">Tahapan kelengkapan pendaftaran santri baru</p>
+                    </div>
+                    <span class="text-lg font-extrabold text-emerald-400" x-text="getOverallProgress() + '%'"></span>
+                  </div>
+
+                  <!-- Progress Bar -->
+                  <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-brand-500 to-emerald-400 h-full transition-all duration-500" :style="'width: ' + getOverallProgress() + '%'"></div>
+                  </div>
+
+                  <!-- Checklist Grid -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-2">
+                    <div class="p-3 rounded-xl border flex items-center gap-3 text-xs" :class="currentUser.isPasswordChanged ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'">
+                      <i :data-lucide="currentUser.isPasswordChanged ? 'check-circle-2' : 'circle'" class="w-4 h-4 flex-shrink-0"></i>
+                      <span>Ganti Password</span>
+                    </div>
+
+                    <div class="p-3 rounded-xl border flex items-center gap-3 text-xs" :class="dashData.payments.pendaftaran.status === 'VERIFIED' ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'">
+                      <i :data-lucide="dashData.payments.pendaftaran.status === 'VERIFIED' ? 'check-circle-2' : 'circle'" class="w-4 h-4 flex-shrink-0"></i>
+                      <span>Pembayaran</span>
+                    </div>
+
+                    <div class="p-3 rounded-xl border flex items-center gap-3 text-xs" :class="dashData.biodata.isLocked ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'">
+                      <i :data-lucide="dashData.biodata.isLocked ? 'check-circle-2' : 'circle'" class="w-4 h-4 flex-shrink-0"></i>
+                      <span>Biodata Santri</span>
+                    </div>
+
+                    <div class="p-3 rounded-xl border flex items-center gap-3 text-xs" :class="dashData.documents.NISN && dashData.documents.NISN.status === 'VERIFIED' ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'">
+                      <i :data-lucide="dashData.documents.NISN && dashData.documents.NISN.status === 'VERIFIED' ? 'check-circle-2' : 'circle'" class="w-4 h-4 flex-shrink-0"></i>
+                      <span>Upload Berkas</span>
+                    </div>
+
+                    <div class="p-3 rounded-xl border flex items-center gap-3 text-xs" :class="dashData.announcement.status !== 'MENUNGGU' ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'">
+                      <i :data-lucide="dashData.announcement.status !== 'MENUNGGU' ? 'check-circle-2' : 'circle'" class="w-4 h-4 flex-shrink-0"></i>
+                      <span>Ujian & Hasil</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- WA Group Unlocked Banner Stage 1 -->
+                <div x-show="dashData.payments.pendaftaran.status === 'VERIFIED'" class="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-between gap-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                      <i data-lucide="message-square-plus" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-white">Grup WhatsApp Tahap 1 Terbuka!</div>
+                      <div class="text-[11px] text-emerald-200/80">Pembayaran diisi & diverifikasi. Silakan bergabung ke grup koordinasi peserta.</div>
+                    </div>
+                  </div>
+                  <a :href="dashData.config.WA_GROUP_STAGE1 || '#'" target="_blank" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex-shrink-0 transition">
+                    Gabung Grup WA
+                  </a>
+                </div>
+              </div>
+
+              <!-- ==================================================== -->
+              <!-- TAB 2: PEMBAYARAN                                    -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'pembayaran'" class="space-y-6">
+                <!-- Sub Tab Switcher -->
+                <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <button @click="paymentSubTab = 'pendaftaran'" class="px-4 py-2 rounded-xl text-xs font-bold transition" :class="paymentSubTab === 'pendaftaran' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'">
+                    Biaya Pendaftaran
+                  </button>
+                  <button @click="paymentSubTab = 'daftarUlang'" class="px-4 py-2 rounded-xl text-xs font-bold transition" :class="paymentSubTab === 'daftarUlang' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'">
+                    Biaya Daftar Ulang
+                  </button>
+                </div>
+
+                <!-- Bank Info Card -->
+                <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Bank Transfer</span>
+                    <div class="text-sm font-extrabold text-white" x-text="dashData.config.BANK_NAME || 'BSI'"></div>
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Nomor Rekening</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-base font-extrabold text-amber-400 font-mono" x-text="dashData.config.BANK_ACCOUNT_NO || '7123456789'"></span>
+                      <button @click="copyToClipboard(dashData.config.BANK_ACCOUNT_NO, 'No Rekening')" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Atas Nama</span>
+                    <div class="text-xs font-bold text-slate-200" x-text="dashData.config.BANK_ACCOUNT_NAME || 'Ponpes Al-Umm'"></div>
+                  </div>
+                </div>
+
+                <!-- Payment Status & Upload Section -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                      <h4 class="font-bold text-sm text-white" x-text="paymentSubTab === 'pendaftaran' ? 'Upload Bukti Pembayaran Pendaftaran' : 'Upload Bukti Pembayaran Daftar Ulang'"></h4>
+                      <p class="text-xs text-slate-400">Format Gambar / PDF (Maksimal 2 MB)</p>
+                    </div>
+                    <!-- Status Badge -->
+                    <span class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase border"
+                          :class="{
+                            'bg-emerald-950/60 text-emerald-300 border-emerald-800': dashData.payments[paymentSubTab].status === 'VERIFIED',
+                            'bg-amber-950/60 text-amber-300 border-amber-800': dashData.payments[paymentSubTab].status === 'PENDING',
+                            'bg-rose-950/60 text-rose-300 border-rose-800': dashData.payments[paymentSubTab].status === 'REVISION',
+                            'bg-slate-800 text-slate-400 border-slate-700': dashData.payments[paymentSubTab].status === 'BELUM_UPLOAD'
+                          }"
+                          x-text="dashData.payments[paymentSubTab].status"></span>
+                  </div>
+
+                  <!-- Upload Controls -->
+                  <div class="space-y-3">
+                    <template x-if="dashData.payments[paymentSubTab].proofUrl">
+                      <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                        <span class="text-xs text-slate-300 font-mono truncate" x-text="dashData.payments[paymentSubTab].proofFileName || 'Bukti Transfer'"></span>
+                        <a :href="dashData.payments[paymentSubTab].proofUrl" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5">
+                          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          <span>Lihat Bukti Tf</span>
+                        </a>
+                      </div>
+                    </template>
+
+                    <label class="block">
+                      <input type="file" @change="handleFileUpload($event, 'payment', paymentSubTab.toUpperCase())" accept="image/*,.pdf" class="hidden" id="payInput">
+                      <button type="button" @click="document.getElementById('payInput').click()" :disabled="isSubmitting" class="w-full py-3.5 rounded-xl border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-900/50 hover:bg-slate-900 text-slate-300 font-bold text-xs flex items-center justify-center gap-2 transition">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-emerald-400"></i>
+                        <span x-text="isSubmitting ? 'Mengunggah Berkas...' : 'Pilih File (Gambar/PDF <= 2MB)'"></span>
+                      </button>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ==================================================== -->
+              <!-- TAB 3: BIODATA                                       -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'biodata'" class="space-y-6">
+                <!-- Completion Progress Header -->
+                <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-sm text-white">Kelengkapan Biodata</h4>
+                    <p class="text-xs text-slate-400">Isi seluruh data santri, ayah, dan ibu secara valid.</p>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-sm font-extrabold text-emerald-400" x-text="getBiodataFilledCount() + '%'"></span>
+                    <span x-show="dashData.biodata.isLocked" class="block text-[10px] text-amber-400 font-bold">TERKUNCI</span>
+                  </div>
+                </div>
+
+                <form @submit.prevent="handleSaveBiodata(true)" class="space-y-6">
+                  <!-- Data Santri -->
+                  <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                    <h5 class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2">1. Data Santri</h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <label class="block text-slate-400 mb-1">NIK Santri</label>
+                        <input type="text" x-model="dashData.biodata.nikSantri" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold" placeholder="351234...">
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">NISN</label>
+                        <input type="text" x-model="dashData.biodata.nisn" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold" placeholder="001234...">
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">Tempat Lahir</label>
+                        <input type="text" x-model="dashData.biodata.tempatLahir" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">Tanggal Lahir</label>
+                        <input type="date" x-model="dashData.biodata.tanggalLahir" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">Anak Ke-</label>
+                        <input type="number" x-model="dashData.biodata.anakKe" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">Jumlah Saudara</label>
+                        <input type="number" x-model="dashData.biodata.jumlahSaudara" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                      </div>
+                      <div class="sm:col-span-2 md:col-span-3">
+                        <label class="block text-slate-400 mb-1">Alamat Lengkap (Sesuai KK)</label>
+                        <textarea x-model="dashData.biodata.alamatLengkap" :disabled="dashData.biodata.isLocked" rows="2" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Data Ayah & Ibu -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Data Ayah -->
+                    <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                      <h5 class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2">2. Data Ayah Kandung</h5>
+                      <div class="space-y-3 text-xs">
+                        <div>
+                          <label class="block text-slate-400 mb-1">Nama Ayah</label>
+                          <input type="text" x-model="dashData.biodata.namaAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1">NIK Ayah</label>
+                          <input type="text" x-model="dashData.biodata.nikAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1">Pekerjaan Ayah</label>
+                          <input type="text" x-model="dashData.biodata.pekerjaanAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1">No WA Ayah</label>
+                          <input type="text" x-model="dashData.biodata.noWaAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Data Ibu -->
+                    <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                      <h5 class="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800 pb-2">3. Data Ibu Kandung</h5>
+                      <div class="space-y-3 text-xs">
+                        <div>
+                          <label class="block text-slate-400 mb-1">Nama Ibu</label>
+                          <input type="text" x-model="dashData.biodata.namaIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1">NIK Ibu</label>
+                          <input type="text" x-model="dashData.biodata.nikIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1">Pekerjaan Ibu</label>
+                          <input type="text" x-model="dashData.biodata.pekerjaanIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1">No WA Ibu</label>
+                          <input type="text" x-model="dashData.biodata.noWaIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Save / Lock / Revision Buttons -->
+                  <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                    <template x-if="!dashData.biodata.isLocked">
+                      <div class="flex items-center gap-2">
+                        <button type="button" @click="handleSaveBiodata(false)" :disabled="isSubmitting" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs">
+                          Simpan Draft
+                        </button>
+                        <button type="submit" :disabled="isSubmitting" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+                          Simpan & Kunci Biodata
+                        </button>
+                      </div>
+                    </template>
+
+                    <template x-if="dashData.biodata.isLocked">
+                      <button type="button" @click="showRevisionModal = true" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md flex items-center gap-2">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        <span>Ajukan Revisi Biodata</span>
+                      </button>
+                    </template>
+                  </div>
+                </form>
+              </div>
+
+              <!-- ==================================================== -->
+              <!-- TAB 4: UPLOAD BERKAS                                 -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'upload_berkas'" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <template x-for="(info, key) in docLabels" :key="key">
+                    <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-3">
+                      <div>
+                        <div class="flex items-center justify-between mb-1">
+                          <span class="text-xs font-bold text-white truncate" x-text="info.title"></span>
+                          <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase"
+                                :class="dashData.documents[key] && dashData.documents[key].status === 'VERIFIED' ? 'bg-emerald-900 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+                                x-text="dashData.documents[key] ? dashData.documents[key].status : 'BELUM_UPLOAD'"></span>
+                        </div>
+                        <p class="text-[10px] text-slate-400" x-text="info.desc"></p>
+                      </div>
+
+                      <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                        <template x-if="dashData.documents[key] && dashData.documents[key].fileUrl">
+                          <a :href="dashData.documents[key].fileUrl" target="_blank" class="w-full py-1.5 px-2 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 font-bold text-[11px] flex items-center justify-center gap-1 border border-emerald-800/40">
+                            <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+                            <span>Lihat Berkas</span>
+                          </a>
+                        </template>
+
+                        <label class="block">
+                          <input type="file" @change="handleFileUpload($event, 'doc', key)" accept="image/*,.pdf" class="hidden" :id="'doc-' + key">
+                          <button type="button" @click="document.getElementById('doc-' + key).click()" :disabled="isSubmitting" class="w-full py-1.5 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 border border-slate-800">
+                            <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span>Upload (<=2MB)</span>
+                          </button>
+                        </label>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- ==================================================== -->
+              <!-- TAB 5: UJIAN TES                                     -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'ujian_tes'" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <!-- Ujian Akademik (Online) -->
+                  <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i data-lucide="laptop" class="w-5 h-5"></i>
+                      </div>
+                      <div>
+                        <h4 class="font-bold text-sm text-white">1. Ujian Akademik (Online)</h4>
+                        <p class="text-xs text-slate-400">Tes Potensi Akademik CBT</p>
+                      </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Username CBT:</span>
+                        <span class="font-mono font-bold text-emerald-400" x-text="dashData.exam.cbtUsername"></span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Password CBT:</span>
+                        <span class="font-mono font-bold text-amber-400" x-text="dashData.exam.cbtPassword"></span>
+                      </div>
+                    </div>
+
+                    <a :href="dashData.exam.cbtUrl || '#'" target="_blank" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-2">
+                      <i data-lucide="external-link" class="w-4 h-4"></i>
+                      <span>Masuk Portal Ujian CBT</span>
+                    </a>
+                  </div>
+
+                  <!-- Ujian Wawancara (Offline) -->
+                  <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <i data-lucide="users-2" class="w-5 h-5"></i>
+                      </div>
+                      <div>
+                        <h4 class="font-bold text-sm text-white">2. Ujian Wawancara (Offline)</h4>
+                        <p class="text-xs text-slate-400">Tatap Muka & Tes Al-Qur'an</p>
+                      </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
+                      <div class="text-slate-400">Lokasi Ujian:</div>
+                      <div class="font-bold text-white" x-text="dashData.exam.wawancaraLocation"></div>
+                      <div class="text-[11px] text-slate-400 mt-2" x-text="dashData.exam.instructions"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                      <a :href="dashData.exam.mapsUrl" target="_blank" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-1.5">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i>
+                        <span>Google Maps</span>
+                      </a>
+                      <a :href="dashData.exam.letterUrl || '#'" target="_blank" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Surat Edaran</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ==================================================== -->
+              <!-- TAB 6: PENGUMUMAN                                    -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'pengumuman'" class="space-y-6">
+                <div class="p-8 rounded-3xl bg-slate-950 border border-slate-800 text-center space-y-4 max-w-2xl mx-auto">
+                  <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-white"
+                       :class="{
+                         'bg-emerald-500/20 text-emerald-400': dashData.announcement.status === 'LULUS',
+                         'bg-amber-500/20 text-amber-400': dashData.announcement.status === 'CADANGAN',
+                         'bg-rose-500/20 text-rose-400': dashData.announcement.status === 'TIDAK_LULUS',
+                         'bg-slate-800 text-slate-400': dashData.announcement.status === 'MENUNGGU'
+                       }">
+                    <i data-lucide="award" class="w-8 h-8"></i>
+                  </div>
+
+                  <h3 class="text-xl font-extrabold text-white uppercase tracking-wide" x-text="'STATUS: ' + dashData.announcement.status"></h3>
+                  <p class="text-xs text-slate-400 leading-relaxed" x-text="dashData.announcement.notes || 'Hasil seleksi akan diumumkan sesuai jadwal.'"></p>
+
+                  <template x-if="dashData.announcement.status === 'LULUS'">
+                    <a :href="dashData.announcement.waGroupLink2 || '#'" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs shadow-lg transition">
+                      <i data-lucide="message-square-check" class="w-4 h-4"></i>
+                      <span>Gabung Grup WA Tahap 2 (Santri Diterima)</span>
+                    </a>
+                  </template>
+                </div>
+              </div>
+
+              <!-- ==================================================== -->
+              <!-- TAB 7: PENGATURAN                                    -->
+              <!-- ==================================================== -->
+              <div x-show="activeTab === 'pengaturan'" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <!-- Ubah Password -->
+                  <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                    <h4 class="font-bold text-sm text-white border-b border-slate-800 pb-2">Ubah Password Akun</h4>
+                    <form @submit.prevent="handleForceChangePassword()" class="space-y-3 text-xs">
+                      <div>
+                        <label class="block text-slate-400 mb-1">Password Lama</label>
+                        <input type="password" x-model="passwordForm.oldPassword" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold" required>
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">Password Baru</label>
+                        <input type="password" x-model="passwordForm.newPassword" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold" required>
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1">Konfirmasi Password Baru</label>
+                        <input type="password" x-model="passwordForm.confirmPassword" class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold" required>
+                      </div>
+                      <button type="submit" :disabled="isSubmitting" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md">
+                        Update Password
+                      </button>
+                    </form>
+                  </div>
+
+                  <!-- Pengajuan Mundur -->
+                  <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                    <h4 class="font-bold text-sm text-rose-400 border-b border-slate-800 pb-2">Pengunduran Diri</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                      Jika Anda bermaksud membatalkan pendaftaran santri baru, silakan tuliskan alasan Anda di bawah ini.
+                    </p>
+                    <div class="space-y-3 text-xs">
+                      <textarea x-model="resignReason" rows="3" placeholder="Tuliskan alasan pengunduran diri..." class="w-full p-2.5 rounded-xl glass-input text-slate-800 font-semibold"></textarea>
+                      <button type="button" @click="handleResign()" :disabled="isSubmitting" class="w-full py-2.5 rounded-xl bg-rose-900/60 hover:bg-rose-900 text-rose-200 border border-rose-800 font-bold">
+                        Kirim Permohonan Mundur
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </main>
+          </div>
+        </div>
+
+        <!-- REVISION REASON MODAL -->
+        <div x-show="showRevisionModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white text-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+            <h4 class="font-bold text-sm text-slate-900">Ajukan Revisi Biodata</h4>
+            <p class="text-xs text-slate-500">Tuliskan bagian biodata yang ingin dikoreksi beserta alasannya.</p>
+            <textarea x-model="revisionReason" rows="3" class="w-full p-2.5 rounded-xl glass-input text-xs text-slate-800 font-semibold" placeholder="Contoh: Salah mengisikan NIK Ayah..."></textarea>
+            <div class="flex justify-end gap-2">
+              <button type="button" @click="showRevisionModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">Batal</button>
+              <button type="button" @click="handleRequestBiodataRevision()" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">Kirim Pengajuan</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </template>
 
     <!-- HELP / FORGOT PASSWORD MODAL UI -->
     <div x-show="showHelpModal" x-transition 
@@ -1163,6 +1794,75 @@
           }
         },
 
+        isLoggedIn: false,
+        currentUser: null,
+        activeTab: 'home',
+        sidebarExpanded: true,
+        sidebarMobileOpen: false,
+        isDashLoading: false,
+
+        paymentSubTab: 'pendaftaran',
+        showRevisionModal: false,
+        revisionReason: '',
+        resignReason: '',
+
+        passwordForm: {
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        },
+
+        dashData: {
+          config: {},
+          biodata: {
+            nikSantri: '', nisn: '', tempatLahir: '', tanggalLahir: '', anakKe: '', jumlahSaudara: '',
+            hobi: '', citaCita: '', alamatLengkap: '', namaAyah: '', nikAyah: '', pekerjaanAyah: '', noWaAyah: '',
+            namaIbu: '', nikIbu: '', pekerjaanIbu: '', noWaIbu: '', isLocked: false, revisionStatus: 'NONE', revisionNote: ''
+          },
+          payments: {
+            pendaftaran: { status: 'BELUM_UPLOAD', proofUrl: '', note: '', amount: '250000' },
+            daftarUlang: { status: 'BELUM_UPLOAD', proofUrl: '', note: '', amount: '5000000' }
+          },
+          documents: {
+            NISN: { status: 'BELUM_UPLOAD' }, KK: { status: 'BELUM_UPLOAD' }, AKTA: { status: 'BELUM_UPLOAD' },
+            SURAT_AKTIF: { status: 'BELUM_UPLOAD' }, PAS_FOTO: { status: 'BELUM_UPLOAD' }, RAPOR: { status: 'BELUM_UPLOAD' },
+            KTP_AYAH: { status: 'BELUM_UPLOAD' }, KTP_IBU: { status: 'BELUM_UPLOAD' }
+          },
+          exam: {
+            cbtUrl: '', cbtUsername: '', cbtPassword: '',
+            academicSchedule: '', wawancaraSchedule: '', wawancaraLocation: 'Aula Utama Ponpes Al-Umm',
+            mapsUrl: 'https://maps.google.com', letterUrl: '', instructions: 'Hadir 15 menit sebelum ujian & mengenakan pakaian islami rapi.'
+          },
+          announcement: {
+            status: 'MENUNGGU', waGroupLink2: '', notes: 'Hasil pengumuman belum dirilis oleh panitia.', releasedAt: ''
+          }
+        },
+
+        docLabels: {
+          NISN: { title: 'NISN Santri', desc: 'Kartu NISN atau Cetak NISN Kemdikbud' },
+          KK: { title: 'Kartu Keluarga (KK)', desc: 'Scan KK keluarga asal santri' },
+          AKTA: { title: 'Akta Kelahiran', desc: 'Scan Akta Asli' },
+          SURAT_AKTIF: { title: 'Surat Ket. Aktif Belajar', desc: 'Dari sekolah asal/terakhir' },
+          PAS_FOTO: { title: 'Pas Foto Santri', desc: 'Latar Belakang Merah/Biru Rapi' },
+          RAPOR: { title: 'Scan Rapor Terakhir', desc: 'Halaman identitas & nilai semester akhir' },
+          KTP_AYAH: { title: 'KTP Ayah Kandung', desc: 'Scan e-KTP Ayah' },
+          KTP_IBU: { title: 'KTP Ibu Kandung', desc: 'Scan e-KTP Ibu' }
+        },
+
+        copyToClipboard(txt, label) {
+          if (!txt) return;
+          navigator.clipboard.writeText(txt);
+          this.showToast((label || 'Teks') + ' berhasil disalin!', 'success');
+        },
+
+        logout() {
+          this.isLoggedIn = false;
+          this.currentUser = null;
+          this.mode = 'login';
+          this.showToast('Anda telah keluar.', 'success');
+          this.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+        },
+
         handleLogin() {
           var self = this;
           this.isSubmitting = true;
@@ -1173,8 +1873,10 @@
           .then(function(res) {
             self.isSubmitting = false;
             if (res.ok) {
-              self.showToast('Login Berhasil! Role: ' + res.data.role, 'success');
-              // Siap untuk pengalihan ke dashboard di tahap selanjutnya
+              self.currentUser = res.data;
+              self.isLoggedIn = true;
+              self.showToast('Login Berhasil!', 'success');
+              self.fetchDashboardData();
             } else {
               self.showToast(res.message || 'Login gagal');
             }
@@ -1183,6 +1885,214 @@
             self.isSubmitting = false;
             self.showToast(err.message || 'Terjadi kesalahan jaringan.');
           });
+        },
+
+        fetchDashboardData() {
+          if (!this.currentUser || !this.currentUser.regNo) return;
+          var self = this;
+          this.isDashLoading = true;
+          this.postRequest('getStudentDashboard', { regNo: this.currentUser.regNo })
+            .then(function(res) {
+              self.isDashLoading = false;
+              if (res.ok && res.data) {
+                self.dashData = Object.assign({}, self.dashData, res.data);
+                if (res.data.user) {
+                  self.currentUser = Object.assign({}, self.currentUser, res.data.user);
+                }
+              }
+              self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+            })
+            .catch(function(err) {
+              self.isDashLoading = false;
+              self.showToast('Gagal memuat dashboard: ' + err.message);
+            });
+        },
+
+        handleForceChangePassword() {
+          if (!this.passwordForm.newPassword || this.passwordForm.newPassword.length < 6) {
+            this.showToast('Password baru minimal 6 karakter.');
+            return;
+          }
+          if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+            this.showToast('Konfirmasi password tidak cocok.');
+            return;
+          }
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('changePassword', {
+            regNo: this.currentUser.regNo,
+            oldPassword: this.passwordForm.oldPassword,
+            newPassword: this.passwordForm.newPassword
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.currentUser.isPasswordChanged = true;
+              self.passwordForm = { oldPassword: '', newPassword: '', confirmPassword: '' };
+              self.showToast('Password berhasil diperbarui!', 'success');
+              self.fetchDashboardData();
+            } else {
+              self.showToast(res.message || 'Gagal mengubah password.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleFileUpload(event, uploadType, docType) {
+          var file = event.target.files[0];
+          if (!file) return;
+
+          // Limit Max 2 MB
+          if (file.size > 2 * 1024 * 1024) {
+            this.showToast('Ukuran file maksimal adalah 2 MB.');
+            event.target.value = '';
+            return;
+          }
+
+          var self = this;
+          this.isSubmitting = true;
+
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var base64Data = e.target.result.split(',')[1];
+            var actionName = uploadType === 'payment' ? 'uploadPaymentProof' : 'uploadDocument';
+            var payload = {
+              regNo: self.currentUser.regNo,
+              fileName: file.name,
+              mimeType: file.type,
+              fileData: base64Data,
+              type: docType,
+              docType: docType,
+              amount: uploadType === 'payment' ? (self.dashData.payments[docType.toLowerCase()] ? self.dashData.payments[docType.toLowerCase()].amount : '') : ''
+            };
+
+            self.postRequest(actionName, payload)
+              .then(function(res) {
+                self.isSubmitting = false;
+                event.target.value = '';
+                if (res.ok) {
+                  self.showToast('Berkas berhasil diunggah!', 'success');
+                  self.fetchDashboardData();
+                } else {
+                  self.showToast(res.message || 'Gagal mengunggah berkas.');
+                }
+              })
+              .catch(function(err) {
+                self.isSubmitting = false;
+                event.target.value = '';
+                self.showToast(err.message || 'Gagal terhubung ke server.');
+              });
+          };
+          reader.readAsDataURL(file);
+        },
+
+        handleSaveBiodata(lock) {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('saveBiodata', {
+            regNo: this.currentUser.regNo,
+            biodata: this.dashData.biodata,
+            lock: lock
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showToast(lock ? 'Biodata berhasil disimpan & dikunci!' : 'Draft biodata tersimpan.', 'success');
+              self.fetchDashboardData();
+            } else {
+              self.showToast(res.message || 'Gagal menyimpan biodata.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleRequestBiodataRevision() {
+          if (!this.revisionReason.trim()) {
+            this.showToast('Silakan tuliskan alasan revisi biodata.');
+            return;
+          }
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('requestBiodataRevision', {
+            regNo: this.currentUser.regNo,
+            note: this.revisionReason
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showRevisionModal = false;
+              self.revisionReason = '';
+              self.showToast('Permohonan revisi terkirim ke panitia.', 'success');
+              self.fetchDashboardData();
+            } else {
+              self.showToast(res.message || 'Gagal mengajukan revisi.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleResign() {
+          if (!this.resignReason.trim()) {
+            this.showToast('Silakan tuliskan alasan pengunduran diri.');
+            return;
+          }
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('resignStudent', {
+            regNo: this.currentUser.regNo,
+            reason: this.resignReason
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.resignReason = '';
+              self.showToast('Permohonan pengunduran diri terkirim.', 'success');
+              self.fetchDashboardData();
+            } else {
+              self.showToast(res.message || 'Gagal mengirim permohonan.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        getBiodataFilledCount() {
+          var b = this.dashData.biodata || {};
+          var fields = ['nikSantri', 'nisn', 'tempatLahir', 'tanggalLahir', 'alamatLengkap', 'namaAyah', 'nikAyah', 'namaIbu', 'nikIbu'];
+          var count = 0;
+          for (var i = 0; i < fields.length; i++) {
+            if (b[fields[i]] && b[fields[i]].toString().trim()) count++;
+          }
+          return Math.round((count / fields.length) * 100);
+        },
+
+        getOverallProgress() {
+          var step = 0;
+          if (this.currentUser && this.currentUser.isPasswordChanged) step += 20;
+          if (this.dashData.payments && this.dashData.payments.pendaftaran && this.dashData.payments.pendaftaran.status === 'VERIFIED') step += 20;
+          if (this.dashData.biodata && (this.dashData.biodata.isLocked || this.getBiodataFilledCount() === 100)) step += 20;
+          
+          var docs = this.dashData.documents || {};
+          var verifiedDocs = 0;
+          var docKeys = Object.keys(docs);
+          for (var d = 0; d < docKeys.length; d++) {
+            if (docs[docKeys[d]] && docs[docKeys[d]].status === 'VERIFIED') verifiedDocs++;
+          }
+          if (docKeys.length > 0 && verifiedDocs === docKeys.length) step += 20;
+          if (this.dashData.announcement && this.dashData.announcement.status !== 'MENUNGGU') step += 20;
+
+          return step;
         },
 
         handleRegisterStepSubmit() {
