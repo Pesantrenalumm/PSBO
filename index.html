@@ -1682,89 +1682,77 @@
                                   <h5 class="font-bold text-slate-800 leading-snug" x-text="doc.label"></h5>
                                   <span class="px-2 py-0.5 rounded font-bold text-[10px] flex-shrink-0" :class="getDocStatusBadgeClass(doc.key)" x-text="getDocStatusLabel(doc.key)"></span>
                                 </div>
-                                <p class="text-[11px] text-slate-600 leading-relaxed" x-text="doc.desc"></p>
+                                <p class="text-[11px] text-slate-600 leading-relaxed whitespace-pre-line" x-text="doc.desc"></p>
                               </div>
 
-                              <!-- IF FILE HAS BEEN UPLOADED & NOT IN REPLACE MODE -->
-                              <template x-if="isDocUploaded(doc.key) && !isReplaceMode(doc.key)">
-                                <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5">
-                                  <div class="flex items-center space-x-2 text-emerald-800">
-                                    <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-600 flex-shrink-0"></i>
-                                    <span class="font-bold truncate text-[11px]" x-text="getDocObject(doc.key).fileName || 'File Berkas'"></span>
-                                  </div>
+                              <!-- CASE 1: File SUDAH diunggah dan tidak dalam mode ganti -->
+                              <div x-show="isDocUploaded(doc.key) && !isReplaceMode(doc.key)" class="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 mt-2">
+                                <div class="flex items-center space-x-2 text-emerald-800">
+                                  <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-600 flex-shrink-0"></i>
+                                  <span class="font-bold truncate text-[11px]" x-text="getDocObject(doc.key).fileName || 'File Berkas'"></span>
+                                </div>
 
-                                  <div class="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-100 pt-2">
-                                    <span>Ukuran: <strong x-text="getDocObject(doc.key).fileSizeFormatted || '-'"></strong></span>
-                                    <span x-text="getDocObject(doc.key).uploadedAt ? 'Diunggah: ' + new Date(getDocObject(doc.key).uploadedAt).toLocaleDateString('id-ID') : ''"></span>
-                                  </div>
+                                <div class="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-100 pt-2">
+                                  <span>Ukuran: <strong x-text="getDocObject(doc.key).fileSizeFormatted || '-'"></strong></span>
+                                  <span x-text="getDocObject(doc.key).uploadedAt ? 'Diunggah: ' + new Date(getDocObject(doc.key).uploadedAt).toLocaleDateString('id-ID') : ''"></span>
+                                </div>
 
-                                  <div class="pt-1 flex items-center space-x-2">
-                                    <a :href="getDocObject(doc.key).url" target="_blank" 
-                                       class="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-center font-bold text-xs shadow transition flex items-center justify-center space-x-1.5">
-                                      <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                      <span>Lihat Berkas</span>
-                                    </a>
-                                    <button type="button" @click="toggleReplaceMode(doc.key, true)" 
-                                            class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs transition flex items-center space-x-1">
-                                      <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                                      <span>Ganti</span>
-                                    </button>
+                                <div class="pt-1 flex items-center space-x-2">
+                                  <a :href="getDocObject(doc.key).url" target="_blank" 
+                                     class="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-center font-bold text-xs shadow transition flex items-center justify-center space-x-1.5">
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                    <span>Lihat Berkas</span>
+                                  </a>
+                                  <button type="button" @click="toggleReplaceMode(doc.key, true)" 
+                                          class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs transition flex items-center space-x-1">
+                                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                    <span>Ganti Berkas</span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              <!-- CASE 2: File BELUM diunggah ATAU sedang dalam mode ganti -->
+                              <div x-show="!isDocUploaded(doc.key) || isReplaceMode(doc.key)" class="space-y-3 pt-2 border-t border-slate-200 mt-2">
+                                <div>
+                                  <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Pilih File (Gambar/PDF, Maks 2MB):</label>
+                                  <input type="file" :accept="doc.accept" @change="handleFileSelect(doc.key, $event)"
+                                         class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                </div>
+
+                                <!-- Indikator Ukuran File & Validasi Realtime -->
+                                <div x-show="getSelectedFile(doc.key)" class="p-2.5 rounded-xl text-[11px] font-medium"
+                                     :class="getSelectedFile(doc.key) && getSelectedFile(doc.key).isValid ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'">
+                                  <div class="flex items-center justify-between">
+                                    <span>Ukuran file: <strong x-text="getSelectedFile(doc.key) ? getSelectedFile(doc.key).sizeStr : ''"></strong></span>
+                                    <span class="font-bold" x-text="getSelectedFile(doc.key) && getSelectedFile(doc.key).isValid ? '✅ Ukuran Sesuai (< 2MB)' : '❌ Melebihi 2MB'"></span>
+                                  </div>
+                                  <div x-show="getSelectedFile(doc.key) && !getSelectedFile(doc.key).isValid" class="text-[10px] text-red-600 font-bold mt-1">
+                                    ⚠️ Ukuran file melebihi 2 MB! Silakan kompres atau pilih file yang lebih kecil.
                                   </div>
                                 </div>
-                              </template>
 
-                              <!-- IF FILE NOT UPLOADED YET OR IN REPLACE MODE -->
-                              <template x-if="!isDocUploaded(doc.key) || isReplaceMode(doc.key)">
-                                <div class="space-y-3 pt-2 border-t border-slate-200">
-                                  <div>
-                                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Pilih File (Maksimal 2 MB):</label>
-                                    <input type="file" :accept="doc.accept" @change="handleFileSelect(doc.key, $event)"
-                                           class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-                                  </div>
+                                <div class="flex items-center space-x-2 pt-1">
+                                  <button type="button" @click="uploadSingleFile(doc.key)"
+                                          :disabled="!getSelectedFile(doc.key) || !getSelectedFile(doc.key).isValid || isUploading(doc.key)"
+                                          class="flex-1 py-2.5 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                    <span x-show="!isUploading(doc.key)" class="flex items-center space-x-1.5">
+                                      <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                      <span>Unggah Berkas</span>
+                                    </span>
+                                    <span x-show="isUploading(doc.key)" class="flex items-center space-x-1.5">
+                                      <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span>Mengunggah...</span>
+                                    </span>
+                                  </button>
 
-                                  <!-- FILE SIZE INDICATOR & ERROR WARNING -->
-                                  <template x-if="getSelectedFile(doc.key)">
-                                    <div class="p-2.5 rounded-xl text-[11px] font-medium"
-                                         :class="getSelectedFile(doc.key).isValid ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'">
-                                      <div class="flex items-center justify-between">
-                                        <span>Ukuran file: <strong x-text="getSelectedFile(doc.key).sizeStr"></strong></span>
-                                        <span class="font-bold" x-text="getSelectedFile(doc.key).isValid ? '✅ Ukuran Sesuai (< 2MB)' : '❌ Melebihi 2MB'"></span>
-                                      </div>
-                                      <template x-if="!getSelectedFile(doc.key).isValid">
-                                        <p class="text-[10px] text-red-600 font-bold mt-1">⚠️ Ukuran file melebihi 2 MB! Silakan kompres atau pilih file yang lebih kecil.</p>
-                                      </template>
-                                    </div>
-                                  </template>
-
-                                  <div class="flex items-center space-x-2 pt-1">
-                                    <button type="button" @click="uploadSingleFile(doc.key)"
-                                            :disabled="!getSelectedFile(doc.key) || !getSelectedFile(doc.key).isValid || isUploading(doc.key)"
-                                            class="flex-1 py-2.5 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-                                      <template x-if="!isUploading(doc.key)">
-                                        <span class="flex items-center space-x-1.5">
-                                          <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                                          <span>Unggah Berkas</span>
-                                        </span>
-                                      </template>
-                                      <template x-if="isUploading(doc.key)">
-                                        <span class="flex items-center space-x-1.5">
-                                          <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                          </svg>
-                                          <span>Mengunggah...</span>
-                                        </span>
-                                      </template>
-                                    </button>
-
-                                    <template x-if="isReplaceMode(doc.key)">
-                                      <button type="button" @click="toggleReplaceMode(doc.key, false)" class="py-2.5 px-3 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-semibold">
-                                        Batal
-                                      </button>
-                                    </template>
-                                  </div>
+                                  <button type="button" x-show="isReplaceMode(doc.key)" @click="toggleReplaceMode(doc.key, false)" class="py-2.5 px-3 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-semibold">
+                                    Batal
+                                  </button>
                                 </div>
-                              </template>
+                              </div>
 
                             </div>
                           </template>
