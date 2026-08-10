@@ -658,10 +658,17 @@
             <!-- ------------------------------------------------------- -->
             <!-- VIEW 3: REGISTRATION SUCCESS VIEW & PDF GENERATOR        -->
             <!-- ------------------------------------------------------- -->
-            <div x-show="mode === 'success'" x-transition.opacity.duration.300ms class="space-y-6">
+            <div x-show="mode === 'success'" 
+                 x-transition:enter="transition ease-out duration-400 transform"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="space-y-5">
               
               <!-- PDF Card Content Area -->
-              <div id="registrationCard" class="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-emerald-200/70 shadow-sm space-y-4">
+              <div id="registrationCard" class="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-emerald-200/70 shadow-sm space-y-3.5">
                 
                 <div class="flex items-center justify-between border-b border-emerald-200/60 pb-3">
                   <div>
@@ -674,7 +681,7 @@
                 </div>
 
                 <!-- Credential Box -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
                   <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span class="text-[10px] text-slate-400 block uppercase font-semibold">No Registrasi / Username</span>
@@ -712,24 +719,33 @@
 
                 <div class="text-[10px] text-emerald-700 bg-emerald-50 p-2.5 rounded-lg flex items-center gap-2 border border-emerald-200">
                   <i data-lucide="mail-check" class="w-4 h-4 flex-shrink-0"></i>
-                  <span>Email konfirmasi bukti pendaftaran telah terkirim otomatis ke email Anda.</span>
+                  <span>Email konfirmasi bukti pendaftaran telah terkirim otomatis.</span>
                 </div>
 
               </div>
 
               <!-- Action Buttons -->
-              <div class="space-y-2 pt-2">
-                <button type="button" 
-                        @click="downloadPDF()" 
-                        class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition">
-                  <i data-lucide="download" class="w-4 h-4"></i>
-                  <span>Unduh Bukti Akun (PDF)</span>
-                </button>
+              <div class="space-y-2 pt-1">
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" 
+                          @click="downloadPDF()" 
+                          class="py-3 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Unduh PDF</span>
+                  </button>
+
+                  <button type="button" 
+                          @click="registerAnotherChild()" 
+                          class="py-3 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>Daftar Anak Lain</span>
+                  </button>
+                </div>
 
                 <button type="button" 
                         @click="switchToLoginWithUser()" 
-                        class="w-full py-3 px-4 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition">
-                  <span>Lanjut ke Login Akun</span>
+                        class="w-full py-3.5 px-4 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition transform active:scale-[0.99]">
+                  <span>Lanjut Login Akun Ini</span>
                   <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
               </div>
@@ -929,9 +945,38 @@
         },
 
         switchToLoginWithUser() {
+          var self = this;
           this.loginForm.identifier = this.registeredData.regNo;
           this.loginForm.password = this.registeredData.autoPass;
           this.mode = 'login';
+          this.showToast('Kredensial ' + this.registeredData.regNo + ' siap. Klik Masuk!', 'success');
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        registerAnotherChild() {
+          var preservedWa = this.registeredData.noWa || this.regForm.noWa;
+          var preservedEmail = this.registeredData.email || this.regForm.email;
+          var preservedSekolah = this.regForm.asalSekolah;
+
+          this.regForm = {
+            jalur: 'Reguler',
+            jenjang: 'SMP',
+            kelasTujuan: 'Kelas 7',
+            namaLengkap: '',
+            jenisKelamin: 'LAKI-LAKI',
+            asalSekolah: preservedSekolah,
+            noWa: preservedWa,
+            email: preservedEmail,
+            agreeTerms: false,
+            agreeProcess: false,
+            agreeValidData: false
+          };
+
+          this.registerStep = 1;
+          this.mode = 'register';
+          this.showToast('Silakan isi data santri kedua / berikutnya.', 'success');
           this.$nextTick(function() {
             if (window.lucide) window.lucide.createIcons();
           });
