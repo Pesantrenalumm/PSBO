@@ -2009,7 +2009,148 @@
         showRevisionModal: false,
         revisionReason: '',
         resignReason: '',
-
+        stagedFiles: {},
+        uploadingState: {},
+        makeFileKey(category, key) {
+          return category + '_' + key;
+        },
+        getStagedFile(category, key) {
+          var k = this.makeFileKey(category, key);
+          return this.stagedFiles[k] || null;
+        },
+        isUploading(category, key) {
+          var k = this.makeFileKey(category, key);
+          return !!this.uploadingState[k];
+        },
+        getItemStatus(category, key) {
+          if (category === 'payment') {
+            var p = this.dashData.payments ? this.dashData.payments[key] : null;
+            if (p && p.status && p.status !== 'BELUM_UPLOAD') {
+              return p.status;
+            }
+            return 'BELUM_UPLOAD';
+          } else if (category === 'doc') {
+            var d = this.dashData.documents ? this.dashData.documents[key] : null;
+            if (d && d.status && d.status !== 'BELUM_UPLOAD') {
+              return d.status;
+            }
+            return 'BELUM_UPLOAD';
+          }
+          return 'BELUM_UPLOAD';
+        },
+        getItemNote(category, key) {
+          if (category === 'payment') {
+            var p = this.dashData.payments ? this.dashData.payments[key] : null;
+            return p ? (p.note || '') : '';
+          } else if (category === 'doc') {
+            var d = this.dashData.documents ? this.dashData.documents[key] : null;
+            return d ? (d.note || '') : '';
+          }
+          return '';
+        },
+        hasUploadedFile(category, key) {
+          if (category === 'payment') {
+            var p = this.dashData.payments ? this.dashData.payments[key] : null;
+            return !!(p && p.proofUrl && (p.status === 'PENDING' || p.status === 'VERIFIED' || p.status === 'REVISION'));
+          } else if (category === 'doc') {
+            var d = this.dashData.documents ? this.dashData.documents[key] : null;
+            return !!(d && d.fileUrl && (d.status === 'PENDING' || d.status === 'VERIFIED' || d.status === 'REVISION'));
+          }
+          return false;
+        },
+        getUploadedFileName(category, key) {
+          if (category === 'payment') {
+            var p = this.dashData.payments ? this.dashData.payments[key] : null;
+            return p ? (p.proofFileName || 'Bukti_Transfer.jpg') : '';
+          } else if (category === 'doc') {
+            var d = this.dashData.documents ? this.dashData.documents[key] : null;
+            return d ? (d.fileName || (key + '.pdf')) : '';
+          }
+          return '';
+        },
+        getUploadedUrl(category, key) {
+          if (category === 'payment') {
+            var p = this.dashData.payments ? this.dashData.payments[key] : null;
+            return p ? (p.proofUrl || '#') : '#';
+          } else if (category === 'doc') {
+            var d = this.dashData.documents ? this.dashData.documents[key] : null;
+            return d ? (d.fileUrl || '#') : '#';
+          }
+          return '#';
+        },
+        onFileSelected(event, category, key) {
+          var file = event.target.files[0];
+          if (!file) return;
+          if (file.size > 2  1024  1024) {
+            this.showToast('Ukuran file melebihi 2 MB! Mohon pilih file yang lebih kecil.', 'error');
+            event.target.value = '';
+            return;
+          }
+          var sizeFormatted = '';
+          if (file.size >= 1024  1024) {
+            sizeFormatted = (file.size / (1024  1024)).toFixed(2) + ' MB';
+          } else {
+            sizeFormatted = Math.round(file.size / 1024) + ' KB';
+          }
+          var fileKey = this.makeFileKey(category, key);
+          this.stagedFiles[fileKey] = {
+            file: file,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            sizeFormatted: sizeFormatted
+          };
+        },
+        cancelStagedFile(category, key) {
+          var fileKey = this.makeFileKey(category, key);
+          delete this.stagedFiles[fileKey];
+          var inputId = (category === 'payment' ? 'payFileInput-' : 'docFileInput-') + key;
+          var inputElem = document.getElementById(inputId);
+          if (inputElem) inputElem.value = '';
+        },
+        executeStagedUpload(category, key) {
+          var fileKey = this.makeFileKey(category, key);
+          var staged = this.stagedFiles[fileKey];
+          if (!staged || !staged.file) {
+            this.showToast('Tidak ada file yang dipilih.', 'error');
+            return;
+          }
+          var self = this;
+          this.uploadingState[fileKey] = true;
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var base64Data = e.target.result.split(',')[1];
+            var actionName = category === 'payment' ? 'uploadPaymentProof' : 'uploadDocument';
+            var payload = {
+              regNo: self.currentUser.regNo,
+              fileName: staged.name,
+              mimeType: staged.type,
+              fileData: base64Data,
+              type: key,
+              docType: key,
+              amount: category === 'payment' ? (self.dashData.payments && self.dashData.payments[key] ? self.dashData.payments[key].amount : '') : ''
+            };
+            self.postRequest(actionName, payload)
+              .then(function(res) {
+                self.uploadingState[fileKey] = false;
+                if (res.ok) {
+                  delete self.stagedFiles[fileKey];
+                  var inputId = (category === 'payment' ? 'payFileInput-' : 'docFileInput-') + key;
+                  var inputElem = document.getElementById(inputId);
+                  if (inputElem) inputElem.value = '';
+                  self.showToast('Berkas ' + staged.name + ' berhasil diunggah!', 'success');
+                  self.fetchDashboardData();
+                } else {
+                  self.showToast(res.message || 'Gagal mengunggah berkas.');
+                }
+              })
+              .catch(function(err) {
+                self.uploadingState[fileKey] = false;
+                self.showToast(err.message || 'Gagal terhubung ke server.');
+              });
+          };
+          reader.readAsDataURL(staged.file);
+        },
         passwordForm: {
           oldPassword: '',
           newPassword: '',
