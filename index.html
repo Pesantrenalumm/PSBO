@@ -810,58 +810,830 @@
 
 
             <!-- ================= VIEW 4: DASHBOARD (ADMIN / PESERTA) ================= -->
-            <div x-show="mode === 'dashboard'" x-transition:enter="transition ease-out duration-300" class="space-y-6">
+            <div x-show="mode === 'dashboard'" x-transition:enter="transition ease-out duration-300" class="w-full">
               
-              <!-- PESERTA DASHBOARD -->
+              <!-- PESERTA DASHBOARD CONTAINER -->
               <template x-if="currentUser && currentUser.role !== 'ADMIN'">
-                <div class="space-y-5">
-                  <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                    <div>
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-md">Portal Santri</span>
-                      <h3 class="text-xl font-bold text-slate-800 mt-1" x-text="currentUser.fullName"></h3>
-                      <p class="text-xs text-slate-500">ID: <span class="font-mono font-bold" x-text="currentUser.id"></span></p>
+                <div class="flex flex-col md:flex-row min-h-[580px] -m-6 sm:-m-10">
+                  
+                  <!-- FIRST-TIME LOGIN PASSWORD CHANGE MODAL BLOCKER -->
+                  <div x-cloak x-show="currentUser && currentUser.isDefaultPassword" 
+                       class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div class="bg-white max-w-md w-full rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 text-left">
+                      <div class="flex items-center space-x-3 text-amber-600">
+                        <div class="p-3 bg-amber-100 rounded-xl">
+                          <i data-lucide="shield-alert" class="w-7 h-7"></i>
+                        </div>
+                        <div>
+                          <h3 class="font-bold text-lg text-slate-800 leading-tight">Ganti Kata Sandi Wajib</h3>
+                          <p class="text-xs text-slate-500">Pertama Kali Login - Keamanan Akun</p>
+                        </div>
+                      </div>
+
+                      <p class="text-xs text-slate-600 leading-relaxed bg-amber-50 p-3 rounded-xl border border-amber-200">
+                        Anda saat ini menggunakan kata sandi bawaan (4 digit terakhir WhatsApp). Demi keamanan data, Anda <strong>wajib mengganti kata sandi</strong> sebelum mengakses dashboard.
+                      </p>
+
+                      <form @submit.prevent="submitFirstPasswordChange()" class="space-y-3">
+                        <div>
+                          <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru (Min. 6 Karakter)</label>
+                          <input type="password" x-model="firstPassForm.newPass" required placeholder="Masukkan kata sandi baru"
+                                 class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 outline-none">
+                        </div>
+
+                        <div>
+                          <label class="block text-xs font-semibold text-slate-700 mb-1">Konfirmasi Kata Sandi Baru</label>
+                          <input type="password" x-model="firstPassForm.confirmPass" required placeholder="Ulangi kata sandi baru"
+                                 class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-600 outline-none">
+                        </div>
+
+                        <button type="submit" :disabled="isSubmitting" 
+                                class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center justify-center space-x-2">
+                          <template x-if="!isSubmitting">
+                            <span>Simpan & Lanjutkan Dashboard</span>
+                          </template>
+                          <template x-if="isSubmitting">
+                            <span>Memproses...</span>
+                          </template>
+                        </button>
+                      </form>
                     </div>
-                    <button type="button" @click="logout()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold flex items-center space-x-1 transition">
-                      <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                      <span>Keluar</span>
-                    </button>
                   </div>
 
-                  <!-- Details Card -->
-                  <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-3">
-                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
-                      <div>
-                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Status Pendaftaran</span>
-                        <span class="text-xs font-bold text-emerald-700 uppercase" x-text="currentUser.status || 'TERDAFTAR'"></span>
+                  <!-- STICKY SIDEBAR PESERTA -->
+                  <div class="bg-slate-900 text-slate-300 flex-shrink-0 transition-all duration-300 flex flex-col justify-between border-r border-slate-800 sticky top-0"
+                       :class="sidebarExpanded ? 'w-full md:w-64' : 'w-full md:w-20'">
+                    
+                    <div>
+                      <!-- Sidebar Header & Toggle Button -->
+                      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                        <div x-show="sidebarExpanded" class="flex items-center space-x-2.5">
+                          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                            <i data-lucide="user-check" class="w-4 h-4"></i>
+                          </div>
+                          <div>
+                            <h4 class="text-xs font-bold text-white tracking-wide">PORTAL SANTRI</h4>
+                            <p class="text-[10px] text-emerald-400">PSB Al-Umm</p>
+                          </div>
+                        </div>
+
+                        <button type="button" @click="sidebarExpanded = !sidebarExpanded" 
+                                class="hidden md:flex p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+                          <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-4 h-4"></i>
+                        </button>
                       </div>
-                      <span class="p-2 bg-emerald-50 text-emerald-700 rounded-lg">
-                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                      </span>
+
+                      <!-- Nav Items -->
+                      <nav class="p-2 space-y-1">
+                        <!-- Menu 1: Home -->
+                        <button type="button" @click="setDashTab('home')"
+                                :class="dashTab === 'home' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
+                          <i data-lucide="home" class="w-5 h-5 flex-shrink-0"></i>
+                          <span x-show="sidebarExpanded" class="truncate">Beranda Utama</span>
+                          <span x-show="!sidebarExpanded" class="hidden md:block absolute left-16 bg-slate-800 text-white text-[10px] px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 z-50 transition pointer-events-none whitespace-nowrap">Beranda</span>
+                        </button>
+
+                        <!-- Menu 2: Pembayaran -->
+                        <button type="button" @click="setDashTab('pembayaran')"
+                                :class="dashTab === 'pembayaran' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
+                          <div class="flex items-center space-x-3 min-w-0">
+                            <i data-lucide="credit-card" class="w-5 h-5 flex-shrink-0"></i>
+                            <span x-show="sidebarExpanded" class="truncate">Pembayaran</span>
+                          </div>
+                          <span x-show="sidebarExpanded" class="text-[9px] px-1.5 py-0.5 rounded font-bold" 
+                                :class="getPaymentStatusBadgeClass()" x-text="getPaymentStatusLabel()"></span>
+                        </button>
+
+                        <!-- Menu 3: Biodata -->
+                        <button type="button" @click="setDashTab('biodata')"
+                                :class="dashTab === 'biodata' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
+                          <div class="flex items-center space-x-3 min-w-0">
+                            <i data-lucide="user-edit" class="w-5 h-5 flex-shrink-0"></i>
+                            <span x-show="sidebarExpanded" class="truncate">Biodata Santri</span>
+                          </div>
+                          <span x-show="sidebarExpanded" class="text-[9px] bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-bold" x-text="getBiodataProgressText()"></span>
+                        </button>
+
+                        <!-- Menu 4: Upload Berkas -->
+                        <button type="button" @click="setDashTab('berkas')"
+                                :class="dashTab === 'berkas' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
+                          <div class="flex items-center space-x-3 min-w-0">
+                            <i data-lucide="folder-up" class="w-5 h-5 flex-shrink-0"></i>
+                            <span x-show="sidebarExpanded" class="truncate">Upload Berkas</span>
+                          </div>
+                          <span x-show="sidebarExpanded" class="text-[9px] bg-slate-800 text-amber-400 px-1.5 py-0.5 rounded font-bold" x-text="getDocsCountText()"></span>
+                        </button>
+
+                        <!-- Menu 5: Ujian Seleksi -->
+                        <button type="button" @click="setDashTab('ujian')"
+                                :class="dashTab === 'ujian' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
+                          <i data-lucide="file-text" class="w-5 h-5 flex-shrink-0"></i>
+                          <span x-show="sidebarExpanded" class="truncate">Ujian Tes Seleksi</span>
+                        </button>
+
+                        <!-- Menu 6: Pengumuman -->
+                        <button type="button" @click="setDashTab('pengumuman')"
+                                :class="dashTab === 'pengumuman' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center justify-between p-3 rounded-xl transition text-xs group relative">
+                          <div class="flex items-center space-x-3 min-w-0">
+                            <i data-lucide="megaphone" class="w-5 h-5 flex-shrink-0"></i>
+                            <span x-show="sidebarExpanded" class="truncate">Pengumuman</span>
+                          </div>
+                          <span x-show="sidebarExpanded && currentUser.selectionStatus === 'LULUS'" class="text-[9px] bg-emerald-500 text-slate-950 font-bold px-1.5 py-0.5 rounded">LULUS</span>
+                        </button>
+
+                        <!-- Menu 7: Grup WA -->
+                        <button type="button" @click="setDashTab('grupwa')"
+                                :class="dashTab === 'grupwa' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
+                          <i data-lucide="message-square" class="w-5 h-5 flex-shrink-0 text-emerald-400"></i>
+                          <span x-show="sidebarExpanded" class="truncate">Grup WhatsApp</span>
+                        </button>
+
+                        <!-- Menu 8: Pengaturan -->
+                        <button type="button" @click="setDashTab('pengaturan')"
+                                :class="dashTab === 'pengaturan' ? 'bg-emerald-700 text-white font-semibold' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'"
+                                class="w-full flex items-center space-x-3 p-3 rounded-xl transition text-xs group relative">
+                          <i data-lucide="settings" class="w-5 h-5 flex-shrink-0"></i>
+                          <span x-show="sidebarExpanded" class="truncate">Pengaturan Akun</span>
+                        </button>
+                      </nav>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                      <div class="bg-white p-3 rounded-xl border border-slate-200">
-                        <span class="text-[10px] font-semibold text-slate-400 uppercase block">Jalur</span>
-                        <span class="font-bold text-slate-800 uppercase" x-text="currentUser.jalur"></span>
+                    <!-- Sidebar Footer Logout -->
+                    <div class="p-3 border-t border-slate-800">
+                      <button type="button" @click="logout()" 
+                              class="w-full flex items-center space-x-3 p-2.5 rounded-xl text-red-400 hover:bg-red-950/50 hover:text-red-300 transition text-xs">
+                        <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+                        <span x-show="sidebarExpanded" class="font-medium">Keluar Sesi</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- MAIN DASHBOARD CONTENT AREA -->
+                  <div class="flex-1 bg-slate-50 p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto max-h-[85vh]">
+                    
+                    <!-- TOP HEADER SANTRI INFO -->
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white font-bold text-lg flex items-center justify-center shadow">
+                          <span x-text="currentUser.fullName ? currentUser.fullName.charAt(0) : 'S'"></span>
+                        </div>
+                        <div>
+                          <div class="flex items-center space-x-2">
+                            <h3 class="font-bold text-slate-800 text-base" x-text="currentUser.fullName"></h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600" x-text="currentUser.jalur + ' - ' + currentUser.jenjang"></span>
+                          </div>
+                          <p class="text-xs text-slate-500 font-mono mt-0.5">ID: <strong class="text-slate-700" x-text="currentUser.id"></strong> | WA: <span x-text="currentUser.noWA"></span></p>
+                        </div>
                       </div>
-                      <div class="bg-white p-3 rounded-xl border border-slate-200">
-                        <span class="text-[10px] font-semibold text-slate-400 uppercase block">Jenjang</span>
-                        <span class="font-bold text-slate-800 uppercase" x-text="currentUser.jenjang"></span>
-                      </div>
-                      <div class="bg-white p-3 rounded-xl border border-slate-200">
-                        <span class="text-[10px] font-semibold text-slate-400 uppercase block">Asal Sekolah</span>
-                        <span class="font-bold text-slate-800" x-text="currentUser.asalSekolah || '-'"></span>
-                      </div>
-                      <div class="bg-white p-3 rounded-xl border border-slate-200">
-                        <span class="text-[10px] font-semibold text-slate-400 uppercase block">No WhatsApp</span>
-                        <span class="font-bold text-slate-800" x-text="currentUser.noWA || '-'"></span>
+
+                      <!-- Status Stepper Badge Indicator -->
+                      <div class="flex items-center space-x-1 text-[11px] font-semibold bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(1)">1. Akun</span>
+                        <span class="text-slate-300">&rarr;</span>
+                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(2)">2. Biaya</span>
+                        <span class="text-slate-300">&rarr;</span>
+                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(3)">3. Berkas</span>
+                        <span class="text-slate-300">&rarr;</span>
+                        <span class="px-2 py-1 rounded-lg" :class="getStepBadgeClass(4)">4. Seleksi</span>
                       </div>
                     </div>
+
+                    <!-- ================= MENU 1: BERANDA UTAMA ================= -->
+                    <div x-show="dashTab === 'home'" class="space-y-6">
+                      <!-- Contextual Banner Banner -->
+                      <div class="bg-emerald-900 text-white p-5 rounded-2xl shadow-md relative overflow-hidden flex items-start space-x-4 border border-emerald-800">
+                        <div class="p-3 bg-emerald-800 rounded-xl flex-shrink-0 text-emerald-300">
+                          <i data-lucide="info" class="w-6 h-6"></i>
+                        </div>
+                        <div class="space-y-1">
+                          <h4 class="font-bold text-sm text-emerald-100">Status Pendaftaran Anda Saat Ini</h4>
+                          <p class="text-xs text-emerald-200/90 leading-relaxed" x-text="getHomeContextualBannerText()"></p>
+                        </div>
+                      </div>
+
+                      <!-- Timelined Progress Bar (6 Tahap) -->
+                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Tahapan Pendaftaran (Alur PSB)</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center text-xs">
+                          
+                          <!-- Step 1 -->
+                          <div class="p-3 rounded-xl border space-y-1 bg-emerald-50 border-emerald-300 text-emerald-900 font-medium">
+                            <i data-lucide="check-circle" class="w-5 h-5 mx-auto text-emerald-600"></i>
+                            <div class="font-bold text-[11px]">1. Registrasi Akun</div>
+                            <span class="text-[9px] text-emerald-700 font-bold">Selesai ✅</span>
+                          </div>
+
+                          <!-- Step 2 -->
+                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(2)">
+                            <i :data-lucide="getTimelineStepIcon(2)" class="w-5 h-5 mx-auto"></i>
+                            <div class="font-bold text-[11px]">2. Bayar Formulir</div>
+                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(2)"></span>
+                          </div>
+
+                          <!-- Step 3 -->
+                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(3)">
+                            <i :data-lucide="getTimelineStepIcon(3)" class="w-5 h-5 mx-auto"></i>
+                            <div class="font-bold text-[11px]">3. Biodata & Berkas</div>
+                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(3)"></span>
+                          </div>
+
+                          <!-- Step 4 -->
+                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(4)">
+                            <i :data-lucide="getTimelineStepIcon(4)" class="w-5 h-5 mx-auto"></i>
+                            <div class="font-bold text-[11px]">4. Kartu & Ujian</div>
+                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(4)"></span>
+                          </div>
+
+                          <!-- Step 5 -->
+                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(5)">
+                            <i :data-lucide="getTimelineStepIcon(5)" class="w-5 h-5 mx-auto"></i>
+                            <div class="font-bold text-[11px]">5. Pengumuman</div>
+                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(5)"></span>
+                          </div>
+
+                          <!-- Step 6 -->
+                          <div class="p-3 rounded-xl border space-y-1 transition" :class="getTimelineStepClass(6)">
+                            <i :data-lucide="getTimelineStepIcon(6)" class="w-5 h-5 mx-auto"></i>
+                            <div class="font-bold text-[11px]">6. Daftar Ulang</div>
+                            <span class="text-[9px] font-bold" x-text="getTimelineStepLabel(6)"></span>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      <!-- Kartu Ringkasan Santri & Quick Action -->
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <h4 class="text-xs font-bold uppercase text-slate-700">Ringkasan Data Santri</h4>
+                          <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Jalur Pendaftaran</span>
+                              <strong class="text-slate-800" x-text="currentUser.jalur"></strong>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Jenjang Studi</span>
+                              <strong class="text-slate-800" x-text="currentUser.jenjang"></strong>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Asal Sekolah</span>
+                              <strong class="text-slate-800" x-text="currentUser.asalSekolah || '-'"></strong>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Hasil Seleksi</span>
+                              <strong class="text-emerald-700 uppercase" x-text="currentUser.selectionStatus || 'BELUM DIPROSES'"></strong>
+                            </div>
+                          </div>
+
+                          <div class="pt-2 flex flex-wrap gap-2">
+                            <button type="button" @click="printAccountCard()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
+                              <i data-lucide="printer" class="w-4 h-4"></i>
+                              <span>Cetak Bukti Registrasi</span>
+                            </button>
+                            <button type="button" @click="setDashTab('ujian')" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
+                              <i data-lucide="award" class="w-4 h-4"></i>
+                              <span>Download Kartu Ujian</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Widget Pengumuman Penting -->
+                        <div class="bg-amber-50/80 border border-amber-200 p-5 rounded-2xl shadow-sm space-y-3">
+                          <div class="flex items-center space-x-2 text-amber-900">
+                            <i data-lucide="bell" class="w-5 h-5 text-amber-700"></i>
+                            <h4 class="font-bold text-xs uppercase tracking-wider">Pengumuman Panitia</h4>
+                          </div>
+                          <p class="text-xs text-amber-950 leading-relaxed">
+                            Harap menyelesaikan verifikasi pembayaran formulir agar jadwal ujian tes seleksi dapat diproses oleh panitia.
+                          </p>
+                          <div class="pt-2 border-t border-amber-200 text-[10px] text-amber-800 font-semibold">
+                            Pusat Bantuan WA: <a :href="'https://wa.me/' + (config.HELPDESK_WA || '6281234567890')" target="_blank" class="underline text-amber-950" x-text="config.HELPDESK_LABEL || 'Helpdesk PSB'"></a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 2: PEMBAYARAN ================= -->
+                    <div x-show="dashTab === 'pembayaran'" class="space-y-6">
+                      <!-- Sub Tab Navigation -->
+                      <div class="flex border-b border-slate-200 space-x-4">
+                        <button type="button" @click="paymentTab = 'pendaftaran'"
+                                :class="paymentTab === 'pendaftaran' ? 'border-emerald-600 text-emerald-800 border-b-2 font-bold' : 'text-slate-500 hover:text-slate-700 font-medium'"
+                                class="pb-3 text-xs transition">
+                          Tab A: Biaya Pendaftaran / Formulir
+                        </button>
+                        <button type="button" @click="paymentTab = 'daftarUlang'"
+                                :class="paymentTab === 'daftarUlang' ? 'border-emerald-600 text-emerald-800 border-b-2 font-bold' : 'text-slate-500 hover:text-slate-700 font-medium'"
+                                class="pb-3 text-xs transition">
+                          Tab B: Biaya Daftar Ulang (Lulus)
+                        </button>
+                      </div>
+
+                      <!-- TAB A: PEMBAYARAN PENDAFTARAN -->
+                      <div x-show="paymentTab === 'pendaftaran'" class="space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <!-- Bank Rekening Info -->
+                          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center space-x-3 text-emerald-800">
+                              <div class="p-2.5 bg-emerald-100 rounded-xl">
+                                <i data-lucide="landmark" class="w-6 h-6"></i>
+                              </div>
+                              <div>
+                                <h4 class="font-bold text-sm">Rekening Pembayaran Resmi</h4>
+                                <p class="text-[11px] text-slate-500">Biaya Formulir: <strong>Rp 250.000,-</strong></p>
+                              </div>
+                            </div>
+
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                              <span class="text-[10px] text-slate-400 font-bold uppercase block">Bank Syariah Indonesia (BSI)</span>
+                              <div class="flex items-center justify-between font-mono font-bold text-emerald-800 text-sm">
+                                <span>7123-4567-89</span>
+                                <span class="text-[10px] font-sans font-normal text-slate-500">a.n. YPP Al-Umm PSB</span>
+                              </div>
+                            </div>
+
+                            <div class="text-[11px] text-slate-600 space-y-1">
+                              <p class="font-bold text-slate-800">Instruksi Transfer:</p>
+                              <ol class="list-decimal pl-4 space-y-0.5">
+                                <li>Transfer tepat sesuai nominal Rp 250.000.</li>
+                                <li>Simpan bukti/struk transfer bank/e-wallet.</li>
+                                <li>Isi form upload di sebelah kanan ini.</li>
+                              </ol>
+                            </div>
+                          </div>
+
+                          <!-- Form Upload Bukti Pendaftaran -->
+                          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <h4 class="font-bold text-xs uppercase text-slate-700">Form Konfirmasi Pembayaran Formulir</h4>
+                            
+                            <form @submit.prevent="submitRegPayment()" class="space-y-3">
+                              <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nominal Transfer (Rp)</label>
+                                <input type="number" x-model="regPayForm.nominal" required placeholder="250000"
+                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-600">
+                              </div>
+
+                              <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Transfer</label>
+                                <input type="date" x-model="regPayForm.transferDate" required
+                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-600">
+                              </div>
+
+                              <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pemilik Rekening / Pengirim</label>
+                                <input type="text" x-model="regPayForm.ownerName" required placeholder="NAMA SESUAI STRUK"
+                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase outline-none focus:ring-2 focus:ring-emerald-600">
+                              </div>
+
+                              <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Link / URL Struk Bukti Transfer (Google Drive / Imgur)</label>
+                                <input type="url" x-model="regPayForm.proofUrl" required placeholder="https://..."
+                                       class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-600">
+                              </div>
+
+                              <button type="submit" :disabled="isSubmitting"
+                                      class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition">
+                                <span x-text="isSubmitting ? 'Kirim...' : 'Kirim Bukti Pembayaran'"></span>
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+
+                        <!-- Status Verification Card & Digital Invoice -->
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <h4 class="text-xs font-bold uppercase text-slate-700">Status Verifikasi Pembayaran Formulir</h4>
+                          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                            <div>
+                              <span class="text-[10px] uppercase font-bold text-slate-400 block">Status Saat Ini</span>
+                              <span class="font-bold uppercase text-sm" :class="getPaymentStatusColorClass()" x-text="getPaymentStatusLabel()"></span>
+                            </div>
+                            <template x-if="getPaymentStatusLabel() === 'TERVERIFIKASI'">
+                              <button type="button" @click="showInvoiceModal = true" class="px-3 py-1.5 bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center space-x-1">
+                                <i data-lucide="file-check" class="w-4 h-4"></i>
+                                <span>Unduh Invoice Digital</span>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- TAB B: PEMBAYARAN DAFTAR ULANG -->
+                      <div x-show="paymentTab === 'daftarUlang'" class="space-y-5">
+                        <template x-if="currentUser.selectionStatus !== 'LULUS'">
+                          <div class="bg-amber-50 border border-amber-200 p-6 rounded-2xl text-center space-y-2">
+                            <i data-lucide="lock" class="w-8 h-8 text-amber-600 mx-auto"></i>
+                            <h4 class="font-bold text-amber-900 text-sm">Menu Belum Terbuka</h4>
+                            <p class="text-xs text-amber-800">Rincian Pembayaran Daftar Ulang hanya tersedia bagi calon santri yang telah dinyatakan <strong>LULUS SELEKSI</strong>.</p>
+                          </div>
+                        </template>
+
+                        <template x-if="currentUser.selectionStatus === 'LULUS'">
+                          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <h4 class="font-bold text-sm text-slate-800">Rincian Komponen Biaya Daftar Ulang</h4>
+                            <div class="border border-slate-200 rounded-xl overflow-hidden text-xs">
+                              <table class="w-full text-left">
+                                <thead class="bg-slate-100 font-bold text-slate-600 text-[10px] uppercase">
+                                  <tr>
+                                    <th class="p-2.5">Komponen Biaya</th>
+                                    <th class="p-2.5 text-right">Nominal</th>
+                                  </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                  <tr><td class="p-2.5">SPP Bulan Pertama</td><td class="p-2.5 text-right font-mono">Rp 1.200.000</td></tr>
+                                  <tr><td class="p-2.5">Uang Pangkal / Gedung</td><td class="p-2.5 text-right font-mono">Rp 6.500.000</td></tr>
+                                  <tr><td class="p-2.5">Seragam LENGKAP (5 Stel)</td><td class="p-2.5 text-right font-mono">Rp 1.800.000</td></tr>
+                                  <tr><td class="p-2.5">Fasilitas Asrama & Perlengkapan</td><td class="p-2.5 text-right font-mono">Rp 2.500.000</td></tr>
+                                  <tr><td class="p-2.5">Kitab Modul & Al-Qur'an</td><td class="p-2.5 text-right font-mono">Rp 800.000</td></tr>
+                                  <tr class="bg-emerald-50 font-bold text-emerald-950">
+                                    <td class="p-2.5">TOTAL BIAYA DAFTAR ULANG</td>
+                                    <td class="p-2.5 text-right font-mono text-sm">Rp 12.800.000</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <p class="text-xs text-slate-500 italic">* Skema cicilan diperbolehkan maksimal 3 kali pembayaran sesuai persetujuan panitia keuangan.</p>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 3: BIODATA SANTRI & ORTU ================= -->
+                    <div x-show="dashTab === 'biodata'" class="space-y-6">
+                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                        
+                        <!-- Sub-tab Accordion Bar -->
+                        <div class="flex flex-wrap border-b border-slate-200 gap-2 pb-2 text-xs">
+                          <button type="button" @click="biodataTab = 'santri'"
+                                  :class="biodataTab === 'santri' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                  class="px-3 py-1.5 rounded-xl transition">1. Data Santri</button>
+                          <button type="button" @click="biodataTab = 'ayah'"
+                                  :class="biodataTab === 'ayah' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                  class="px-3 py-1.5 rounded-xl transition">2. Data Ayah</button>
+                          <button type="button" @click="biodataTab = 'ibu'"
+                                  :class="biodataTab === 'ibu' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                  class="px-3 py-1.5 rounded-xl transition">3. Data Ibu</button>
+                          <button type="button" @click="biodataTab = 'wali'"
+                                  :class="biodataTab === 'wali' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                  class="px-3 py-1.5 rounded-xl transition">4. Data Wali (Opsional)</button>
+                          <button type="button" @click="biodataTab = 'alamat'"
+                                  :class="biodataTab === 'alamat' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                  class="px-3 py-1.5 rounded-xl transition">5. Alamat & Kontak</button>
+                        </div>
+
+                        <!-- SUB-TAB 1: DATA SANTRI -->
+                        <div x-show="biodataTab === 'santri'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">NIK Santri (16 Digit)</label>
+                            <input type="text" x-model="biodataForm.nik" placeholder="3507..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">NISN</label>
+                            <input type="text" x-model="biodataForm.nisn" placeholder="005..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tempat Lahir</label>
+                            <input type="text" x-model="biodataForm.tempatLahir" placeholder="Malang" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tanggal Lahir</label>
+                            <input type="date" x-model="biodataForm.tglLahir" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Anak Ke-</label>
+                            <input type="number" x-model="biodataForm.anakKe" placeholder="1" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Jumlah Bersaudara</label>
+                            <input type="number" x-model="biodataForm.jmlSaudara" placeholder="3" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Ukuran Seragam</label>
+                            <select x-model="biodataForm.ukuranBaju" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                              <option value="S">S</option>
+                              <option value="M">M</option>
+                              <option value="L">L</option>
+                              <option value="XL">XL</option>
+                              <option value="XXL">XXL</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Riwayat Penyakit / Alergi</label>
+                            <input type="text" x-model="biodataForm.riwayatPenyakit" placeholder="Asma / Tidak ada" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                        </div>
+
+                        <!-- SUB-TAB 2: DATA AYAH -->
+                        <div x-show="biodataTab === 'ayah'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div class="sm:col-span-2">
+                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ayah (+ Gelar)</label>
+                            <input type="text" x-model="biodataForm.namaAyah" placeholder="Ahmad Sanusi, S.Pd." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">NIK Ayah</label>
+                            <input type="text" x-model="biodataForm.nikAyah" placeholder="3507..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ayah</label>
+                            <input type="text" x-model="biodataForm.pekerjaanAyah" placeholder="PNS / Swasta / Wiraswasta" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Penghasilan Bulanan</label>
+                            <select x-model="biodataForm.penghasilanAyah" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                              <option value="< 2 Juta">&lt; Rp 2.000.000</option>
+                              <option value="2 - 5 Juta">Rp 2.000.000 - Rp 5.000.000</option>
+                              <option value="5 - 10 Juta">Rp 5.000.000 - Rp 10.000.000</option>
+                              <option value="> 10 Juta">&gt; Rp 10.000.000</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">No. WA / Telepon Ayah</label>
+                            <input type="text" x-model="biodataForm.waAyah" placeholder="08123..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                        </div>
+
+                        <!-- SUB-TAB 3: DATA IBU -->
+                        <div x-show="biodataTab === 'ibu'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div class="sm:col-span-2">
+                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Ibu (+ Gelar)</label>
+                            <input type="text" x-model="biodataForm.namaIbu" placeholder="Siti Aminah, S.Ag." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">NIK Ibu</label>
+                            <input type="text" x-model="biodataForm.nikIbu" placeholder="3507..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Pekerjaan Ibu</label>
+                            <input type="text" x-model="biodataForm.pekerjaanIbu" placeholder="Ibu Rumah Tangga / Guru" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                        </div>
+
+                        <!-- SUB-TAB 4: DATA WALI -->
+                        <div x-show="biodataTab === 'wali'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div class="sm:col-span-2">
+                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap Wali (Jika ada)</label>
+                            <input type="text" x-model="biodataForm.namaWali" placeholder="Kosongi jika tidak ada" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                        </div>
+
+                        <!-- SUB-TAB 5: ALAMAT -->
+                        <div x-show="biodataTab === 'alamat'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div class="sm:col-span-2">
+                            <label class="block font-semibold text-slate-700 mb-1">Alamat Rumah Lengkap</label>
+                            <textarea x-model="biodataForm.alamat" rows="2" placeholder="Jl. Mawar No. 12..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600"></textarea>
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Kota / Kabupaten</label>
+                            <input type="text" x-model="biodataForm.kota" placeholder="Malang" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Provinsi</label>
+                            <input type="text" x-model="biodataForm.provinsi" placeholder="Jawa Timur" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                          <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Kontak Darurat (Nama & No WA)</label>
+                            <input type="text" x-model="biodataForm.kontakDarurat" placeholder="Paman - 0812345..." class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                          </div>
+                        </div>
+
+                        <!-- Save Action Button -->
+                        <div class="pt-4 border-t border-slate-200 flex justify-end">
+                          <button type="button" @click="saveBiodata()" :disabled="isSubmitting"
+                                  class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow transition flex items-center space-x-1.5">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span>Simpan Biodata Santri</span>
+                          </button>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 4: UPLOAD BERKAS ================= -->
+                    <div x-show="dashTab === 'berkas'" class="space-y-6">
+                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700">Checklist Dokumen Persyaratan</h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <template x-for="doc in docList" :key="doc.key">
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
+                              <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-800" x-text="doc.label"></span>
+                                <span class="px-2 py-0.5 rounded font-bold text-[10px]" :class="getDocStatusBadgeClass(doc.key)" x-text="getDocStatusLabel(doc.key)"></span>
+                              </div>
+                              <p class="text-[11px] text-slate-500" x-text="doc.desc"></p>
+
+                              <div class="pt-2 flex items-center space-x-2">
+                                <input type="url" :value="getDocUrl(doc.key)" 
+                                       @change="updateDocUrl(doc.key, $event.target.value)"
+                                       placeholder="Paste Link Google Drive / Image URL..."
+                                       class="flex-1 p-2 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-600">
+                                <button type="button" @click="saveDoc(doc.key)" class="px-3 py-2 bg-emerald-700 text-white rounded-xl font-semibold text-xs hover:bg-emerald-800 transition">
+                                  Simpan
+                                </button>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 5: UJIAN SELEKSI ================= -->
+                    <div x-show="dashTab === 'ujian'" class="space-y-6">
+                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                          <div>
+                            <h4 class="font-bold text-sm text-slate-800">Jadwal & Kartu Ujian Seleksi</h4>
+                            <p class="text-xs text-slate-500">PSB Pondok Pesantren Al-Umm</p>
+                          </div>
+                          <button type="button" @click="printAccountCard()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            <span>Cetak Kartu Ujian Digital</span>
+                          </button>
+                        </div>
+
+                        <!-- Schedule & Venue -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Tanggal Ujian</span>
+                            <strong class="text-slate-800 text-sm">15 Maret 2025</strong>
+                          </div>
+                          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Sesi / Waktu</span>
+                            <strong class="text-slate-800 text-sm">Sesi 1 (08.00 - 11.30 WIB)</strong>
+                          </div>
+                          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                            <span class="text-[10px] font-bold text-emerald-800 uppercase block">Lokasi Ujian</span>
+                            <strong class="text-slate-800 text-sm">Gedung Utama Al-Umm</strong>
+                          </div>
+                        </div>
+
+                        <!-- Subjects & Dresscode -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <h5 class="font-bold text-slate-800">Materi & Jenis Tes:</h5>
+                            <ul class="list-disc pl-4 space-y-1 text-slate-600">
+                              <li>Tes Baca Tulis Al-Qur'an (BTQ) & Hafalan.</li>
+                              <li>Tes Potensi Akademik (Matematika, B. Indo, Agama).</li>
+                              <li>Wawancara Calon Santri & Wali Santri.</li>
+                            </ul>
+                          </div>
+
+                          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <h5 class="font-bold text-slate-800">Tata Tertib & Busana Ujian:</h5>
+                            <ul class="list-disc pl-4 space-y-1 text-slate-600">
+                              <li><strong>Putra:</strong> Kemeja putih, celana kain hitam, peci hitam.</li>
+                              <li><strong>Putri:</strong> Gamis/rok panjang, jilbab putih.</li>
+                              <li>Membawa Kartu Ujian Cetak, alat tulis, & Al-Qur'an.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 6: PENGUMUMAN KELULUSAN ================= -->
+                    <div x-show="dashTab === 'pengumuman'" class="space-y-6">
+                      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+                             :class="currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+                          <i data-lucide="award" class="w-8 h-8"></i>
+                        </div>
+
+                        <div>
+                          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Hasil Seleksi PSB</span>
+                          <h3 class="text-2xl font-extrabold uppercase mt-1" 
+                              :class="currentUser.selectionStatus === 'LULUS' ? 'text-emerald-700' : 'text-slate-700'"
+                              x-text="currentUser.selectionStatus || 'BELUM DIPROSES'"></h3>
+                        </div>
+
+                        <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                          <template x-if="currentUser.selectionStatus === 'LULUS'">
+                            <span>Selamat! Anda dinyatakan <strong>LULUS SELEKSI</strong> sebagai Calon Santri Baru Pondok Pesantren Al-Umm. Silakan cetak SK Kelulusan dan lakukan pembayaran daftar ulang.</span>
+                          </template>
+                          <template x-if="currentUser.selectionStatus !== 'LULUS'">
+                            <span>Hasil seleksi saat ini sedang dalam proses rekapitulasi tim penguji. Pengumuman resmi akan diupdate secara berkala.</span>
+                          </template>
+                        </p>
+
+                        <div class="pt-3 flex flex-wrap justify-center gap-3">
+                          <button type="button" @click="printAccountCard()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span>Cetak SK Kelulusan Digital</span>
+                          </button>
+
+                          <template x-if="currentUser.selectionStatus === 'LULUS'">
+                            <button type="button" @click="setDashTab('pembayaran'); paymentTab = 'daftarUlang';" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow">
+                              <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
+                              <span>Lanjut Pembayaran Daftar Ulang</span>
+                            </button>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 7: GRUP WHATSAPP ================= -->
+                    <div x-show="dashTab === 'grupwa'" class="space-y-6">
+                      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div>
+                          <h4 class="font-bold text-sm text-slate-800">Tautan Grup WhatsApp Resmi</h4>
+                          <p class="text-xs text-slate-500">Silakan bergabung ke grup sesuai dengan jalur dan status pendaftaran Anda.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                          <!-- Grup 1: Santri Baru -->
+                          <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-3 flex flex-col justify-between">
+                            <div class="space-y-1">
+                              <div class="flex items-center space-x-2 text-emerald-800 font-bold">
+                                <i data-lucide="users" class="w-5 h-5"></i>
+                                <span>Grup Santri Baru</span>
+                              </div>
+                              <p class="text-[11px] text-emerald-900">Khusus pendaftar Jalur Reguler & Mutasi seluruh jenjang.</p>
+                            </div>
+                            <a href="https://chat.whatsapp.com/example-santri-baru" target="_blank" class="w-full py-2 bg-emerald-700 text-white text-center rounded-xl font-bold hover:bg-emerald-800 transition block">
+                              Gabung Grup WA &rarr;
+                            </a>
+                          </div>
+
+                          <!-- Grup 2: Santri Inden -->
+                          <div class="p-4 bg-teal-50 rounded-2xl border border-teal-200 space-y-3 flex flex-col justify-between">
+                            <div class="space-y-1">
+                              <div class="flex items-center space-x-2 text-teal-800 font-bold">
+                                <i data-lucide="clock" class="w-5 h-5"></i>
+                                <span>Grup Santri Inden</span>
+                              </div>
+                              <p class="text-[11px] text-teal-900">Khusus pendaftar Jalur Inden persiapan tahun mendatang.</p>
+                            </div>
+                            <a href="https://chat.whatsapp.com/example-santri-inden" target="_blank" class="w-full py-2 bg-teal-700 text-white text-center rounded-xl font-bold hover:bg-teal-800 transition block">
+                              Gabung Grup WA &rarr;
+                            </a>
+                          </div>
+
+                          <!-- Grup 3: Kelas Dinamis -->
+                          <div class="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-3 flex flex-col justify-between">
+                            <div class="space-y-1">
+                              <div class="flex items-center space-x-2 text-blue-800 font-bold">
+                                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                                <span x-text="getDynamicWaGroupName()"></span>
+                              </div>
+                              <p class="text-[11px] text-blue-900">Khusus bagi santri yang dinyatakan diterima sesuai jenjang.</p>
+                            </div>
+                            <a href="https://chat.whatsapp.com/example-grup-kelas" target="_blank" class="w-full py-2 bg-blue-700 text-white text-center rounded-xl font-bold hover:bg-blue-800 transition block">
+                              Gabung Grup WA Kelas &rarr;
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ================= MENU 8: PENGATURAN ================= -->
+                    <div x-show="dashTab === 'pengaturan'" class="space-y-6">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        
+                        <!-- Change Password Form -->
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs">
+                          <h4 class="font-bold text-sm text-slate-800">Ubah Kata Sandi (Password)</h4>
+                          
+                          <form @submit.prevent="changePasswordNormal()" class="space-y-3">
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Kata Sandi Baru</label>
+                              <input type="password" x-model="normPassForm.newPass" required placeholder="Minimal 6 karakter" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+                            <div>
+                              <label class="block font-semibold text-slate-700 mb-1">Konfirmasi Kata Sandi Baru</label>
+                              <input type="password" x-model="normPassForm.confirmPass" required placeholder="Ulangi kata sandi" class="w-full p-2 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-600">
+                            </div>
+                            <button type="submit" :disabled="isSubmitting" class="w-full py-2.5 bg-emerald-700 text-white rounded-xl font-bold hover:bg-emerald-800 transition">
+                              Update Kata Sandi
+                            </button>
+                          </form>
+                        </div>
+
+                        <!-- Session Log -->
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
+                          <h4 class="font-bold text-sm text-slate-800">Riwayat Login Sesi</h4>
+                          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-slate-600">
+                            <div class="flex justify-between font-bold text-slate-800">
+                              <span>Login Sesi Aktif</span>
+                              <span class="text-emerald-700">Online</span>
+                            </div>
+                            <p class="text-[10px]">Perangkat: Web Browser (Mobile/Desktop)</p>
+                            <p class="text-[10px]">ID Sesi: <span x-text="currentUser.id"></span></p>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </template>
 
-              <!-- ADMIN DASHBOARD -->
+              <!-- ADMIN DASHBOARD CONTAINER -->
               <template x-if="currentUser && currentUser.role === 'ADMIN'">
                 <div class="space-y-5">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
@@ -1077,6 +1849,379 @@
         adminConfig: {},
         showAdminModal: false,
 
+        // Participant Dashboard States
+        sidebarExpanded: true,
+        dashTab: 'home', // 'home', 'pembayaran', 'biodata', 'berkas', 'ujian', 'pengumuman', 'grupwa', 'pengaturan'
+        paymentTab: 'pendaftaran', // 'pendaftaran', 'daftarUlang'
+        biodataTab: 'santri', // 'santri', 'ayah', 'ibu', 'wali', 'alamat'
+        showInvoiceModal: false,
+
+        firstPassForm: {
+          newPass: '',
+          confirmPass: ''
+        },
+
+        normPassForm: {
+          newPass: '',
+          confirmPass: ''
+        },
+
+        regPayForm: {
+          nominal: 250000,
+          transferDate: '',
+          ownerName: '',
+          proofUrl: ''
+        },
+
+        biodataForm: {
+          nik: '', nisn: '', tempatLahir: '', tglLahir: '', anakKe: 1, jmlSaudara: 1, ukuranBaju: 'M', riwayatPenyakit: '',
+          namaAyah: '', nikAyah: '', pekerjaanAyah: '', penghasilanAyah: '< 2 Juta', waAyah: '',
+          namaIbu: '', nikIbu: '', pekerjaanIbu: '',
+          namaWali: '',
+          alamat: '', kota: '', provinsi: '', kontakDarurat: ''
+        },
+
+        docsMap: {},
+        docList: [
+          { key: 'foto', label: 'Pas Foto Formal', desc: 'Background Merah/Biru (JPG/PNG)' },
+          { key: 'kk', label: 'Kartu Keluarga (KK)', desc: 'Scan / Foto jernih KK' },
+          { key: 'akta', label: 'Akta Kelahiran', desc: 'Scan / Foto Akta' },
+          { key: 'ijazah', label: 'Ijazah / SKL / Rapor', desc: 'Dokumen pendidikan terakhir' },
+          { key: 'ktp', label: 'KTP Orang Tua', desc: 'Scan KTP Ayah / Ibu' },
+          { key: 'sehat', label: 'Surat Keterangan Sehat', desc: 'Dari Dokter / Puskesmas' }
+        ],
+
+        setDashTab: function(tabKey) {
+          this.dashTab = tabKey;
+          setTimeout(function() {
+            if (window.lucide) window.lucide.createIcons();
+          }, 100);
+        },
+
+        submitFirstPasswordChange: function() {
+          var self = this;
+          if (!self.firstPassForm.newPass || self.firstPassForm.newPass.length < 6) {
+            self.showToast('Password Kurang', 'Kata sandi minimal 6 karakter.', 'error');
+            return;
+          }
+          if (self.firstPassForm.newPass !== self.firstPassForm.confirmPass) {
+            self.showToast('Tidak Cocok', 'Konfirmasi kata sandi tidak sama.', 'error');
+            return;
+          }
+
+          self.isSubmitting = true;
+          fetch(self.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'changePassword',
+              payload: {
+                userId: self.currentUser.id,
+                newPassword: self.firstPassForm.newPass
+              }
+            })
+          })
+          .then(function(res) { return res.text(); })
+          .then(function(text) {
+            var resData = JSON.parse(text);
+            if (resData.ok) {
+              self.currentUser.isDefaultPassword = false;
+              self.showToast('Berhasil', 'Kata sandi berhasil diperbarui.', 'success');
+            } else {
+              self.showToast('Gagal', resData.message || 'Gagal mengubah password.', 'error');
+            }
+          })
+          .catch(function() {
+            self.showToast('Error', 'Kesalahan jaringan.', 'error');
+          })
+          .finally(function() {
+            self.isSubmitting = false;
+          });
+        },
+
+        changePasswordNormal: function() {
+          var self = this;
+          if (!self.normPassForm.newPass || self.normPassForm.newPass.length < 6) {
+            self.showToast('Password Kurang', 'Kata sandi minimal 6 karakter.', 'error');
+            return;
+          }
+          if (self.normPassForm.newPass !== self.normPassForm.confirmPass) {
+            self.showToast('Tidak Cocok', 'Konfirmasi kata sandi tidak sama.', 'error');
+            return;
+          }
+
+          self.isSubmitting = true;
+          fetch(self.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'changePassword',
+              payload: {
+                userId: self.currentUser.id,
+                newPassword: self.normPassForm.newPass
+              }
+            })
+          })
+          .then(function(res) { return res.text(); })
+          .then(function(text) {
+            var resData = JSON.parse(text);
+            if (resData.ok) {
+              self.normPassForm.newPass = '';
+              self.normPassForm.confirmPass = '';
+              self.showToast('Berhasil', 'Kata sandi akun berhasil diubah.', 'success');
+            } else {
+              self.showToast('Gagal', resData.message || 'Gagal mengubah password.', 'error');
+            }
+          })
+          .catch(function() {
+            self.showToast('Error', 'Kesalahan jaringan.', 'error');
+          })
+          .finally(function() {
+            self.isSubmitting = false;
+          });
+        },
+
+        submitRegPayment: function() {
+          var self = this;
+          self.isSubmitting = true;
+          var updatedPayments = {};
+          try {
+            updatedPayments = JSON.parse(self.currentUser.paymentsJson || '{}');
+          } catch(e) {}
+
+          updatedPayments.pendaftaran = {
+            nominal: self.regPayForm.nominal,
+            transferDate: self.regPayForm.transferDate,
+            ownerName: self.regPayForm.ownerName,
+            proofUrl: self.regPayForm.proofUrl,
+            status: 'VERIFIKASI_ADMIN'
+          };
+
+          fetch(self.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'submitPayment',
+              payload: {
+                userId: self.currentUser.id,
+                payments: updatedPayments
+              }
+            })
+          })
+          .then(function(res) { return res.text(); })
+          .then(function(text) {
+            var resData = JSON.parse(text);
+            if (resData.ok) {
+              self.currentUser.paymentsJson = JSON.stringify(updatedPayments);
+              self.showToast('Berhasil Dikirim', 'Bukti pembayaran menunggu verifikasi admin.', 'success');
+            } else {
+              self.showToast('Gagal', resData.message || 'Gagal menyimpan.', 'error');
+            }
+          })
+          .catch(function() {
+            self.showToast('Error', 'Kesalahan jaringan.', 'error');
+          })
+          .finally(function() {
+            self.isSubmitting = false;
+          });
+        },
+
+        saveBiodata: function() {
+          var self = this;
+          self.isSubmitting = true;
+          fetch(self.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'updateBiodata',
+              payload: {
+                userId: self.currentUser.id,
+                biodata: self.biodataForm
+              }
+            })
+          })
+          .then(function(res) { return res.text(); })
+          .then(function(text) {
+            var resData = JSON.parse(text);
+            if (resData.ok) {
+              self.currentUser.biodataJson = JSON.stringify(self.biodataForm);
+              self.showToast('Berhasil Disimpan', 'Data biodata santri & orang tua tersimpan.', 'success');
+            } else {
+              self.showToast('Gagal', resData.message || 'Gagal menyimpan biodata.', 'error');
+            }
+          })
+          .catch(function() {
+            self.showToast('Error', 'Kesalahan jaringan.', 'error');
+          })
+          .finally(function() {
+            self.isSubmitting = false;
+          });
+        },
+
+        saveDoc: function(docKey) {
+          var self = this;
+          var url = self.docsMap[docKey] || '';
+          if (!url) {
+            self.showToast('URL Kosong', 'Tempelkan URL/Link dokumen.', 'error');
+            return;
+          }
+
+          var updatedDocs = {};
+          try {
+            updatedDocs = JSON.parse(self.currentUser.documentsJson || '{}');
+          } catch(e) {}
+
+          updatedDocs[docKey] = {
+            url: url,
+            status: 'VERIFIKASI_ADMIN'
+          };
+
+          fetch(self.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'uploadDocument',
+              payload: {
+                userId: self.currentUser.id,
+                documents: updatedDocs
+              }
+            })
+          })
+          .then(function(res) { return res.text(); })
+          .then(function(text) {
+            var resData = JSON.parse(text);
+            if (resData.ok) {
+              self.currentUser.documentsJson = JSON.stringify(updatedDocs);
+              self.showToast('Berhasil', 'Dokumen disimpan untuk verifikasi panitia.', 'success');
+            } else {
+              self.showToast('Gagal', resData.message || 'Gagal menyimpan dokumen.', 'error');
+            }
+          });
+        },
+
+        getDocUrl: function(docKey) {
+          try {
+            var docs = JSON.parse(this.currentUser.documentsJson || '{}');
+            return docs[docKey] ? (docs[docKey].url || '') : '';
+          } catch(e) { return ''; }
+        },
+
+        updateDocUrl: function(docKey, val) {
+          this.docsMap[docKey] = val;
+        },
+
+        getDocStatusLabel: function(docKey) {
+          try {
+            var docs = JSON.parse(this.currentUser.documentsJson || '{}');
+            if (!docs[docKey] || !docs[docKey].url) return '🔴 Belum Diunggah';
+            var st = docs[docKey].status || 'VERIFIKASI_ADMIN';
+            if (st === 'VALID') return '🟢 Disetujui';
+            if (st === 'DITOLAK') return '❌ Ditolak';
+            return '🟡 Verifikasi Panitia';
+          } catch(e) { return '🔴 Belum Diunggah'; }
+        },
+
+        getDocStatusBadgeClass: function(docKey) {
+          var label = this.getDocStatusLabel(docKey);
+          if (label.indexOf('Disetujui') !== -1) return 'bg-emerald-100 text-emerald-700';
+          if (label.indexOf('Ditolak') !== -1) return 'bg-red-100 text-red-700';
+          if (label.indexOf('Verifikasi') !== -1) return 'bg-amber-100 text-amber-700';
+          return 'bg-slate-200 text-slate-600';
+        },
+
+        getPaymentStatusLabel: function() {
+          try {
+            var p = JSON.parse(this.currentUser.paymentsJson || '{}');
+            if (p.pendaftaran && p.pendaftaran.status === 'LUNAS') return 'TERVERIFIKASI';
+            if (p.pendaftaran && p.pendaftaran.proofUrl) return 'MENUNGGU VERIFIKASI';
+            return 'BELUM BAYAR';
+          } catch(e) { return 'BELUM BAYAR'; }
+        },
+
+        getPaymentStatusBadgeClass: function() {
+          var st = this.getPaymentStatusLabel();
+          if (st === 'TERVERIFIKASI') return 'bg-emerald-500 text-slate-950 font-bold';
+          if (st === 'MENUNGGU VERIFIKASI') return 'bg-amber-400 text-amber-950 font-bold';
+          return 'bg-slate-700 text-slate-300';
+        },
+
+        getPaymentStatusColorClass: function() {
+          var st = this.getPaymentStatusLabel();
+          if (st === 'TERVERIFIKASI') return 'text-emerald-700';
+          if (st === 'MENUNGGU VERIFIKASI') return 'text-amber-600';
+          return 'text-red-600';
+        },
+
+        getBiodataProgressText: function() {
+          try {
+            var bio = JSON.parse(this.currentUser.biodataJson || '{}');
+            return bio.nik ? '100%' : '50%';
+          } catch(e) { return '50%'; }
+        },
+
+        getDocsCountText: function() {
+          try {
+            var docs = JSON.parse(this.currentUser.documentsJson || '{}');
+            var count = 0;
+            for (var k in docs) { if (docs[k] && docs[k].url) count++; }
+            return count + '/6';
+          } catch(e) { return '0/6'; }
+        },
+
+        getStepBadgeClass: function(stepNum) {
+          if (stepNum === 1) return 'bg-emerald-700 text-white font-bold';
+          var paySt = this.getPaymentStatusLabel();
+          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-700 text-white font-bold' : (paySt === 'MENUNGGU VERIFIKASI' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-200 text-slate-600');
+          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
+          if (stepNum === 4) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-700 text-white font-bold' : 'bg-slate-200 text-slate-600';
+          return 'bg-slate-200 text-slate-600';
+        },
+
+        getHomeContextualBannerText: function() {
+          var paySt = this.getPaymentStatusLabel();
+          if (paySt === 'BELUM BAYAR') return 'Halo ' + this.currentUser.fullName + ', pendaftaran akun Anda berhasil. Silakan lakukan pembayaran biaya formulir pendaftaran di menu Pembayaran.';
+          if (paySt === 'MENUNGGU VERIFIKASI') return 'Pembayaran formulir Anda sedang dalam tahap verifikasi admin panitia. Sambil menunggu, silakan lengkapi Biodata & Upload Berkas.';
+          if (this.currentUser.selectionStatus === 'LULUS') return 'Selamat ' + this.currentUser.fullName + '! Anda dinyatakan LULUS SELEKSI. Silakan cek menu Pengumuman & Pembayaran Daftar Ulang.';
+          return 'Pembayaran formulir terverifikasi LUNAS! Langkah selanjutnya: Lengkapi Biodata Santri, Upload Berkas, & Cetak Kartu Ujian Seleksi.';
+        },
+
+        getTimelineStepClass: function(stepNum) {
+          var paySt = this.getPaymentStatusLabel();
+          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : (paySt === 'MENUNGGU VERIFIKASI' ? 'bg-amber-50 border-amber-300 text-amber-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400');
+          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
+          if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
+          if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
+          if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-medium' : 'bg-slate-100 border-slate-200 text-slate-400';
+          return 'bg-slate-100 border-slate-200 text-slate-400';
+        },
+
+        getTimelineStepIcon: function(stepNum) {
+          var paySt = this.getPaymentStatusLabel();
+          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'check-circle' : 'credit-card';
+          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'check-circle' : 'file-text';
+          if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'award' : 'lock';
+          if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'check-circle' : 'lock';
+          if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'check-circle' : 'lock';
+          return 'lock';
+        },
+
+        getTimelineStepLabel: function(stepNum) {
+          var paySt = this.getPaymentStatusLabel();
+          if (stepNum === 2) return paySt === 'TERVERIFIKASI' ? 'Lunas ✅' : (paySt === 'MENUNGGU VERIFIKASI' ? 'Verifikasi ⏳' : 'Belum Bayar 🔒');
+          if (stepNum === 3) return this.getDocsCountText() === '6/6' ? 'Lengkap ✅' : 'Proses ⏳';
+          if (stepNum === 4) return paySt === 'TERVERIFIKASI' ? 'Siap Cetak ✅' : 'Terkunci 🔒';
+          if (stepNum === 5) return this.currentUser.selectionStatus === 'LULUS' ? 'LULUS ✅' : 'Proses ⏳';
+          if (stepNum === 6) return this.currentUser.selectionStatus === 'LULUS' ? 'Tersedia ✅' : 'Terkunci 🔒';
+          return 'Terkunci 🔒';
+        },
+
+        getDynamicWaGroupName: function() {
+          var j = (this.currentUser.jenjang || 'SMP').toUpperCase();
+          var g = (this.currentUser.gender || 'LAKI-LAKI').indexOf('LAKI') !== -1 ? 'Pa' : 'Pi';
+          var k = (j === 'SMP') ? 'Kelas 7' : 'Kelas 10';
+          return 'Grup ' + k + ' ' + g;
+        },
+
         showToast: function(title, message, type) {
           this.toast.title = title;
           this.toast.message = message;
@@ -1278,7 +2423,19 @@
               var user = resData.data;
               self.currentUser = user;
               self.mode = 'dashboard';
+              self.dashTab = 'home';
               self.showToast('Login Berhasil', 'Selamat datang, ' + user.fullName + ' (' + user.role + ')', 'success');
+
+              // Populate biodataForm if saved
+              try {
+                if (user.biodataJson) {
+                  var parsedBio = JSON.parse(user.biodataJson);
+                  if (parsedBio && typeof parsedBio === 'object') {
+                    self.biodataForm = Object.assign({}, self.biodataForm, parsedBio);
+                  }
+                }
+              } catch(e) {}
+
               if (user.role === 'ADMIN') {
                 self.fetchCandidates();
               }
