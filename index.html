@@ -111,7 +111,7 @@
     </div>
 
     <!-- MAIN CONTAINER BOX -->
-    <div class="w-full max-w-6xl rounded-3xl glass-card shadow-2xl overflow-hidden border border-white/10 flex flex-col my-auto transition-all duration-300">
+    <div class="w-full max-w-6xl rounded-3xl glass-card shadow-2xl overflow-hidden border border-white/10 flex flex-col my-auto">
       
       <!-- FULL SKELETON LOADER STATE -->
       <template x-if="isLoadingInitial">
@@ -186,20 +186,29 @@
                 </p>
 
                 <!-- DYNAMIC CAROUSEL SLIDE -->
-                <div class="mt-6 glass-panel rounded-2xl p-4 md:p-5 relative overflow-hidden">
-                  <template x-for="(slide, index) in slides" :key="slide.id">
-                    <div x-show="currentSlideIndex === index" x-transition.opacity.duration.300ms class="space-y-2">
-                      <div class="flex items-center justify-between">
-                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30" x-text="slide.badge"></span>
-                        <span class="text-[11px] text-emerald-200/60 font-mono" x-text="(index + 1) + '/' + slides.length"></span>
+                <div class="mt-6 glass-panel rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col justify-between min-h-[160px]">
+                  <div class="grid grid-cols-1 grid-rows-1 min-h-[100px]">
+                    <template x-for="(slide, index) in slides" :key="slide.id">
+                      <div x-show="currentSlideIndex === index" 
+                           x-transition:enter="transition ease-out duration-300"
+                           x-transition:enter-start="opacity-0"
+                           x-transition:enter-end="opacity-100"
+                           x-transition:leave="transition ease-in duration-200"
+                           x-transition:leave-start="opacity-100"
+                           x-transition:leave-end="opacity-0"
+                           class="col-start-1 row-start-1 space-y-2">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30" x-text="slide.badge"></span>
+                          <span class="text-[11px] text-emerald-200/60 font-mono" x-text="(index + 1) + '/' + slides.length"></span>
+                        </div>
+                        <h4 class="text-sm font-bold text-white" x-text="slide.title"></h4>
+                        <p class="text-xs text-emerald-100/80 leading-relaxed" x-text="slide.content"></p>
                       </div>
-                      <h4 class="text-sm font-bold text-white" x-text="slide.title"></h4>
-                      <p class="text-xs text-emerald-100/80 leading-relaxed" x-text="slide.content"></p>
-                    </div>
-                  </template>
+                    </template>
+                  </div>
 
                   <!-- Slide Controls Dots -->
-                  <div class="flex items-center gap-1.5 mt-4 pt-2 border-t border-white/10" x-show="slides.length > 1">
+                  <div class="flex items-center gap-1.5 mt-3 pt-2 border-t border-white/10" x-show="slides.length > 1">
                     <template x-for="(slide, index) in slides" :key="'dot-' + slide.id">
                       <button @click="currentSlideIndex = index" 
                               class="h-1.5 rounded-full transition-all duration-300"
