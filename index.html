@@ -167,121 +167,127 @@
               </div>
 
               <!-- MODE A: LOGIN PANEL LEFT SIDE -->
-              <template x-if="mode === 'login'">
-                <div class="space-y-6 transition-all duration-300">
-                  <!-- Tag Promo -->
-                  <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-semibold tracking-wide uppercase">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                    <span>PENERIMAAN SANTRI BARU</span>
-                  </div>
+              <div x-show="mode === 'login'" 
+                   x-transition:enter="transition ease-out duration-300"
+                   x-transition:enter-start="opacity-0 -translate-x-4"
+                   x-transition:enter-end="opacity-100 translate-x-0"
+                   class="space-y-6">
+                <!-- Tag Promo -->
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-semibold tracking-wide uppercase">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  <span>PENERIMAAN SANTRI BARU</span>
+                </div>
 
-                  <h2 class="text-2xl md:text-3xl font-extrabold text-white leading-snug">
-                    Tahun Ajaran <span class="text-amber-300" x-text="config.TAHUN_AJARAN || '2027/2028'"></span>
-                  </h2>
-                  <p class="text-xs md:text-sm text-emerald-100/80 leading-relaxed">
-                    Satu portal terpadu untuk calon santri baru dan panitia pendaftaran santri baru Pondok Pesantren Al-Umm.
-                  </p>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-white leading-snug">
+                  Tahun Ajaran <span class="text-amber-300" x-text="config.TAHUN_AJARAN || '2027/2028'"></span>
+                </h2>
+                <p class="text-xs md:text-sm text-emerald-100/80 leading-relaxed">
+                  Satu portal terpadu untuk calon santri baru dan panitia pendaftaran santri baru Pondok Pesantren Al-Umm.
+                </p>
 
-                  <!-- DYNAMIC CAROUSEL SLIDE -->
-                  <div class="mt-6 glass-panel rounded-2xl p-4 md:p-5 relative overflow-hidden">
-                    <template x-for="(slide, index) in slides" :key="slide.id">
-                      <div x-show="currentSlideIndex === index" x-transition.opacity.duration.300ms class="space-y-2">
-                        <div class="flex items-center justify-between">
-                          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30" x-text="slide.badge"></span>
-                          <span class="text-[11px] text-emerald-200/60 font-mono" x-text="(index + 1) + '/' + slides.length"></span>
-                        </div>
-                        <h4 class="text-sm font-bold text-white" x-text="slide.title"></h4>
-                        <p class="text-xs text-emerald-100/80 leading-relaxed" x-text="slide.content"></p>
+                <!-- DYNAMIC CAROUSEL SLIDE -->
+                <div class="mt-6 glass-panel rounded-2xl p-4 md:p-5 relative overflow-hidden">
+                  <template x-for="(slide, index) in slides" :key="slide.id">
+                    <div x-show="currentSlideIndex === index" x-transition.opacity.duration.300ms class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30" x-text="slide.badge"></span>
+                        <span class="text-[11px] text-emerald-200/60 font-mono" x-text="(index + 1) + '/' + slides.length"></span>
                       </div>
-                    </template>
-
-                    <!-- Slide Controls Dots -->
-                    <div class="flex items-center gap-1.5 mt-4 pt-2 border-t border-white/10" x-show="slides.length > 1">
-                      <template x-for="(slide, index) in slides" :key="'dot-' + slide.id">
-                        <button @click="currentSlideIndex = index" 
-                                class="h-1.5 rounded-full transition-all duration-300"
-                                :class="currentSlideIndex === index ? 'w-6 bg-amber-400' : 'w-1.5 bg-white/30 hover:bg-white/50'"></button>
-                      </template>
+                      <h4 class="text-sm font-bold text-white" x-text="slide.title"></h4>
+                      <p class="text-xs text-emerald-100/80 leading-relaxed" x-text="slide.content"></p>
                     </div>
+                  </template>
+
+                  <!-- Slide Controls Dots -->
+                  <div class="flex items-center gap-1.5 mt-4 pt-2 border-t border-white/10" x-show="slides.length > 1">
+                    <template x-for="(slide, index) in slides" :key="'dot-' + slide.id">
+                      <button @click="currentSlideIndex = index" 
+                              class="h-1.5 rounded-full transition-all duration-300"
+                              :class="currentSlideIndex === index ? 'w-6 bg-amber-400' : 'w-1.5 bg-white/30 hover:bg-white/50'"></button>
+                    </template>
                   </div>
                 </div>
-              </template>
+              </div>
 
               <!-- MODE B: REGISTER PANEL LEFT SIDE (STEP INDICATOR) -->
-              <template x-if="mode === 'register'">
-                <div class="space-y-6 transition-all duration-300">
-                  <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i data-lucide="clipboard-list" class="w-5 h-5 text-emerald-400"></i>
-                    <span>Tahapan Pendaftaran</span>
-                  </h3>
-                  <p class="text-xs text-emerald-100/80">Lengkapi formulir singkat untuk membuka akun pendaftaran Anda.</p>
+              <div x-show="mode === 'register'" 
+                   x-transition:enter="transition ease-out duration-300"
+                   x-transition:enter-start="opacity-0 translate-x-4"
+                   x-transition:enter-end="opacity-100 translate-x-0"
+                   class="space-y-6">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                  <i data-lucide="clipboard-list" class="w-5 h-5 text-emerald-400"></i>
+                  <span>Tahapan Pendaftaran</span>
+                </h3>
+                <p class="text-xs text-emerald-100/80">Lengkapi formulir singkat untuk membuka akun pendaftaran Anda.</p>
 
-                  <!-- Steps List -->
-                  <div class="space-y-4 mt-6">
-                    <!-- Step 1 Indicator -->
-                    <div class="flex items-center gap-4 p-3 rounded-xl transition-all"
-                         :class="registerStep === 1 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
-                      <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
-                           :class="registerStep === 1 ? 'bg-amber-400 text-slate-900' : (registerStep > 1 ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white')">
-                        <template x-if="registerStep > 1">
-                          <i data-lucide="check" class="w-4 h-4"></i>
-                        </template>
-                        <template x-if="registerStep <= 1">
-                          <span>1</span>
-                        </template>
-                      </div>
-                      <div>
-                        <div class="text-xs font-bold text-white">Jalur & Jenjang</div>
-                        <div class="text-[11px] text-emerald-200/70">Pilih program & kelas tujuan</div>
-                      </div>
+                <!-- Steps List -->
+                <div class="space-y-4 mt-6">
+                  <!-- Step 1 Indicator -->
+                  <div class="flex items-center gap-4 p-3 rounded-xl transition-all"
+                       :class="registerStep === 1 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                         :class="registerStep === 1 ? 'bg-amber-400 text-slate-900' : (registerStep > 1 ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white')">
+                      <template x-if="registerStep > 1">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                      </template>
+                      <template x-if="registerStep <= 1">
+                        <span>1</span>
+                      </template>
                     </div>
-
-                    <!-- Step 2 Indicator -->
-                    <div class="flex items-center gap-4 p-3 rounded-xl transition-all"
-                         :class="registerStep === 2 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
-                      <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
-                           :class="registerStep === 2 ? 'bg-amber-400 text-slate-900' : (registerStep > 2 ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white')">
-                        <template x-if="registerStep > 2">
-                          <i data-lucide="check" class="w-4 h-4"></i>
-                        </template>
-                        <template x-if="registerStep <= 2">
-                          <span>2</span>
-                        </template>
-                      </div>
-                      <div>
-                        <div class="text-xs font-bold text-white">Data Singkat</div>
-                        <div class="text-[11px] text-emerald-200/70">Identitas diri & kontak WA</div>
-                      </div>
+                    <div>
+                      <div class="text-xs font-bold text-white">Jalur & Jenjang</div>
+                      <div class="text-[11px] text-emerald-200/70">Pilih program & kelas tujuan</div>
                     </div>
+                  </div>
 
-                    <!-- Step 3 Indicator -->
-                    <div class="flex items-center gap-4 p-3 rounded-xl transition-all"
-                         :class="registerStep === 3 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
-                      <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
-                           :class="registerStep === 3 ? 'bg-amber-400 text-slate-900' : 'bg-white/20 text-white'">
-                        <span>3</span>
-                      </div>
-                      <div>
-                        <div class="text-xs font-bold text-white">Persetujuan</div>
-                        <div class="text-[11px] text-emerald-200/70">Konfirmasi syarat & ketentuan</div>
-                      </div>
+                  <!-- Step 2 Indicator -->
+                  <div class="flex items-center gap-4 p-3 rounded-xl transition-all"
+                       :class="registerStep === 2 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                         :class="registerStep === 2 ? 'bg-amber-400 text-slate-900' : (registerStep > 2 ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white')">
+                      <template x-if="registerStep > 2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                      </template>
+                      <template x-if="registerStep <= 2">
+                        <span>2</span>
+                      </template>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-white">Data Singkat</div>
+                      <div class="text-[11px] text-emerald-200/70">Identitas diri & kontak WA</div>
+                    </div>
+                  </div>
+
+                  <!-- Step 3 Indicator -->
+                  <div class="flex items-center gap-4 p-3 rounded-xl transition-all"
+                       :class="registerStep === 3 ? 'bg-white/15 border border-white/20' : 'opacity-60'">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                         :class="registerStep === 3 ? 'bg-amber-400 text-slate-900' : 'bg-white/20 text-white'">
+                      <span>3</span>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-white">Persetujuan</div>
+                      <div class="text-[11px] text-emerald-200/70">Konfirmasi syarat & ketentuan</div>
                     </div>
                   </div>
                 </div>
-              </template>
+              </div>
 
               <!-- MODE C: SUCCESS PANEL LEFT SIDE -->
-              <template x-if="mode === 'success'">
-                <div class="space-y-6 transition-all duration-300">
-                  <div class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 mb-4">
-                    <i data-lucide="check-circle" class="w-10 h-10"></i>
-                  </div>
-                  <h3 class="text-2xl font-extrabold text-white">Akun Berhasil Dibuat!</h3>
-                  <p class="text-xs text-emerald-100/80 leading-relaxed">
-                    Selamat, pembuatan akun calon santri berhasil. Simpan kredensial Anda untuk masuk ke portal seleksi santri baru.
-                  </p>
+              <div x-show="mode === 'success'" 
+                   x-transition:enter="transition ease-out duration-300"
+                   x-transition:enter-start="opacity-0 scale-95"
+                   x-transition:enter-end="opacity-100 scale-100"
+                   class="space-y-6">
+                <div class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 mb-4">
+                  <i data-lucide="check-circle" class="w-10 h-10"></i>
                 </div>
-              </template>
+                <h3 class="text-2xl font-extrabold text-white">Akun Berhasil Dibuat!</h3>
+                <p class="text-xs text-emerald-100/80 leading-relaxed">
+                  Selamat, pembuatan akun calon santri berhasil. Simpan kredensial Anda untuk masuk ke portal seleksi santri baru.
+                </p>
+              </div>
             </div>
 
             <!-- FOOTER BUTTONS ON LEFT SIDE -->
@@ -316,13 +322,16 @@
             <!-- ------------------------------------------------------- -->
             <!-- VIEW 1: LOGIN FORM                                       -->
             <!-- ------------------------------------------------------- -->
-            <div x-show="mode === 'login'" x-transition.opacity.duration.300ms>
+            <div x-show="mode === 'login'" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-3"
+                 x-transition:enter-end="opacity-100 translate-y-0">
               <div class="mb-8">
                 <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk ke Akun</h2>
                 <p class="text-xs text-slate-500 mt-1">Gunakan No Registrasi (contoh: PSB2027-0001), No WA, atau Email Anda.</p>
               </div>
 
-              <form @submit.prevent="handleLogin()" class="space-y-5">
+              <form @submit.prevent="handleLogin()" novalidate class="space-y-5">
                 <!-- Identifier Input -->
                 <div>
                   <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">No Registrasi / WA / Email</label>
@@ -393,7 +402,10 @@
             <!-- ------------------------------------------------------- -->
             <!-- VIEW 2: MULTI-STEP REGISTRATION FORM                    -->
             <!-- ------------------------------------------------------- -->
-            <div x-show="mode === 'register'" x-transition.opacity.duration.300ms>
+            <div x-show="mode === 'register'" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-3"
+                 x-transition:enter-end="opacity-100 translate-y-0">
               
               <!-- Back to Login Header -->
               <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
@@ -401,14 +413,14 @@
                   <h2 class="text-xl font-bold text-slate-900">Formulir Pendaftaran</h2>
                   <p class="text-xs text-slate-500">Langkah <span x-text="registerStep"></span> dari 3</p>
                 </div>
-                <button type="button" @click="switchToLogin()" class="text-xs text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg">
+                <button type="button" @click="switchToLogin()" class="text-xs text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg transition hover:bg-slate-200">
                   <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
                   <span>Kembali Login</span>
                 </button>
               </div>
 
               <!-- FORM CONTENT BY STEP -->
-              <form @submit.prevent="handleRegisterStepSubmit()">
+              <form @submit.prevent="handleRegisterStepSubmit()" novalidate>
                 
                 <!-- STEP 1: Pilih Jalur & Jenjang -->
                 <div x-show="registerStep === 1" class="space-y-5">
@@ -466,7 +478,7 @@
                       <div x-show="regForm.jenjang === 'SMP'">
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Pilih Kelas Tujuan (SMP Mutasi)</label>
                         <select x-model="regForm.kelasTujuan" class="w-full py-3 px-4 rounded-xl text-xs font-bold glass-input text-slate-800">
-                          <option value="Kelas 7">Kelas 7 (Semester Genap)</option>
+                          <option value="Kelas 7">Kelas 7</option>
                           <option value="Kelas 8">Kelas 8</option>
                           <option value="Kelas 9">Kelas 9</option>
                         </select>
@@ -475,7 +487,7 @@
                       <div x-show="regForm.jenjang === 'MA'">
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Pilih Kelas Tujuan (MA Mutasi)</label>
                         <select x-model="regForm.kelasTujuan" class="w-full py-3 px-4 rounded-xl text-xs font-bold glass-input text-slate-800">
-                          <option value="Kelas 10">Kelas 10 (Semester Genap)</option>
+                          <option value="Kelas 10">Kelas 10</option>
                           <option value="Kelas 11">Kelas 11</option>
                           <option value="Kelas 12">Kelas 12</option>
                         </select>
@@ -966,14 +978,26 @@
               this.showToast('Silakan pilih Jalur dan Jenjang pendaftaran.');
               return;
             }
-            this.registerStep = 2;
-          } else if (this.registerStep === 2) {
-            if (!this.regForm.namaLengkap || !this.regForm.asalSekolah || !this.regForm.noWa || !this.regForm.email) {
-              this.showToast('Lengkapi semua field identitas santri.');
+            if (this.regForm.jalur === 'Inden' && (!this.regForm.kelasTujuan || !this.regForm.kelasTujuan.trim())) {
+              this.showToast('Silakan isi kelas calon santri saat ini.');
               return;
             }
-            if (this.regForm.noWa.length < 9) {
-              this.showToast('Nomor WhatsApp tidak valid.');
+            this.registerStep = 2;
+          } else if (this.registerStep === 2) {
+            if (!this.regForm.namaLengkap.trim()) {
+              this.showToast('Silakan isi nama lengkap santri.');
+              return;
+            }
+            if (!this.regForm.asalSekolah.trim()) {
+              this.showToast('Silakan isi asal sekolah santri.');
+              return;
+            }
+            if (!this.regForm.noWa || this.regForm.noWa.length < 9) {
+              this.showToast('Nomor WhatsApp tidak valid (minimal 9 digit).');
+              return;
+            }
+            if (!this.regForm.email.trim() || !this.regForm.email.includes('@')) {
+              this.showToast('Silakan masukkan alamat email yang valid.');
               return;
             }
             this.registerStep = 3;
