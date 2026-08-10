@@ -369,19 +369,19 @@
 
               <div class="mb-8">
                 <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk ke Akun</h2>
-                <p class="text-xs text-slate-500 mt-1">Gunakan No Registrasi (contoh: PSB2027-0001), No WA, atau Email Anda.</p>
+                <p class="text-xs text-slate-500 mt-1">Gunakan No Registrasi pendaftaran Anda (contoh: PSB2027-0001).</p>
               </div>
 
               <form @submit.prevent="handleLogin()" novalidate class="space-y-5">
                 <!-- Identifier Input -->
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">No Registrasi / WA / Email</label>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">No Registrasi</label>
                   <div class="relative">
                     <i data-lucide="user" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                     <input type="text" 
                            x-model="loginForm.identifier"
                            @input="loginForm.identifier = loginForm.identifier.toUpperCase()"
-                           placeholder="PSB2027-0001 / 081234... / email@domain.com"
+                           placeholder="PSB2027-0001"
                            class="w-full pl-11 pr-4 py-3 rounded-xl text-sm font-semibold uppercase glass-input text-slate-800 placeholder-slate-400 focus:outline-none"
                            required>
                   </div>
