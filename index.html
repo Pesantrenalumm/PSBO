@@ -1020,21 +1020,43 @@
                 <div class="text-[10px] text-amber-400 font-mono" x-text="currentUser.regNo"></div>
               </div>
               <nav class="space-y-1">
-                <template x-for="item in [
-                  { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
-                  { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
-                  { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
-                  { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
-                  { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
-                  { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
-                  { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
-                ]" :key="'mob-' + item.id">
-                  <button @click="activeTab = item.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
-                          :class="activeTab === item.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
-                    <i :data-lucide="item.icon" class="w-5 h-5"></i>
-                    <span x-text="item.label"></span>
-                  </button>
+                <template x-if="currentUser.role === 'PESERTA'">
+                  <div class="space-y-1">
+                    <template x-for="item in [
+                      { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
+                      { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
+                      { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
+                      { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
+                      { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
+                      { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
+                      { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
+                    ]" :key="'mob-' + item.id">
+                      <button @click="activeTab = item.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                              :class="activeTab === item.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                        <i :data-lucide="item.icon" class="w-5 h-5"></i>
+                        <span x-text="item.label"></span>
+                      </button>
+                    </template>
+                  </div>
+                </template>
+
+                <template x-if="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN'">
+                  <div class="space-y-1">
+                    <template x-for="item in [
+                      { id: 'sys_dashboard', label: 'Dashboard Sistem', icon: 'layout-dashboard' },
+                      { id: 'config_psb', label: 'Konfigurasi PSB', icon: 'sliders' },
+                      { id: 'slides_mgmt', label: 'Banner & Slide', icon: 'image' },
+                      { id: 'users_mgmt', label: 'Manajemen Pengguna', icon: 'users' }
+                    ]" :key="'mob-admin-' + item.id">
+                      <button @click="activeTab = item.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                              :class="activeTab === item.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                        <i :data-lucide="item.icon" class="w-5 h-5"></i>
+                        <span x-text="item.label"></span>
+                      </button>
+                    </template>
+                  </div>
                 </template>
               </nav>
             </div>
@@ -1073,68 +1095,120 @@
             <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 w-full max-w-full mx-auto space-y-6">
 
               <!-- ==================================================== -->
-              <!-- ADMIN TAB 1: DASHBOARD SISTEM                        -->
+              <!-- MENU 1: DASHBOARD SISTEM (SUPER_ADMIN)               -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'sys_dashboard'" class="space-y-6">
+                
+                <!-- System Header Status Banner -->
+                <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 border border-slate-800 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                      <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-400">Ringkasan Sistem Super Admin</span>
+                    </div>
+                    <h3 class="text-lg font-bold">Koneksi Database Google Sheets Active</h3>
+                    <p class="text-xs text-slate-400 font-mono" x-text="'Spreadsheet ID: ' + (adminData.ssId || '1mw8CnUs8d7KiYhj3DftrJ4kHs0TCJAlWE-W3t0htt00')"></p>
+                  </div>
+                  <div class="text-right flex flex-col items-start sm:items-end">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" x-text="'STATUS: ' + (adminData.dbStatus || 'CONNECTED')"></span>
+                    <span class="text-[10px] text-slate-400 mt-1 font-mono" x-text="'Terakhir Sinkron: ' + (adminData.lastSync ? new Date(adminData.lastSync).toLocaleTimeString('id-ID') : 'Baru Saja')"></span>
+                  </div>
+                </div>
+
                 <!-- Stat Cards Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <!-- Card 1: Total Pendaftar -->
                   <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
-                      <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pendaftar</div>
+                      <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Peserta</div>
                       <div class="text-2xl font-extrabold text-slate-900 mt-1" x-text="(adminData.users || []).filter(u => u.role === 'PESERTA').length"></div>
+                      <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">Calon Santri Terdaftar</div>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
                       <i data-lucide="users" class="w-6 h-6"></i>
                     </div>
                   </div>
 
+                  <!-- Card 2: Total Panitia / Staff -->
                   <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
-                      <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Akun Staff / Admin</div>
+                      <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Panitia & Staff</div>
                       <div class="text-2xl font-extrabold text-slate-900 mt-1" x-text="(adminData.users || []).filter(u => u.role !== 'PESERTA').length"></div>
+                      <div class="text-[10px] text-amber-700 font-semibold mt-0.5">Akun Operator Aktif</div>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                      <i data-lucide="user-cog" class="w-6 h-6"></i>
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shadow-inner">
+                      <i data-lucide="user-check" class="w-6 h-6"></i>
                     </div>
                   </div>
 
+                  <!-- Card 3: Slide Banner -->
                   <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
                       <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Slide Banner</div>
-                      <div class="text-2xl font-extrabold text-slate-900 mt-1" x-text="(adminData.slides || []).length"></div>
+                      <div class="text-2xl font-extrabold text-slate-900 mt-1" x-text="(adminData.slides || []).filter(s => s.isActive).length + ' / ' + (adminData.slides || []).length"></div>
+                      <div class="text-[10px] text-teal-700 font-semibold mt-0.5">Slide Aktif Tampil</div>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center shadow-inner">
                       <i data-lucide="image" class="w-6 h-6"></i>
                     </div>
                   </div>
 
+                  <!-- Card 4: Periode Utama -->
                   <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
                       <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Periode Aktif</div>
-                      <div class="text-base font-extrabold text-brand-700 mt-1" x-text="adminData.config.PERIODE_AKTIF || 'EARLY BIRD'"></div>
+                      <div class="text-base font-extrabold text-brand-700 mt-1" x-text="getConfigVal('PERIODE_AKTIF', 'EARLY BIRD')"></div>
+                      <div class="text-[10px] text-slate-500 font-semibold mt-0.5" x-text="'T.A. ' + getConfigVal('TAHUN_AJARAN', '2027/2028')"></div>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-700 flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-700 flex items-center justify-center shadow-inner">
                       <i data-lucide="calendar" class="w-6 h-6"></i>
                     </div>
                   </div>
                 </div>
 
-                <!-- Data Table Peserta -->
-                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <!-- Distribution Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Reguler SMP Stat -->
+                  <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 font-bold">SMP</div>
                     <div>
-                      <h3 class="font-bold text-base text-slate-900">Daftar Akun & Peserta Terdaftar</h3>
-                      <p class="text-xs text-slate-500">Kelola kredensial dan status pendaftaran calon santri</p>
-                    </div>
-
-                    <!-- Search Input -->
-                    <div class="relative w-full sm:w-64">
-                      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                      <input type="text" x-model="adminUserSearch" placeholder="Cari nama, RegNo, WA..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none">
+                      <div class="text-xs text-slate-500 font-medium">Santri Jenjang SMP</div>
+                      <div class="text-lg font-extrabold text-slate-900" x-text="(adminData.users || []).filter(u => u.jenjang === 'SMP' && u.role === 'PESERTA').length + ' Santri'"></div>
                     </div>
                   </div>
 
-                  <!-- Table -->
+                  <!-- Reguler MA Stat -->
+                  <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0 font-bold">MA</div>
+                    <div>
+                      <div class="text-xs text-slate-500 font-medium">Santri Jenjang MA</div>
+                      <div class="text-lg font-extrabold text-slate-900" x-text="(adminData.users || []).filter(u => u.jenjang === 'MA' && u.role === 'PESERTA').length + ' Santri'"></div>
+                    </div>
+                  </div>
+
+                  <!-- Mutasi / Inden Stat -->
+                  <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 font-bold">M/I</div>
+                    <div>
+                      <div class="text-xs text-slate-500 font-medium">Jalur Mutasi & Inden</div>
+                      <div class="text-lg font-extrabold text-slate-900" x-text="(adminData.users || []).filter(u => (u.jalur === 'MUTASI' || u.jalur === 'INDEN') && u.role === 'PESERTA').length + ' Santri'"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Recent Registered Log Table Summary -->
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <h3 class="font-bold text-base text-slate-900">Aktivitas Pendaftaran Akun Terbaru</h3>
+                      <p class="text-xs text-slate-500">Ringkasan pendaftar terbaru yang masuk ke database Google Sheets</p>
+                    </div>
+                    <button type="button" @click="activeTab = 'users_mgmt'" class="text-xs font-bold text-brand-700 hover:underline flex items-center gap-1">
+                      <span>Lihat Semua Akun</span>
+                      <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+
                   <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs border-collapse">
                       <thead>
@@ -1144,11 +1218,10 @@
                           <th class="p-3">Jalur / Jenjang</th>
                           <th class="p-3">WhatsApp</th>
                           <th class="p-3">Role</th>
-                          <th class="p-3 text-center">Aksi</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-slate-100">
-                        <template x-for="u in filteredAdminUsers()" :key="u.regNo">
+                        <template x-for="u in (adminData.users || []).slice(0, 8)" :key="'recent-' + u.regNo">
                           <tr class="hover:bg-slate-50/80 transition">
                             <td class="p-3 font-mono font-bold text-brand-800" x-text="u.regNo"></td>
                             <td class="p-3 font-bold text-slate-800" x-text="u.namaLengkap"></td>
@@ -1159,60 +1232,65 @@
                                     :class="u.role === 'PESERTA' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
                                     x-text="u.role"></span>
                             </td>
-                            <td class="p-3 text-center">
-                              <button type="button" @click="openResetUserModal(u)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-sm transition">
-                                <i data-lucide="key-round" class="w-3 h-3"></i>
-                                <span>Reset Pass</span>
-                              </button>
-                            </td>
                           </tr>
                         </template>
                       </tbody>
                     </table>
                   </div>
                 </div>
+
               </div>
 
               <!-- ==================================================== -->
-              <!-- ADMIN TAB 2: KONFIGURASI PSB                         -->
+              <!-- MENU 2: KONFIGURASI PSB (SUPER_ADMIN)                -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'config_psb'" class="space-y-6">
                 <form @submit.prevent="saveAdminConfig()" class="space-y-6">
                   
-                  <!-- Toggle Controls Grid -->
+                  <!-- Toggle Controls Grid (Status Buka/Tutup Gelombang & Program) -->
                   <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="font-bold text-base text-slate-900 border-b border-slate-100 pb-3">Status Buka / Tutup Pendaftaran</h3>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 class="font-bold text-base text-slate-900">Status Buka / Tutup Pendaftaran (Toggle Master)</h3>
+                        <p class="text-xs text-slate-500">Ubah status BUKA / TUTUP untuk setiap gelombang dan jalur secara realtime.</p>
+                      </div>
+                      <span class="text-[11px] font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-600">Sheet CONFIG</span>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       <template x-for="item in [
+                        { key: 'STATUS_EARLY_BIRD', label: 'Periode Early Bird' },
+                        { key: 'STATUS_GELOMBANG_1', label: 'Periode Gelombang 1' },
+                        { key: 'STATUS_GELOMBANG_2', label: 'Periode Gelombang 2' },
+                        { key: 'STATUS_SUSULAN', label: 'Periode Susulan' },
                         { key: 'STATUS_SMP_PA', label: 'SMP Putra (PA)' },
                         { key: 'STATUS_SMP_PI', label: 'SMP Putri (PI)' },
                         { key: 'STATUS_MA_PA', label: 'MA Putra (PA)' },
                         { key: 'STATUS_MA_PI', label: 'MA Putri (PI)' },
                         { key: 'STATUS_MUTASI', label: 'Jalur Mutasi' },
-                        { key: 'STATUS_INDEN', label: 'Jalur Inden' },
-                        { key: 'STATUS_EARLY_BIRD', label: 'Periode Early Bird' },
-                        { key: 'STATUS_GELOMBANG_1', label: 'Periode Gelombang 1' },
-                        { key: 'STATUS_GELOMBANG_2', label: 'Periode Gelombang 2' },
-                        { key: 'STATUS_SUSULAN', label: 'Periode Susulan' }
+                        { key: 'STATUS_INDEN', label: 'Jalur Inden' }
                       ]" :key="item.key">
-                        <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                        <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between hover:border-slate-300 transition">
                           <span class="text-xs font-bold text-slate-800" x-text="item.label"></span>
                           <button type="button" @click="handleToggleConfigKey(item.key)"
-                                  class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase transition shadow-sm"
-                                  :class="(adminData.config[item.key] || 'BUKA').toUpperCase() === 'BUKA' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
-                                  x-text="(adminData.config[item.key] || 'BUKA').toUpperCase()"></button>
+                                  class="px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase transition shadow-sm flex items-center gap-1.5"
+                                  :class="isConfigOpen(item.key) ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white" :class="isConfigOpen(item.key) ? 'animate-pulse' : ''"></span>
+                            <span x-text="isConfigOpen(item.key) ? 'DIBUKA' : 'DITUTUP'"></span>
+                          </button>
                         </div>
                       </template>
                     </div>
                   </div>
 
-                  <!-- Text Settings Grid -->
+                  <!-- Parameter & Rekening Form -->
                   <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="font-bold text-base text-slate-900 border-b border-slate-100 pb-3">Pengaturan Informasi & Rekening Pembayaran</h3>
+                    <h3 class="font-bold text-base text-slate-900 border-b border-slate-100 pb-3">Parameter Sistem, Biaya & Rekening Bank</h3>
+                    
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                       <div>
                         <label class="block font-bold text-slate-700 mb-1">Tahun Ajaran Aktif</label>
-                        <input type="text" x-model="adminData.config.TAHUN_AJARAN" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <input type="text" x-model="adminData.config.TAHUN_AJARAN" placeholder="2027/2028" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
 
                       <div>
@@ -1226,38 +1304,50 @@
                       </div>
 
                       <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp Helpdesk</label>
-                        <input type="text" x-model="adminData.config.HELPDESK_WA" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                      </div>
-
-                      <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nama Bank Pembayaran</label>
-                        <input type="text" x-model="adminData.config.BANK_NAME" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                      </div>
-
-                      <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nomor Rekening Bank</label>
-                        <input type="text" x-model="adminData.config.BANK_ACCOUNT_NO" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                      </div>
-
-                      <div>
-                        <label class="block font-bold text-slate-700 mb-1">Atas Nama Rekening</label>
-                        <input type="text" x-model="adminData.config.BANK_ACCOUNT_NAME" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <label class="block font-bold text-slate-700 mb-1">Nomor WA Helpdesk</label>
+                        <input type="text" x-model="adminData.config.HELPDESK_WA" placeholder="6281234567890" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
 
                       <div>
                         <label class="block font-bold text-slate-700 mb-1">Biaya Pendaftaran (Rp)</label>
-                        <input type="text" x-model="adminData.config.REGISTRATION_FEE" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <input type="text" x-model="adminData.config.REGISTRATION_FEE" placeholder="250000" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
 
                       <div>
                         <label class="block font-bold text-slate-700 mb-1">Biaya Daftar Ulang (Rp)</label>
-                        <input type="text" x-model="adminData.config.RE_REGISTRATION_FEE" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <input type="text" x-model="adminData.config.RE_REGISTRATION_FEE" placeholder="5000000" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+
+                      <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nama Bank Pembayaran</label>
+                        <input type="text" x-model="adminData.config.BANK_NAME" placeholder="Bank Syariah Indonesia (BSI)" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+
+                      <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nomor Rekening Bank</label>
+                        <input type="text" x-model="adminData.config.BANK_ACCOUNT_NO" placeholder="7123456789" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+
+                      <div>
+                        <label class="block font-bold text-slate-700 mb-1">Atas Nama Rekening</label>
+                        <input type="text" x-model="adminData.config.BANK_ACCOUNT_NAME" placeholder="Ponpes Al-Umm PSB" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
 
                       <div>
                         <label class="block font-bold text-slate-700 mb-1">Link Brosur PDF / Drive</label>
-                        <input type="text" x-model="adminData.config.LINK_BROSUR" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <input type="text" x-model="adminData.config.LINK_BROSUR" placeholder="https://drive.google.com/..." class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+
+                      <div class="sm:col-span-2 md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                        <div>
+                          <label class="block font-bold text-slate-700 mb-1">Link Group WA Tahap 1 (Setelah Bayar Form)</label>
+                          <input type="text" x-model="adminData.config.WA_GROUP_STAGE1" placeholder="https://chat.whatsapp.com/..." class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+
+                        <div>
+                          <label class="block font-bold text-slate-700 mb-1">Link Group WA Tahap 2 (Setelah Lulus Seleksi)</label>
+                          <input type="text" x-model="adminData.config.WA_GROUP_STAGE2" placeholder="https://chat.whatsapp.com/..." class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
                       </div>
                     </div>
 
@@ -1273,14 +1363,14 @@
               </div>
 
               <!-- ==================================================== -->
-              <!-- ADMIN TAB 3: BANNER & SLIDE MANAGEMENT               -->
+              <!-- MENU 3: BANNER & SLIDE MANAGEMENT (SUPER_ADMIN)      -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'slides_mgmt'" class="space-y-6">
                 <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
                   <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
-                      <h3 class="font-bold text-base text-slate-900">Kelola Banner Slide Informasi</h3>
-                      <p class="text-xs text-slate-500">Slide yang aktif akan ditampilkan pada halaman login/pendaftaran</p>
+                      <h3 class="font-bold text-base text-slate-900">Kelola Banner Slide Informasi Login</h3>
+                      <p class="text-xs text-slate-500">Banner pengumuman/promo yang aktif akan muncul di carousel halaman pendaftaran.</p>
                     </div>
                     <button type="button" @click="openSlideModal(null)" class="px-4 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition">
                       <i data-lucide="plus" class="w-4 h-4"></i>
@@ -1288,21 +1378,23 @@
                     </button>
                   </div>
 
-                  <!-- Slide Cards List -->
+                  <!-- Slide Cards Grid -->
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <template x-for="s in (adminData.slides || [])" :key="s.id">
-                      <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3 flex flex-col justify-between">
+                      <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3 flex flex-col justify-between hover:border-slate-300 transition">
                         <div class="space-y-2">
                           <div class="flex items-center justify-between">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800" x-text="s.badge"></span>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase" :class="s.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'" x-text="s.isActive ? 'AKTIF' : 'NON-AKTIF'"></span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-300" x-text="s.badge"></span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase" 
+                                  :class="s.isActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600'" 
+                                  x-text="s.isActive ? 'AKTIF' : 'NON-AKTIF'"></span>
                           </div>
                           <h4 class="font-bold text-sm text-slate-900" x-text="s.title"></h4>
                           <p class="text-xs text-slate-600 leading-relaxed" x-text="s.content"></p>
                         </div>
 
                         <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
-                          <span class="text-[10px] font-mono text-slate-400" x-text="'Urutan: ' + s.order"></span>
+                          <span class="text-[10px] font-mono text-slate-500 font-bold" x-text="'Urutan Tampil: #' + s.order"></span>
                           <div class="flex items-center gap-2">
                             <button type="button" @click="openSlideModal(s)" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition flex items-center gap-1">
                               <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
@@ -1321,49 +1413,79 @@
               </div>
 
               <!-- ==================================================== -->
-              <!-- ADMIN TAB 4: MANAJEMEN PENGGUNA & STAFF              -->
+              <!-- MENU 4: MANAJEMEN PENGGUNA & STAFF (SUPER_ADMIN)     -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'users_mgmt'" class="space-y-6">
-                <!-- Create Staff Form -->
                 <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                  <h3 class="font-bold text-base text-slate-900 border-b border-slate-100 pb-3">Buat Akun Panitia / Staff Baru</h3>
-                  <form @submit.prevent="handleCreateStaffUser()" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                  
+                  <!-- Toolbar Header & Search -->
+                  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Nama Lengkap Staff</label>
-                      <input type="text" x-model="newStaffForm.namaLengkap" placeholder="CONTOH: AHMAD, S.Pd" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase" required>
+                      <h3 class="font-bold text-base text-slate-900">Manajemen Pengguna & Panitia PSB</h3>
+                      <p class="text-xs text-slate-500">Kelola seluruh akun peserta dan buat akun panitia/staff baru</p>
                     </div>
 
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Role / Wewenang</label>
-                      <select x-model="newStaffForm.role" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        <option value="TU_SMP">TU SMP</option>
-                        <option value="TU_MA">TU MA</option>
-                        <option value="BENDAHARA">BENDAHARA</option>
-                        <option value="PANITIA">PANITIA PSB</option>
-                      </select>
-                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                      <!-- Search Input -->
+                      <div class="relative flex-1 sm:w-64">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" x-model="adminUserSearch" placeholder="Cari nama, RegNo, WA..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
 
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Email Aktif</label>
-                      <input type="email" x-model="newStaffForm.email" placeholder="staff@alumm.sch.id" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" required>
-                    </div>
-
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp</label>
-                      <input type="text" x-model="newStaffForm.noWa" placeholder="081234567890" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" required>
-                    </div>
-
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Password Default</label>
-                      <input type="text" x-model="newStaffForm.password" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" required>
-                    </div>
-
-                    <div class="sm:col-span-2 md:col-span-1 flex items-end">
-                      <button type="submit" :disabled="isSubmitting" class="w-full py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-md transition disabled:opacity-50">
-                        <span x-text="isSubmitting ? 'Memproses...' : 'Tambah Akun Staff'"></span>
+                      <!-- Create Staff Button -->
+                      <button type="button" @click="showCreateStaffModal = true" class="px-3.5 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition flex-shrink-0">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Buat Akun Staff</span>
                       </button>
                     </div>
-                  </form>
+                  </div>
+
+                  <!-- Table -->
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                          <th class="p-3">No. Reg / ID</th>
+                          <th class="p-3">Nama Lengkap</th>
+                          <th class="p-3">Role</th>
+                          <th class="p-3">Jalur / Jenjang</th>
+                          <th class="p-3">WhatsApp & Email</th>
+                          <th class="p-3 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        <template x-for="u in filteredAdminUsers()" :key="u.regNo">
+                          <tr class="hover:bg-slate-50/80 transition">
+                            <td class="p-3 font-mono font-bold text-brand-800" x-text="u.regNo"></td>
+                            <td class="p-3 font-bold text-slate-800" x-text="u.namaLengkap"></td>
+                            <td class="p-3">
+                              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border"
+                                    :class="{
+                                      'bg-emerald-50 text-emerald-800 border-emerald-200': u.role === 'PESERTA',
+                                      'bg-amber-50 text-amber-800 border-amber-200': u.role === 'SUPER_ADMIN' || u.role === 'ADMIN',
+                                      'bg-blue-50 text-blue-800 border-blue-200': u.role === 'BENDAHARA',
+                                      'bg-purple-50 text-purple-800 border-purple-200': u.role === 'TU_SMP' || u.role === 'TU_MA',
+                                      'bg-slate-100 text-slate-800 border-slate-300': u.role === 'PANITIA'
+                                    }"
+                                    x-text="u.role"></span>
+                            </td>
+                            <td class="p-3 text-slate-600" x-text="u.jalur + ' - ' + u.jenjang"></td>
+                            <td class="p-3 font-mono text-slate-600">
+                              <div x-text="u.noWa"></div>
+                              <div class="text-[10px] text-slate-400 font-sans truncate max-w-[150px]" x-text="u.email"></div>
+                            </td>
+                            <td class="p-3 text-center">
+                              <button type="button" @click="openResetUserModal(u)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-sm transition" title="Reset Password / WA">
+                                <i data-lucide="key-round" class="w-3 h-3"></i>
+                                <span>Reset Pass & WA</span>
+                              </button>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+
                 </div>
               </div>
 
@@ -2829,7 +2951,30 @@
         adminData: {
           config: {},
           users: [],
-          slides: []
+          slides: [],
+          dbStatus: 'CONNECTED',
+          ssId: '',
+          lastSync: ''
+        },
+
+        showCreateStaffModal: false,
+
+        getConfigVal(key, defaultVal) {
+          if (this.adminData && this.adminData.config && this.adminData.config[key] !== undefined) {
+            return this.adminData.config[key];
+          }
+          return defaultVal !== undefined ? defaultVal : '';
+        },
+
+        isConfigOpen(key) {
+          var val = this.getConfigVal(key, 'BUKA');
+          return String(val).toUpperCase() === 'BUKA';
+        },
+
+        handleToggleConfigKey(key) {
+          if (!this.adminData.config) this.adminData.config = {};
+          var current = (this.adminData.config[key] || 'BUKA').toString().toUpperCase();
+          this.adminData.config[key] = (current === 'BUKA') ? 'TUTUP' : 'BUKA';
         },
         slideModalData: {
           id: '',
@@ -3129,6 +3274,53 @@
           <div class="pt-3 flex justify-end gap-2">
             <button type="button" @click="showSlideModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold">Batal</button>
             <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-brand-700 text-white font-bold">Simpan Slide</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- CREATE STAFF MODAL -->
+    <div x-show="showCreateStaffModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white text-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+        <div class="flex items-center justify-between border-b pb-3">
+          <h4 class="font-bold text-sm text-slate-900">Buat Akun Panitia / Staff Baru</h4>
+          <button @click="showCreateStaffModal = false" class="text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <form @submit.prevent="handleCreateStaffUser(); showCreateStaffModal = false;" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Nama Lengkap Staff</label>
+            <input type="text" x-model="newStaffForm.namaLengkap" placeholder="CONTOH: AHMAD, S.Pd" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase" required>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Role / Wewenang</label>
+              <select x-model="newStaffForm.role" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                <option value="PANITIA">PANITIA PSB</option>
+                <option value="BENDAHARA">BENDAHARA</option>
+                <option value="TU_SMP">TU SMP</option>
+                <option value="TU_MA">TU MA</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Password Default</label>
+              <input type="text" x-model="newStaffForm.password" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" required>
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Email Aktif</label>
+            <input type="email" x-model="newStaffForm.email" placeholder="staff@alumm.sch.id" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" required>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp</label>
+            <input type="text" x-model="newStaffForm.noWa" placeholder="081234567890" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" required>
+          </div>
+          <div class="pt-3 flex justify-end gap-2">
+            <button type="button" @click="showCreateStaffModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold">Batal</button>
+            <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-brand-700 text-white font-bold">Buat Akun Staff</button>
           </div>
         </form>
       </div>
