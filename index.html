@@ -1312,123 +1312,473 @@
               <!-- TAB 3: BIODATA                                       -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'biodata'" class="space-y-6">
-                <!-- Completion Progress Header -->
-                <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
-                  <div>
-                    <h4 class="font-bold text-sm text-slate-900">Kelengkapan Biodata</h4>
-                    <p class="text-xs text-slate-500">Isi seluruh data santri, ayah, dan ibu secara valid.</p>
+                <!-- Completion Progress & Step Header -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                        <span>Formulir Biodata Lengkap Santri</span>
+                        <span x-show="dashData.biodata.isLocked" class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-extrabold flex items-center gap-1 border border-amber-300">
+                          <i data-lucide="lock" class="w-3 h-3"></i>
+                          <span>TERKUNCI</span>
+                        </span>
+                      </h4>
+                      <p class="text-xs text-slate-500 mt-0.5">Lengkapi formulir secara bertahap. Anda dapat menyimpan draf kapan saja.</p>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-lg font-extrabold text-brand-700" x-text="getBiodataFilledCount() + '%'"></div>
+                      <div class="text-[10px] text-slate-400 font-medium">Terisi</div>
+                    </div>
                   </div>
-                  <div class="text-right">
-                    <span class="text-sm font-extrabold text-brand-700" x-text="getBiodataFilledCount() + '%'"></span>
-                    <span x-show="dashData.biodata.isLocked" class="block text-[10px] text-amber-600 font-bold">TERKUNCI</span>
+
+                  <!-- Step Wizard Navigation Header -->
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="bioStep = 1; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                            class="p-2.5 rounded-xl border text-left transition flex items-center gap-2.5"
+                            :class="bioStep === 1 ? 'bg-brand-50 border-brand-700 text-brand-800 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                           :class="bioStep === 1 ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-700'">1</div>
+                      <div class="truncate">
+                        <div class="text-[11px] font-bold truncate">Data Santri</div>
+                        <div class="text-[9px] text-slate-400 truncate">Identitas Diri</div>
+                      </div>
+                    </button>
+
+                    <button type="button" @click="bioStep = 2; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                            class="p-2.5 rounded-xl border text-left transition flex items-center gap-2.5"
+                            :class="bioStep === 2 ? 'bg-brand-50 border-brand-700 text-brand-800 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                           :class="bioStep === 2 ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-700'">2</div>
+                      <div class="truncate">
+                        <div class="text-[11px] font-bold truncate">Alamat & Sekolah</div>
+                        <div class="text-[9px] text-slate-400 truncate">Domisili & Asal</div>
+                      </div>
+                    </button>
+
+                    <button type="button" @click="bioStep = 3; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                            class="p-2.5 rounded-xl border text-left transition flex items-center gap-2.5"
+                            :class="bioStep === 3 ? 'bg-brand-50 border-brand-700 text-brand-800 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                           :class="bioStep === 3 ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-700'">3</div>
+                      <div class="truncate">
+                        <div class="text-[11px] font-bold truncate">Biodata Ayah</div>
+                        <div class="text-[9px] text-slate-400 truncate">Orang Tua Laki-laki</div>
+                      </div>
+                    </button>
+
+                    <button type="button" @click="bioStep = 4; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                            class="p-2.5 rounded-xl border text-left transition flex items-center gap-2.5"
+                            :class="bioStep === 4 ? 'bg-brand-50 border-brand-700 text-brand-800 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                           :class="bioStep === 4 ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-700'">4</div>
+                      <div class="truncate">
+                        <div class="text-[11px] font-bold truncate">Biodata Ibu</div>
+                        <div class="text-[9px] text-slate-400 truncate">Orang Tua Perempuan</div>
+                      </div>
+                    </button>
                   </div>
                 </div>
 
+                <!-- Lock Info Alert Box -->
+                <div x-show="dashData.biodata.isLocked" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-sm">
+                  <div class="flex items-center gap-3">
+                    <i data-lucide="lock" class="w-5 h-5 text-amber-600 flex-shrink-0"></i>
+                    <div>
+                      <span class="font-bold block">Biodata Telah Dikunci & Terverifikasi</span>
+                      <span class="text-amber-800">Data tidak dapat diedit langsung. Silakan ajukan permohonan revisi jika ada kesalahan.</span>
+                    </div>
+                  </div>
+                  <button type="button" @click="showRevisionModal = true" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm flex items-center gap-1.5 flex-shrink-0">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    <span>Ajukan Revisi</span>
+                  </button>
+                </div>
+
+                <!-- MULTI-STEP FORM -->
                 <form @submit.prevent="handleSaveBiodata(true)" class="space-y-6">
-                  <!-- Data Santri -->
-                  <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                    <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 border-b border-slate-100 pb-2">1. Data Santri</h5>
+
+                  <!-- STEP 1: DATA SANTRI -->
+                  <div x-show="bioStep === 1" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                    <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                      <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 flex items-center gap-2">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span>Langkah 1: Identitas Calon Santri</span>
+                      </h5>
+                      <span class="text-[10px] text-slate-400 font-semibold">* Field terkunci otomatis dari akun pendaftaran</span>
+                    </div>
+
+                    <div class="space-y-4 text-xs">
+
+                      <!-- LOCKED REGISTRATION FIELDS GROUP -->
+                      <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                          <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
+                          <span>Data Pendaftaran Akun (Dikunci)</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          <div>
+                            <label class="block text-slate-500 font-semibold mb-1">Nama Lengkap Santri</label>
+                            <input type="text" :value="currentUser.namaLengkap" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed uppercase">
+                          </div>
+                          <div>
+                            <label class="block text-slate-500 font-semibold mb-1">Jenis Kelamin</label>
+                            <input type="text" :value="currentUser.jenisKelamin" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed uppercase">
+                          </div>
+                          <div>
+                            <label class="block text-slate-500 font-semibold mb-1">Jenis Jenjang</label>
+                            <input type="text" :value="currentUser.jenjang" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed uppercase">
+                          </div>
+                          <div>
+                            <label class="block text-slate-500 font-semibold mb-1">Jenis Pendaftaran / Jalur</label>
+                            <input type="text" :value="currentUser.jalur" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed uppercase">
+                          </div>
+                          <div>
+                            <label class="block text-slate-500 font-semibold mb-1">Kelas Dituju</label>
+                            <input type="text" :value="currentUser.kelasTujuan" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed uppercase">
+                          </div>
+                          <div>
+                            <label class="block text-slate-500 font-semibold mb-1">Sekolah Asal</label>
+                            <input type="text" :value="currentUser.asalSekolah" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed uppercase">
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- EDITABLE FIELDS STEP 1 -->
+                      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">NISN (Nomor Induk Siswa Nasional)</label>
+                          <input type="text" x-model="dashData.biodata.nisn" @input="dashData.biodata.nisn = dashData.biodata.nisn.replace(/\D/g, '').slice(0, 10)" :disabled="dashData.biodata.isLocked" placeholder="10 digit NISN" maxlength="10" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Tempat Lahir</label>
+                          <input type="text" x-model="dashData.biodata.tempatLahir" :disabled="dashData.biodata.isLocked" placeholder="Kota lahir" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Tanggal Lahir</label>
+                          <input type="date" x-model="dashData.biodata.tanggalLahir" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Anak Ke-</label>
+                          <input type="text" x-model="dashData.biodata.anakKe" @input="dashData.biodata.anakKe = dashData.biodata.anakKe.replace(/\D/g, '').slice(0, 2)" :disabled="dashData.biodata.isLocked" placeholder="Contoh: 1" maxlength="2" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Jumlah Saudara</label>
+                          <input type="text" x-model="dashData.biodata.jumlahSaudara" @input="dashData.biodata.jumlahSaudara = dashData.biodata.jumlahSaudara.replace(/\D/g, '').slice(0, 2)" :disabled="dashData.biodata.isLocked" placeholder="Contoh: 3" maxlength="2" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Agama</label>
+                          <select x-model="dashData.biodata.agama" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                            <option value="Islam">Islam</option>
+                            <option value="Lainnya">Lainnya</option>
+                          </select>
+                        </div>
+                        <div class="sm:col-span-2 md:col-span-3">
+                          <label class="block text-slate-700 font-semibold mb-1">Riwayat Penyakit (Jika Ada)</label>
+                          <input type="text" x-model="dashData.biodata.riwayatPenyakit" :disabled="dashData.biodata.isLocked" placeholder="Tuliskan alergi, asma, atau penyakit khusus (Ketik 'Tidak Ada' jika sehat)" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <!-- STEP 2: ALAMAT & SEKOLAH -->
+                  <div x-show="bioStep === 2" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                    <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                      <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        <span>Langkah 2: Alamat, Kependudukan & Sekolah</span>
+                      </h5>
+                    </div>
+
+                    <div class="space-y-4 text-xs">
+
+                      <!-- Kependudukan & Alamat -->
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">No. Kartu Keluarga (KK)</label>
+                          <input type="text" x-model="dashData.biodata.noKk" @input="dashData.biodata.noKk = dashData.biodata.noKk.replace(/\D/g, '').slice(0, 16)" :disabled="dashData.biodata.isLocked" placeholder="16 digit No. KK" maxlength="16" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Nomor Induk Kependudukan (NIK Santri)</label>
+                          <input type="text" x-model="dashData.biodata.nikSantri" @input="dashData.biodata.nikSantri = dashData.biodata.nikSantri.replace(/\D/g, '').slice(0, 16)" :disabled="dashData.biodata.isLocked" placeholder="16 digit NIK Santri" maxlength="16" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div class="sm:col-span-2">
+                          <label class="block text-slate-700 font-semibold mb-1">Alamat Jalan / Dusun</label>
+                          <textarea x-model="dashData.biodata.alamat" :disabled="dashData.biodata.isLocked" rows="2" placeholder="Nama Jalan, No. Rumah, Dusun/Gang" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none"></textarea>
+                        </div>
+                      </div>
+
+                      <!-- 2-COLUMN LAYOUT ONLY FOR SHORT RT & RW -->
+                      <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-2">
+                        <span class="text-[10px] font-bold text-emerald-900 uppercase">Wilayah RT / RW (Dua Kolom)</span>
+                        <div class="grid grid-cols-2 gap-3">
+                          <div>
+                            <label class="block text-slate-700 font-semibold mb-1">RT</label>
+                            <input type="text" x-model="dashData.biodata.rt" @input="dashData.biodata.rt = dashData.biodata.rt.replace(/\D/g, '').slice(0, 3)" :disabled="dashData.biodata.isLocked" placeholder="001" maxlength="3" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 font-semibold focus:border-brand-700 focus:outline-none text-center">
+                          </div>
+                          <div>
+                            <label class="block text-slate-700 font-semibold mb-1">RW</label>
+                            <input type="text" x-model="dashData.biodata.rw" @input="dashData.biodata.rw = dashData.biodata.rw.replace(/\D/g, '').slice(0, 3)" :disabled="dashData.biodata.isLocked" placeholder="002" maxlength="3" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 font-semibold focus:border-brand-700 focus:outline-none text-center">
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Kelurahan, Kecamatan, Kab, Prov, Kode Pos -->
+                      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Kelurahan / Desa</label>
+                          <input type="text" x-model="dashData.biodata.kelurahan" :disabled="dashData.biodata.isLocked" placeholder="Nama Kelurahan/Desa" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Kecamatan</label>
+                          <input type="text" x-model="dashData.biodata.kecamatan" :disabled="dashData.biodata.isLocked" placeholder="Nama Kecamatan" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Kabupaten / Kota</label>
+                          <input type="text" x-model="dashData.biodata.kabupaten" :disabled="dashData.biodata.isLocked" placeholder="Nama Kabupaten/Kota" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Provinsi</label>
+                          <input type="text" x-model="dashData.biodata.provinsi" :disabled="dashData.biodata.isLocked" placeholder="Nama Provinsi" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Kode Pos</label>
+                          <input type="text" x-model="dashData.biodata.kodePos" @input="dashData.biodata.kodePos = dashData.biodata.kodePos.replace(/\D/g, '').slice(0, 5)" :disabled="dashData.biodata.isLocked" placeholder="5 digit Kode Pos" maxlength="5" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Kewarganegaraan</label>
+                          <select x-model="dashData.biodata.kewarganegaraan" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                            <option value="WNI">WNI (Warga Negara Indonesia)</option>
+                            <option value="WNA">WNA (Warga Negara Asing)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <!-- Locked Kontak & Detail Sekolah -->
+                      <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <label class="block text-slate-500 font-semibold mb-1">Email (Dikunci)</label>
+                          <input type="text" :value="currentUser.email" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed">
+                        </div>
+                        <div>
+                          <label class="block text-slate-500 font-semibold mb-1">No. WhatsApp (Dikunci)</label>
+                          <input type="text" :value="currentUser.noWa" disabled class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-bold cursor-not-allowed">
+                        </div>
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1">Jenis Sekolah Asal</label>
+                          <select x-model="dashData.biodata.jenisSekolah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                            <option value="">Pilih Jenis Sekolah</option>
+                            <option value="SD Negeri">SD Negeri</option>
+                            <option value="SD Swasta">SD Swasta / IT</option>
+                            <option value="MI Negeri/Swasta">MI (Madrasah Ibtidaiyah)</option>
+                            <option value="SMP Negeri">SMP Negeri</option>
+                            <option value="SMP Swasta">SMP Swasta / IT</option>
+                            <option value="MTs Negeri/Swasta">MTs (Madrasah Tsanawiyah)</option>
+                            <option value="Pondok Pesantren">Pondok Pesantren / PKPPS</option>
+                            <option value="Homeschooling/Lainnya">Homeschooling / Lainnya</option>
+                          </select>
+                        </div>
+                        <div class="sm:col-span-2 md:col-span-3">
+                          <label class="block text-slate-700 font-semibold mb-1">Alamat Lengkap Sekolah Asal</label>
+                          <input type="text" x-model="dashData.biodata.alamatSekolah" :disabled="dashData.biodata.isLocked" placeholder="Alamat jalan / kota sekolah asal" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <!-- STEP 3: BIODATA AYAH -->
+                  <div x-show="bioStep === 3" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                    <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                      <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-4 h-4"></i>
+                        <span>Langkah 3: Biodata Ayah Kandung</span>
+                      </h5>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                       <div>
-                        <label class="block text-slate-600 font-semibold mb-1">NIK Santri</label>
-                        <input type="text" x-model="dashData.biodata.nikSantri" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" placeholder="351234...">
+                        <label class="block text-slate-700 font-semibold mb-1">NIK Ayah</label>
+                        <input type="text" x-model="dashData.biodata.nikAyah" @input="dashData.biodata.nikAyah = dashData.biodata.nikAyah.replace(/\D/g, '').slice(0, 16)" :disabled="dashData.biodata.isLocked" placeholder="16 digit NIK Ayah" maxlength="16" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
                       <div>
-                        <label class="block text-slate-600 font-semibold mb-1">NISN</label>
-                        <input type="text" x-model="dashData.biodata.nisn" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none" placeholder="001234...">
+                        <label class="block text-slate-700 font-semibold mb-1">Nama Lengkap Ayah</label>
+                        <input type="text" x-model="dashData.biodata.namaAyah" :disabled="dashData.biodata.isLocked" placeholder="Nama lengkap Ayah" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase">
                       </div>
                       <div>
-                        <label class="block text-slate-600 font-semibold mb-1">Tempat Lahir</label>
-                        <input type="text" x-model="dashData.biodata.tempatLahir" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <label class="block text-slate-700 font-semibold mb-1">Status Ayah</label>
+                        <select x-model="dashData.biodata.statusAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                          <option value="Masih Hidup">Masih Hidup</option>
+                          <option value="Meninggal Dunia">Meninggal Dunia</option>
+                          <option value="Bercerai">Bercerai</option>
+                        </select>
                       </div>
                       <div>
-                        <label class="block text-slate-600 font-semibold mb-1">Tanggal Lahir</label>
-                        <input type="date" x-model="dashData.biodata.tanggalLahir" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <label class="block text-slate-700 font-semibold mb-1">Tempat Lahir Ayah</label>
+                        <input type="text" x-model="dashData.biodata.tempatLahirAyah" :disabled="dashData.biodata.isLocked" placeholder="Kota lahir Ayah" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase">
                       </div>
                       <div>
-                        <label class="block text-slate-600 font-semibold mb-1">Anak Ke-</label>
-                        <input type="number" x-model="dashData.biodata.anakKe" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <label class="block text-slate-700 font-semibold mb-1">Tanggal Lahir Ayah</label>
+                        <input type="date" x-model="dashData.biodata.tanggalLahirAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
                       <div>
-                        <label class="block text-slate-600 font-semibold mb-1">Jumlah Saudara</label>
-                        <input type="number" x-model="dashData.biodata.jumlahSaudara" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        <label class="block text-slate-700 font-semibold mb-1">No. Handphone / WhatsApp Ayah</label>
+                        <input type="text" x-model="dashData.biodata.noWaAyah" @input="dashData.biodata.noWaAyah = dashData.biodata.noWaAyah.replace(/\D/g, '').slice(0, 15)" :disabled="dashData.biodata.isLocked" placeholder="081234..." maxlength="15" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Pekerjaan Ayah</label>
+                        <input type="text" x-model="dashData.biodata.pekerjaanAyah" :disabled="dashData.biodata.isLocked" placeholder="PNS/S част, Wiraswasta, dll" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Pendidikan Terakhir Ayah</label>
+                        <select x-model="dashData.biodata.pendidikanAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                          <option value="">Pilih Pendidikan</option>
+                          <option value="SD / Sederajat">SD / Sederajat</option>
+                          <option value="SMP / Sederajat">SMP / Sederajat</option>
+                          <option value="SMA / Sederajat">SMA / Sederajat</option>
+                          <option value="D1 / D2 / D3">D1 / D2 / D3</option>
+                          <option value="S1 / D4">S1 / D4</option>
+                          <option value="S2">S2</option>
+                          <option value="S3">S3</option>
+                          <option value="Tidak Sekolah">Tidak Sekolah</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Penghasilan Perbulan Ayah</label>
+                        <select x-model="dashData.biodata.penghasilanAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                          <option value="">Pilih Penghasilan</option>
+                          <option value="< Rp 1.000.000">&lt; Rp 1.000.000</option>
+                          <option value="Rp 1.000.000 - Rp 3.000.000">Rp 1.000.000 - Rp 3.000.000</option>
+                          <option value="Rp 3.000.000 - Rp 5.000.000">Rp 3.000.000 - Rp 5.000.000</option>
+                          <option value="Rp 5.000.000 - Rp 10.000.000">Rp 5.000.000 - Rp 10.000.000</option>
+                          <option value="> Rp 10.000.000">&gt; Rp 10.000.000</option>
+                        </select>
                       </div>
                       <div class="sm:col-span-2 md:col-span-3">
-                        <label class="block text-slate-600 font-semibold mb-1">Alamat Lengkap (Sesuai KK)</label>
-                        <textarea x-model="dashData.biodata.alamatLengkap" :disabled="dashData.biodata.isLocked" rows="2" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none"></textarea>
+                        <label class="block text-slate-700 font-semibold mb-1">Alamat Ayah</label>
+                        <input type="text" x-model="dashData.biodata.alamatAyah" :disabled="dashData.biodata.isLocked" placeholder="Alamat lengkap Ayah (Isi 'Sama dengan Santri' jika serumah)" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
                     </div>
                   </div>
 
-                  <!-- Data Ayah & Ibu -->
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Data Ayah -->
-                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                      <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 border-b border-slate-100 pb-2">2. Data Ayah Kandung</h5>
-                      <div class="space-y-3 text-xs">
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">Nama Ayah</label>
-                          <input type="text" x-model="dashData.biodata.namaAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">NIK Ayah</label>
-                          <input type="text" x-model="dashData.biodata.nikAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">Pekerjaan Ayah</label>
-                          <input type="text" x-model="dashData.biodata.pekerjaanAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">No WA Ayah</label>
-                          <input type="text" x-model="dashData.biodata.noWaAyah" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                      </div>
+                  <!-- STEP 4: BIODATA IBU -->
+                  <div x-show="bioStep === 4" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                    <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                      <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 flex items-center gap-2">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <span>Langkah 4: Biodata Ibu Kandung</span>
+                      </h5>
                     </div>
 
-                    <!-- Data Ibu -->
-                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
-                      <h5 class="text-xs font-bold uppercase tracking-wider text-brand-700 border-b border-slate-100 pb-2">3. Data Ibu Kandung</h5>
-                      <div class="space-y-3 text-xs">
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">Nama Ibu</label>
-                          <input type="text" x-model="dashData.biodata.namaIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">NIK Ibu</label>
-                          <input type="text" x-model="dashData.biodata.nikIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">Pekerjaan Ibu</label>
-                          <input type="text" x-model="dashData.biodata.pekerjaanIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
-                        <div>
-                          <label class="block text-slate-600 font-semibold mb-1">No WA Ibu</label>
-                          <input type="text" x-model="dashData.biodata.noWaIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
-                        </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">NIK Ibu</label>
+                        <input type="text" x-model="dashData.biodata.nikIbu" @input="dashData.biodata.nikIbu = dashData.biodata.nikIbu.replace(/\D/g, '').slice(0, 16)" :disabled="dashData.biodata.isLocked" placeholder="16 digit NIK Ibu" maxlength="16" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Nama Lengkap Ibu</label>
+                        <input type="text" x-model="dashData.biodata.namaIbu" :disabled="dashData.biodata.isLocked" placeholder="Nama lengkap Ibu" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Status Ibu</label>
+                        <select x-model="dashData.biodata.statusIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                          <option value="Masih Hidup">Masih Hidup</option>
+                          <option value="Meninggal Dunia">Meninggal Dunia</option>
+                          <option value="Bercerai">Bercerai</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Tempat Lahir Ibu</label>
+                        <input type="text" x-model="dashData.biodata.tempatLahirIbu" :disabled="dashData.biodata.isLocked" placeholder="Kota lahir Ibu" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none uppercase">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Tanggal Lahir Ibu</label>
+                        <input type="date" x-model="dashData.biodata.tanggalLahirIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">No. Handphone / WhatsApp Ibu</label>
+                        <input type="text" x-model="dashData.biodata.noWaIbu" @input="dashData.biodata.noWaIbu = dashData.biodata.noWaIbu.replace(/\D/g, '').slice(0, 15)" :disabled="dashData.biodata.isLocked" placeholder="081234..." maxlength="15" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Pekerjaan Ibu</label>
+                        <input type="text" x-model="dashData.biodata.pekerjaanIbu" :disabled="dashData.biodata.isLocked" placeholder="Ibu Rumah Tangga, PNS, Swasta, dll" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Pendidikan Terakhir Ibu</label>
+                        <select x-model="dashData.biodata.pendidikanIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                          <option value="">Pilih Pendidikan</option>
+                          <option value="SD / Sederajat">SD / Sederajat</option>
+                          <option value="SMP / Sederajat">SMP / Sederajat</option>
+                          <option value="SMA / Sederajat">SMA / Sederajat</option>
+                          <option value="D1 / D2 / D3">D1 / D2 / D3</option>
+                          <option value="S1 / D4">S1 / D4</option>
+                          <option value="S2">S2</option>
+                          <option value="S3">S3</option>
+                          <option value="Tidak Sekolah">Tidak Sekolah</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Penghasilan Perbulan Ibu</label>
+                        <select x-model="dashData.biodata.penghasilanIbu" :disabled="dashData.biodata.isLocked" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                          <option value="">Pilih Penghasilan</option>
+                          <option value="Tidak Berpenghasilan">Tidak Berpenghasilan</option>
+                          <option value="< Rp 1.000.000">&lt; Rp 1.000.000</option>
+                          <option value="Rp 1.000.000 - Rp 3.000.000">Rp 1.000.000 - Rp 3.000.000</option>
+                          <option value="Rp 3.000.000 - Rp 5.000.000">Rp 3.000.000 - Rp 5.000.000</option>
+                          <option value="> Rp 5.000.000">&gt; Rp 5.000.000</option>
+                        </select>
+                      </div>
+                      <div class="sm:col-span-2 md:col-span-3">
+                        <label class="block text-slate-700 font-semibold mb-1">Alamat Ibu</label>
+                        <input type="text" x-model="dashData.biodata.alamatIbu" :disabled="dashData.biodata.isLocked" placeholder="Alamat lengkap Ibu (Isi 'Sama dengan Santri' jika serumah)" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
                       </div>
                     </div>
                   </div>
 
-                  <!-- Save / Lock / Revision Buttons -->
-                  <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
-                    <template x-if="!dashData.biodata.isLocked">
-                      <div class="flex items-center gap-2">
-                        <button type="button" @click="handleSaveBiodata(false)" :disabled="isSubmitting" class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs">
-                          Simpan Draft
-                        </button>
-                        <button type="submit" :disabled="isSubmitting" class="px-5 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-md">
-                          Simpan & Kunci Biodata
-                        </button>
-                      </div>
-                    </template>
-
-                    <template x-if="dashData.biodata.isLocked">
-                      <button type="button" @click="showRevisionModal = true" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md flex items-center gap-2">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                        <span>Ajukan Revisi Biodata</span>
+                  <!-- NAVIGATION & SAVE CONTROLS -->
+                  <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 bg-white p-4 rounded-2xl shadow-sm">
+                    <!-- Step Navigation Buttons -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                      <button type="button" 
+                              x-show="bioStep > 1" 
+                              @click="bioStep--; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                              class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>Sebelumnya</span>
                       </button>
+
+                      <button type="button" 
+                              x-show="bioStep < 4" 
+                              @click="bioStep++; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                              class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 transition">
+                        <span>Langkah Selanjutnya</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                      </button>
+                    </div>
+
+                    <!-- Action Buttons: Save Draft vs Submit & Lock -->
+                    <template x-if="!dashData.biodata.isLocked">
+                      <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                        <!-- Save as Draft Button -->
+                        <button type="button" 
+                                @click="handleSaveBiodata(false)" 
+                                :disabled="isSubmitting" 
+                                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 disabled:opacity-50">
+                          <i data-lucide="save" class="w-4 h-4 text-slate-600"></i>
+                          <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Draf'"></span>
+                        </button>
+
+                        <!-- Submit & Lock Button -->
+                        <button type="submit" 
+                                :disabled="isSubmitting" 
+                                class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-700 to-emerald-600 hover:from-brand-800 hover:to-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 disabled:opacity-50">
+                          <i data-lucide="lock" class="w-4 h-4"></i>
+                          <span x-text="isSubmitting ? 'Memproses...' : 'Submit & Kunci Biodata'"></span>
+                        </button>
+                      </div>
                     </template>
                   </div>
+
                 </form>
               </div>
 
@@ -1764,6 +2114,7 @@
         showPassword: false,
         mode: 'login', // 'login' | 'register' | 'success'
         registerStep: 1,
+        bioStep: 1,
 
         currentSlideIndex: 0,
         slideInterval: null,
@@ -2160,8 +2511,16 @@
           config: {},
           biodata: {
             nikSantri: '', nisn: '', tempatLahir: '', tanggalLahir: '', anakKe: '', jumlahSaudara: '',
-            hobi: '', citaCita: '', alamatLengkap: '', namaAyah: '', nikAyah: '', pekerjaanAyah: '', noWaAyah: '',
-            namaIbu: '', nikIbu: '', pekerjaanIbu: '', noWaIbu: '', isLocked: false, revisionStatus: 'NONE', revisionNote: ''
+            agama: 'Islam', noKk: '', alamat: '', rt: '', rw: '', kelurahan: '', kecamatan: '',
+            kabupaten: '', provinsi: '', kodePos: '', kewarganegaraan: 'WNI', riwayatPenyakit: '',
+            jenisSekolah: '', alamatSekolah: '',
+            namaAyah: '', nikAyah: '', tempatLahirAyah: '', tanggalLahirAyah: '', alamatAyah: '',
+            noWaAyah: '', statusAyah: 'Masih Hidup', pekerjaanAyah: '', pendidikanAyah: '',
+            kewarganegaraanAyah: 'WNI', penghasilanAyah: '',
+            namaIbu: '', nikIbu: '', tempatLahirIbu: '', tanggalLahirIbu: '', alamatIbu: '',
+            noWaIbu: '', statusIbu: 'Masih Hidup', pekerjaanIbu: '', pendidikanIbu: '',
+            kewarganegaraanIbu: 'WNI', penghasilanIbu: '',
+            isLocked: false, revisionStatus: 'NONE', revisionNote: ''
           },
           payments: {
             pendaftaran: { status: 'BELUM_UPLOAD', proofUrl: '', note: '', amount: '250000' },
@@ -2334,6 +2693,133 @@
         },
 
         handleSaveBiodata(lock) {
+          var b = this.dashData.biodata || {};
+
+          // Validate exact formats before locking and final submission
+          if (lock) {
+            // Step 1 Validation
+            if (!b.nisn || b.nisn.length !== 10 || !/^\d{10}$/.test(b.nisn)) {
+              this.bioStep = 1;
+              this.showToast('NISN harus diisi tepat 10 digit angka.');
+              return;
+            }
+            if (!b.tempatLahir || !b.tempatLahir.trim()) {
+              this.bioStep = 1;
+              this.showToast('Tempat lahir santri wajib diisi.');
+              return;
+            }
+            if (!b.tanggalLahir) {
+              this.bioStep = 1;
+              this.showToast('Tanggal lahir santri wajib diisi.');
+              return;
+            }
+            if (!b.anakKe || isNaN(b.anakKe) || Number(b.anakKe) < 1) {
+              this.bioStep = 1;
+              this.showToast('Anak ke- harus berupa angka minimal 1.');
+              return;
+            }
+            if (!b.jumlahSaudara || isNaN(b.jumlahSaudara) || Number(b.jumlahSaudara) < 0) {
+              this.bioStep = 1;
+              this.showToast('Jumlah saudara harus berupa angka.');
+              return;
+            }
+
+            // Step 2 Validation
+            if (!b.noKk || b.noKk.length !== 16 || !/^\d{16}$/.test(b.noKk)) {
+              this.bioStep = 2;
+              this.showToast('Nomor Kartu Keluarga (KK) harus diisi tepat 16 digit angka.');
+              return;
+            }
+            if (!b.nikSantri || b.nikSantri.length !== 16 || !/^\d{16}$/.test(b.nikSantri)) {
+              this.bioStep = 2;
+              this.showToast('NIK Santri harus diisi tepat 16 digit angka.');
+              return;
+            }
+            if (!b.alamat || !b.alamat.trim()) {
+              this.bioStep = 2;
+              this.showToast('Alamat jalan / dusun wajib diisi.');
+              return;
+            }
+            if (!b.rt || !/^\d{1,3}$/.test(b.rt)) {
+              this.bioStep = 2;
+              this.showToast('RT harus berupa angka (1-3 digit, contoh: 001).');
+              return;
+            }
+            if (!b.rw || !/^\d{1,3}$/.test(b.rw)) {
+              this.bioStep = 2;
+              this.showToast('RW harus berupa angka (1-3 digit, contoh: 002).');
+              return;
+            }
+            if (!b.kelurahan || !b.kelurahan.trim()) {
+              this.bioStep = 2;
+              this.showToast('Kelurahan/Desa wajib diisi.');
+              return;
+            }
+            if (!b.kecamatan || !b.kecamatan.trim()) {
+              this.bioStep = 2;
+              this.showToast('Kecamatan wajib diisi.');
+              return;
+            }
+            if (!b.kabupaten || !b.kabupaten.trim()) {
+              this.bioStep = 2;
+              this.showToast('Kabupaten/Kota wajib diisi.');
+              return;
+            }
+            if (!b.provinsi || !b.provinsi.trim()) {
+              this.bioStep = 2;
+              this.showToast('Provinsi wajib diisi.');
+              return;
+            }
+            if (!b.kodePos || b.kodePos.length !== 5 || !/^\d{5}$/.test(b.kodePos)) {
+              this.bioStep = 2;
+              this.showToast('Kode Pos harus diisi tepat 5 digit angka.');
+              return;
+            }
+            if (!b.jenisSekolah) {
+              this.bioStep = 2;
+              this.showToast('Silakan pilih Jenis Sekolah asal.');
+              return;
+            }
+
+            // Step 3 Validation (Ayah)
+            if (!b.namaAyah || !b.namaAyah.trim()) {
+              this.bioStep = 3;
+              this.showToast('Nama Lengkap Ayah wajib diisi.');
+              return;
+            }
+            if (b.statusAyah === 'Masih Hidup') {
+              if (!b.nikAyah || b.nikAyah.length !== 16 || !/^\d{16}$/.test(b.nikAyah)) {
+                this.bioStep = 3;
+                this.showToast('NIK Ayah harus diisi tepat 16 digit angka.');
+                return;
+              }
+              if (!b.noWaAyah || b.noWaAyah.length < 10 || b.noWaAyah.length > 15 || !/^\d+$/.test(b.noWaAyah)) {
+                this.bioStep = 3;
+                this.showToast('No. HP/WA Ayah harus berupa angka 10-15 digit.');
+                return;
+              }
+            }
+
+            // Step 4 Validation (Ibu)
+            if (!b.namaIbu || !b.namaIbu.trim()) {
+              this.bioStep = 4;
+              this.showToast('Nama Lengkap Ibu wajib diisi.');
+              return;
+            }
+            if (b.statusIbu === 'Masih Hidup') {
+              if (!b.nikIbu || b.nikIbu.length !== 16 || !/^\d{16}$/.test(b.nikIbu)) {
+                this.bioStep = 4;
+                this.showToast('NIK Ibu harus diisi tepat 16 digit angka.');
+                return;
+              }
+              if (!b.noWaIbu || b.noWaIbu.length < 10 || b.noWaIbu.length > 15 || !/^\d+$/.test(b.noWaIbu)) {
+                this.bioStep = 4;
+                this.showToast('No. HP/WA Ibu harus berupa angka 10-15 digit.');
+                return;
+              }
+            }
+          }
+
           var self = this;
           this.isSubmitting = true;
           this.postRequest('saveBiodata', {
@@ -2413,7 +2899,12 @@
 
         getBiodataFilledCount() {
           var b = this.dashData.biodata || {};
-          var fields = ['nikSantri', 'nisn', 'tempatLahir', 'tanggalLahir', 'alamatLengkap', 'namaAyah', 'nikAyah', 'namaIbu', 'nikIbu'];
+          var fields = [
+            'nikSantri', 'nisn', 'tempatLahir', 'tanggalLahir', 'noKk', 'alamat',
+            'rt', 'rw', 'kelurahan', 'kecamatan', 'kabupaten', 'provinsi',
+            'namaAyah', 'nikAyah', 'pekerjaanAyah', 'noWaAyah',
+            'namaIbu', 'nikIbu', 'pekerjaanIbu', 'noWaIbu'
+          ];
           var count = 0;
           for (var i = 0; i < fields.length; i++) {
             if (b[fields[i]] && b[fields[i]].toString().trim()) count++;
