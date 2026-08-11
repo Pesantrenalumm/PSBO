@@ -2075,28 +2075,28 @@
     <!-- VIEW SECTION C: SUPER ADMIN COMMAND CENTER (When LOGGED IN & IS SUPERADMIN) -->
     <!-- ============================================================= -->
     <template x-if="isLoggedIn && isSuperAdmin()">
-      <div x-transition class="w-full min-h-screen flex flex-col bg-slate-950 text-slate-100 relative">
+      <div x-transition class="w-full min-h-screen flex flex-col bg-slate-900 text-slate-100 relative">
         
-        <!-- SUPER ADMIN TOP NAVBAR -->
-        <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shadow-md">
+        <!-- SUPER ADMIN TOP NAVBAR (LIGHT THEME) -->
+        <header class="h-16 border-b border-slate-200 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shadow-sm text-slate-800">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black">
+            <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-sm">
               <i data-lucide="shield-check" class="w-5 h-5"></i>
             </div>
             <div>
-              <div class="font-extrabold text-sm text-white flex items-center gap-2">
+              <div class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                 <span>SUPER ADMIN COMMAND CENTER</span>
-                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">FULL MASTER ACCESS</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300">FULL MASTER ACCESS</span>
               </div>
-              <div class="text-[10px] text-slate-400" x-text="currentUser.namaLengkap + ' (' + currentUser.regNo + ')'"></div>
+              <div class="text-[10px] text-slate-500 font-medium" x-text="currentUser.namaLengkap + ' (' + currentUser.regNo + ')'"></div>
             </div>
           </div>
 
           <div class="flex items-center gap-3">
-            <button @click="fetchSuperAdminData()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Refresh Dashboard Stats">
+            <button @click="fetchSuperAdminData()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition" title="Refresh Dashboard Stats">
               <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin' : ''"></i>
             </button>
-            <button @click="logout()" class="px-3 py-1.5 rounded-xl bg-rose-900/40 hover:bg-rose-900/70 border border-rose-700/50 text-rose-200 font-bold text-xs transition flex items-center gap-1.5">
+            <button @click="logout()" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs transition flex items-center gap-1.5">
               <i data-lucide="log-out" class="w-4 h-4"></i>
               <span>Keluar</span>
             </button>
@@ -2104,10 +2104,10 @@
         </header>
 
         <!-- SUPER ADMIN MAIN CONTAINER -->
-        <div class="flex-1 flex flex-col md:flex-row min-h-0">
+        <div class="flex-1 flex flex-col md:flex-row min-h-0 bg-slate-100 text-slate-800">
           
           <!-- SUPER ADMIN SIDEBAR NAV -->
-          <aside class="w-full md:w-64 border-r border-slate-800 bg-slate-900/50 p-4 space-y-1.5 flex-shrink-0">
+          <aside class="w-full md:w-64 border-r border-slate-800 bg-slate-950 p-4 space-y-1.5 flex-shrink-0 text-slate-100">
             <template x-for="tab in [
               { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
               { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
@@ -2118,85 +2118,85 @@
             ]" :key="tab.id">
               <button @click="superAdminTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
                       class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition"
-                      :class="superAdminTab === tab.id ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'">
+                      :class="superAdminTab === tab.id ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'">
                 <i :data-lucide="tab.icon" class="w-4 h-4 flex-shrink-0"></i>
                 <span x-text="tab.label"></span>
               </button>
             </template>
           </aside>
 
-          <!-- SUPER ADMIN TAB CONTENT BODY -->
-          <main class="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto space-y-6">
+          <!-- SUPER ADMIN TAB CONTENT BODY (LIGHT THEME) -->
+          <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
 
             <!-- TAB 1: OVERVIEW & BOTTLENECK COMMAND CENTER -->
             <div x-show="superAdminTab === 'overview'" class="space-y-6">
               
               <!-- Operational Summary Stats Cards -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div class="flex items-center justify-between text-slate-400">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                  <div class="flex items-center justify-between text-slate-500">
                     <span class="text-xs font-bold uppercase">Total Santri Terdaftar</span>
-                    <i data-lucide="users" class="w-5 h-5 text-emerald-400"></i>
+                    <i data-lucide="users" class="w-5 h-5 text-emerald-600"></i>
                   </div>
-                  <div class="text-3xl font-black text-white" x-text="saData.totalStudents || 0"></div>
-                  <div class="text-[10px] text-emerald-400 font-semibold">Aktif dalam database</div>
+                  <div class="text-3xl font-black text-slate-900" x-text="saData.totalStudents || 0"></div>
+                  <div class="text-[10px] text-emerald-600 font-semibold">Aktif dalam database</div>
                 </div>
 
-                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div class="flex items-center justify-between text-slate-400">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                  <div class="flex items-center justify-between text-slate-500">
                     <span class="text-xs font-bold uppercase">Kas Pendaftaran Masuk</span>
-                    <i data-lucide="wallet" class="w-5 h-5 text-amber-400"></i>
+                    <i data-lucide="wallet" class="w-5 h-5 text-amber-600"></i>
                   </div>
-                  <div class="text-xl font-black text-amber-400" x-text="'Rp ' + (saData.payStats ? (saData.payStats.pendaftaran.totalAmount + saData.payStats.daftarUlang.totalAmount).toLocaleString('id-ID') : 0)"></div>
-                  <div class="text-[10px] text-slate-400">Total terverifikasi bendahara</div>
+                  <div class="text-xl font-black text-brand-700" x-text="'Rp ' + (saData.payStats ? (saData.payStats.pendaftaran.totalAmount + saData.payStats.daftarUlang.totalAmount).toLocaleString('id-ID') : 0)"></div>
+                  <div class="text-[10px] text-slate-500">Total terverifikasi bendahara</div>
                 </div>
 
-                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div class="flex items-center justify-between text-slate-400">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                  <div class="flex items-center justify-between text-slate-500">
                     <span class="text-xs font-bold uppercase">Status Dokumen</span>
-                    <i data-lucide="file-check" class="w-5 h-5 text-blue-400"></i>
+                    <i data-lucide="file-check" class="w-5 h-5 text-blue-600"></i>
                   </div>
-                  <div class="text-xl font-black text-white" x-text="(saData.docStats ? saData.docStats.verified : 0) + ' Terverifikasi'"></div>
-                  <div class="text-[10px] text-amber-400 font-semibold" x-text="(saData.docStats ? saData.docStats.pending : 0) + ' Berkas Membutuhkan Verifikasi'"></div>
+                  <div class="text-xl font-black text-slate-900" x-text="(saData.docStats ? saData.docStats.verified : 0) + ' Terverifikasi'"></div>
+                  <div class="text-[10px] text-amber-600 font-semibold" x-text="(saData.docStats ? saData.docStats.pending : 0) + ' Berkas Membutuhkan Verifikasi'"></div>
                 </div>
 
-                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div class="flex items-center justify-between text-slate-400">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                  <div class="flex items-center justify-between text-slate-500">
                     <span class="text-xs font-bold uppercase">Biodata Santri</span>
-                    <i data-lucide="lock" class="w-5 h-5 text-purple-400"></i>
+                    <i data-lucide="lock" class="w-5 h-5 text-purple-600"></i>
                   </div>
-                  <div class="text-xl font-black text-white" x-text="(saData.bioStats ? saData.bioStats.locked : 0) + ' Terkunci'"></div>
-                  <div class="text-[10px] text-rose-400 font-semibold" x-text="(saData.bioStats ? saData.bioStats.revisionRequested : 0) + ' Pengajuan Revisi'"></div>
+                  <div class="text-xl font-black text-slate-900" x-text="(saData.bioStats ? saData.bioStats.locked : 0) + ' Terkunci'"></div>
+                  <div class="text-[10px] text-rose-600 font-semibold" x-text="(saData.bioStats ? saData.bioStats.revisionRequested : 0) + ' Pengajuan Revisi'"></div>
                 </div>
               </div>
 
               <!-- BOTTLENECK DETECTOR ALERT CARD -->
-              <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-950/60 to-slate-900 border border-amber-500/30 space-y-4">
+              <div class="p-6 rounded-2xl bg-white border border-amber-200/80 shadow-sm space-y-4">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-bold">
+                  <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center font-bold">
                     <i data-lucide="alert-triangle" class="w-6 h-6"></i>
                   </div>
                   <div>
-                    <h4 class="font-extrabold text-sm text-amber-300">Operational Bottleneck Monitor</h4>
-                    <p class="text-xs text-slate-400">Detektor otomatis antrean & tugas tertunda antar departemen panitia.</p>
+                    <h4 class="font-extrabold text-sm text-amber-900">Operational Bottleneck Monitor</h4>
+                    <p class="text-xs text-slate-500">Detektor otomatis antrean & tugas tertunda antar departemen panitia.</p>
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-2">
-                  <div class="p-3.5 rounded-xl border space-y-1" :class="(saData.payStats && (saData.payStats.pendaftaran.pending > 0 || saData.payStats.daftarUlang.pending > 0)) ? 'bg-amber-900/30 border-amber-500/40 text-amber-200' : 'bg-slate-800/40 border-slate-700/50 text-slate-400'">
-                    <div class="font-bold uppercase text-[10px] tracking-wider text-amber-400">Seksi Bendahara</div>
+                  <div class="p-3.5 rounded-xl border space-y-1" :class="(saData.payStats && (saData.payStats.pendaftaran.pending > 0 || saData.payStats.daftarUlang.pending > 0)) ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-600'">
+                    <div class="font-bold uppercase text-[10px] tracking-wider text-amber-700">Seksi Bendahara</div>
                     <div class="text-sm font-black" x-text="((saData.payStats ? saData.payStats.pendaftaran.pending + saData.payStats.daftarUlang.pending : 0)) + ' Pembayaran Pending'"></div>
                     <div class="text-[10px]">Menunggu verifikasi transfer</div>
                   </div>
 
-                  <div class="p-3.5 rounded-xl border space-y-1" :class="(saData.docStats && saData.docStats.pending > 0) ? 'bg-amber-900/30 border-amber-500/40 text-amber-200' : 'bg-slate-800/40 border-slate-700/50 text-slate-400'">
-                    <div class="font-bold uppercase text-[10px] tracking-wider text-blue-400">Seksi Pemberkasan</div>
+                  <div class="p-3.5 rounded-xl border space-y-1" :class="(saData.docStats && saData.docStats.pending > 0) ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-600'">
+                    <div class="font-bold uppercase text-[10px] tracking-wider text-blue-700">Seksi Pemberkasan</div>
                     <div class="text-sm font-black" x-text="(saData.docStats ? saData.docStats.pending : 0) + ' Dokumen Pending'"></div>
                     <div class="text-[10px]">Menunggu validasi berkas fisik/digital</div>
                   </div>
 
-                  <div class="p-3.5 rounded-xl border space-y-1" :class="(saData.bioStats && saData.bioStats.revisionRequested > 0) ? 'bg-rose-900/30 border-rose-500/40 text-rose-200' : 'bg-slate-800/40 border-slate-700/50 text-slate-400'">
-                    <div class="font-bold uppercase text-[10px] tracking-wider text-rose-400">Revisi Biodata</div>
+                  <div class="p-3.5 rounded-xl border space-y-1" :class="(saData.bioStats && saData.bioStats.revisionRequested > 0) ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-slate-50 border-slate-200 text-slate-600'">
+                    <div class="font-bold uppercase text-[10px] tracking-wider text-rose-700">Revisi Biodata</div>
                     <div class="text-sm font-black" x-text="(saData.bioStats ? saData.bioStats.revisionRequested : 0) + ' Pengajuan Permintaan'"></div>
                     <div class="text-[10px]">Perlu pembukaan kunci/persetujuan</div>
                   </div>
@@ -2207,22 +2207,22 @@
 
             <!-- TAB 2: MANAJEMEN STAFF & RBAC -->
             <div x-show="superAdminTab === 'staff'" class="space-y-6">
-              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div>
-                  <h3 class="font-black text-base text-white">Manajemen Akun Petugas & Hak Akses</h3>
-                  <p class="text-xs text-slate-400">Kelola akun panitia per bagian (Ketua, Bendahara, Pemberkasan, Koordinator Ujian).</p>
+                  <h3 class="font-black text-base text-slate-900">Manajemen Akun Petugas & Hak Akses</h3>
+                  <p class="text-xs text-slate-500">Kelola akun panitia per bagian (Ketua, Bendahara, Pemberkasan, Koordinator Ujian).</p>
                 </div>
-                <button @click="openAddStaffModal()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow flex items-center gap-2">
+                <button @click="openAddStaffModal()" class="px-4 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow flex items-center gap-2 transition">
                   <i data-lucide="user-plus" class="w-4 h-4"></i>
                   <span>Tambah Staff Baru</span>
                 </button>
               </div>
 
               <!-- Staff Table -->
-              <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow">
+              <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <div class="overflow-x-auto">
                   <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+                    <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
                       <tr>
                         <th class="p-4">RegNo / ID</th>
                         <th class="p-4">Nama Lengkap</th>
@@ -2232,32 +2232,32 @@
                         <th class="p-4 text-center">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800 text-slate-200 font-medium">
+                    <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
                       <template x-for="st in saData.staffList" :key="st.regNo">
-                        <tr class="hover:bg-slate-800/50 transition">
-                          <td class="p-4 font-mono font-bold text-amber-400" x-text="st.regNo"></td>
-                          <td class="p-4 font-bold text-white" x-text="st.namaLengkap"></td>
+                        <tr class="hover:bg-slate-50/80 transition">
+                          <td class="p-4 font-mono font-bold text-brand-700" x-text="st.regNo"></td>
+                          <td class="p-4 font-bold text-slate-900" x-text="st.namaLengkap"></td>
                           <td class="p-4">
                             <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase border"
                                   :class="{
-                                    'bg-amber-500/20 text-amber-300 border-amber-500/30': st.role === 'SUPERADMIN',
-                                    'bg-blue-500/20 text-blue-300 border-blue-500/30': st.role === 'KETUA_PANITIA',
-                                    'bg-emerald-500/20 text-emerald-300 border-emerald-500/30': st.role === 'BENDAHARA',
-                                    'bg-purple-500/20 text-purple-300 border-purple-500/30': st.role === 'ADMIN_BERKAS',
-                                    'bg-teal-500/20 text-teal-300 border-teal-500/30': st.role === 'KOORDINATOR_UJIAN'
+                                    'bg-amber-50 text-amber-800 border-amber-200': st.role === 'SUPERADMIN',
+                                    'bg-blue-50 text-blue-800 border-blue-200': st.role === 'KETUA_PANITIA',
+                                    'bg-emerald-50 text-emerald-800 border-emerald-200': st.role === 'BENDAHARA',
+                                    'bg-purple-50 text-purple-800 border-purple-200': st.role === 'ADMIN_BERKAS',
+                                    'bg-teal-50 text-teal-800 border-teal-200': st.role === 'KOORDINATOR_UJIAN'
                                   }"
                                   x-text="st.role"></span>
                           </td>
-                          <td class="p-4 font-mono text-slate-300" x-text="st.noWa"></td>
-                          <td class="p-4 text-slate-400" x-text="st.email"></td>
+                          <td class="p-4 font-mono text-slate-600" x-text="st.noWa"></td>
+                          <td class="p-4 text-slate-500" x-text="st.email"></td>
                           <td class="p-4 text-center space-x-1">
-                            <button @click="openResetUserPassModal(st.regNo)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400" title="Reset Password">
+                            <button @click="openResetUserPassModal(st.regNo)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-amber-700 transition" title="Reset Password">
                               <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button @click="openEditStaffModal(st)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400" title="Edit Data">
+                            <button @click="openEditStaffModal(st)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-blue-700 transition" title="Edit Data">
                               <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button @click="handleDeleteStaff(st.regNo)" x-show="st.regNo !== 'ADMIN001'" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-rose-400" title="Hapus Staff">
+                            <button @click="handleDeleteStaff(st.regNo)" x-show="st.regNo !== 'ADMIN001'" class="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-rose-600 transition" title="Hapus Staff">
                               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
                           </td>
@@ -2274,19 +2274,19 @@
               <form @submit.prevent="handleSaveMasterConfig()" class="space-y-6">
                 
                 <!-- Periode & Gelombang -->
-                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-                  <h4 class="font-bold text-sm text-amber-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <h4 class="font-bold text-sm text-brand-700 border-b border-slate-100 pb-2 flex items-center gap-2">
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                     <span>Tahun Ajaran & Periode Aktif</span>
                   </h4>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                      <label class="block text-slate-400 font-semibold mb-1">Tahun Ajaran</label>
-                      <input type="text" x-model="saData.config.TAHUN_AJARAN" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-semibold mb-1">Tahun Ajaran</label>
+                      <input type="text" x-model="saData.config.TAHUN_AJARAN" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                     </div>
                     <div>
-                      <label class="block text-slate-400 font-semibold mb-1">Periode Pendaftaran Aktif</label>
-                      <select x-model="saData.config.PERIODE_AKTIF" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-semibold mb-1">Periode Pendaftaran Aktif</label>
+                      <select x-model="saData.config.PERIODE_AKTIF" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                         <option value="EARLY BIRD">EARLY BIRD</option>
                         <option value="GELOMBANG 1">GELOMBANG 1</option>
                         <option value="GELOMBANG 2">GELOMBANG 2</option>
@@ -2297,8 +2297,8 @@
                 </div>
 
                 <!-- Jalur Status Master Toggles -->
-                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-                  <h4 class="font-bold text-sm text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <h4 class="font-bold text-sm text-brand-700 border-b border-slate-100 pb-2 flex items-center gap-2">
                     <i data-lucide="toggle-right" class="w-4 h-4"></i>
                     <span>Master Toggle Status Pendaftaran Per Jenjang & Gender</span>
                   </h4>
@@ -2311,10 +2311,10 @@
                       { key: 'STATUS_MUTASI', label: 'Jalur Mutasi' },
                       { key: 'STATUS_INDEN', label: 'Jalur Inden' }
                     ]" :key="item.key">
-                      <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-center justify-between">
-                        <span class="font-bold text-slate-200" x-text="item.label"></span>
-                        <select x-model="saData.config[item.key]" class="p-1.5 rounded-lg bg-slate-950 text-[11px] font-black border"
-                                :class="saData.config[item.key] === 'BUKA' ? 'text-emerald-400 border-emerald-500/50' : 'text-rose-400 border-rose-500/50'">
+                      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                        <span class="font-bold text-slate-800" x-text="item.label"></span>
+                        <select x-model="saData.config[item.key]" class="p-1.5 rounded-lg text-[11px] font-black border focus:outline-none"
+                                :class="saData.config[item.key] === 'BUKA' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-rose-50 text-rose-800 border-rose-300'">
                           <option value="BUKA">BUKA</option>
                           <option value="TUTUP">TUTUP</option>
                         </select>
@@ -2324,33 +2324,33 @@
                 </div>
 
                 <!-- Biaya & Rekening Bank -->
-                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-                  <h4 class="font-bold text-sm text-blue-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <h4 class="font-bold text-sm text-brand-700 border-b border-slate-100 pb-2 flex items-center gap-2">
                     <i data-lucide="credit-card" class="w-4 h-4"></i>
                     <span>Pengaturan Biaya & Rekening Bank Pembayaran</span>
                   </h4>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                      <label class="block text-slate-400 font-semibold mb-1">Nama Bank</label>
-                      <input type="text" x-model="saData.config.BANK_NAME" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-semibold mb-1">Nama Bank</label>
+                      <input type="text" x-model="saData.config.BANK_NAME" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                     </div>
                     <div>
-                      <label class="block text-slate-400 font-semibold mb-1">Nomor Rekening Bank</label>
-                      <input type="text" x-model="saData.config.BANK_ACCOUNT_NO" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 font-bold font-mono">
+                      <label class="block text-slate-700 font-semibold mb-1">Nomor Rekening Bank</label>
+                      <input type="text" x-model="saData.config.BANK_ACCOUNT_NO" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-brand-800 font-bold font-mono focus:bg-white focus:border-brand-700 focus:outline-none">
                     </div>
                     <div>
-                      <label class="block text-slate-400 font-semibold mb-1">Nama Pemilik Rekening</label>
-                      <input type="text" x-model="saData.config.BANK_ACCOUNT_NAME" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-semibold mb-1">Nama Pemilik Rekening</label>
+                      <input type="text" x-model="saData.config.BANK_ACCOUNT_NAME" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                     </div>
                     <div>
-                      <label class="block text-slate-400 font-semibold mb-1">Biaya Pendaftaran (Rp)</label>
-                      <input type="text" x-model="saData.config.REGISTRATION_FEE" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-semibold mb-1">Biaya Pendaftaran (Rp)</label>
+                      <input type="text" x-model="saData.config.REGISTRATION_FEE" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                     </div>
                   </div>
                 </div>
 
                 <div class="flex justify-end">
-                  <button type="submit" :disabled="isSubmitting" class="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow flex items-center gap-2">
+                  <button type="submit" :disabled="isSubmitting" class="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-700 to-emerald-600 hover:from-brand-800 hover:to-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-2 transition disabled:opacity-50">
                     <i data-lucide="save" class="w-4 h-4"></i>
                     <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Konfigurasi Master'"></span>
                   </button>
@@ -2360,12 +2360,12 @@
 
             <!-- TAB 4: PROMO SLIDES -->
             <div x-show="superAdminTab === 'slides'" class="space-y-6">
-              <div class="flex items-center justify-between bg-slate-900 p-5 rounded-2xl border border-slate-800">
+              <div class="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div>
-                  <h3 class="font-black text-base text-white">Manajemen Banner / Slide Carousel Front-End</h3>
-                  <p class="text-xs text-slate-400">Atur konten pengumuman & promo yang tampil di portal depan.</p>
+                  <h3 class="font-black text-base text-slate-900">Manajemen Banner / Slide Carousel Front-End</h3>
+                  <p class="text-xs text-slate-500">Atur konten pengumuman & promo yang tampil di portal depan.</p>
                 </div>
-                <button @click="openAddSlideModal()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow flex items-center gap-2">
+                <button @click="openAddSlideModal()" class="px-4 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow flex items-center gap-2 transition">
                   <i data-lucide="plus" class="w-4 h-4"></i>
                   <span>Tambah Slide Baru</span>
                 </button>
@@ -2373,21 +2373,21 @@
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <template x-for="s in saData.slides" :key="s.id">
-                  <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 flex flex-col justify-between">
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
                     <div class="space-y-2">
                       <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30" x-text="s.badge"></span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded" :class="s.isActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'" x-text="s.isActive ? 'AKTIF' : 'NON-AKTIF'"></span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300" x-text="s.badge"></span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase" :class="s.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'" x-text="s.isActive ? 'AKTIF' : 'NON-AKTIF'"></span>
                       </div>
-                      <h4 class="font-bold text-sm text-white" x-text="s.title"></h4>
-                      <p class="text-xs text-slate-400 leading-relaxed" x-text="s.content"></p>
+                      <h4 class="font-bold text-sm text-slate-900" x-text="s.title"></h4>
+                      <p class="text-xs text-slate-500 leading-relaxed" x-text="s.content"></p>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-                      <span class="text-[10px] text-slate-500 font-mono" x-text="'Urutan: ' + s.order"></span>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                      <span class="text-[10px] text-slate-400 font-mono" x-text="'Urutan: ' + s.order"></span>
                       <div class="space-x-2">
-                        <button @click="openEditSlideModal(s)" class="text-blue-400 hover:underline font-bold">Edit</button>
-                        <button @click="handleDeleteSlide(s.id)" class="text-rose-400 hover:underline font-bold">Hapus</button>
+                        <button @click="openEditSlideModal(s)" class="text-brand-700 hover:underline font-bold">Edit</button>
+                        <button @click="handleDeleteSlide(s.id)" class="text-rose-600 hover:underline font-bold">Hapus</button>
                       </div>
                     </div>
                   </div>
@@ -2397,24 +2397,24 @@
 
             <!-- TAB 5: DIRECT OVERRIDE -->
             <div x-show="superAdminTab === 'override'" class="space-y-6">
-              <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5 max-w-2xl mx-auto">
-                <div class="border-b border-slate-800 pb-3">
-                  <h3 class="font-black text-base text-amber-400 flex items-center gap-2">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+              <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-5 max-w-2xl mx-auto">
+                <div class="border-b border-slate-100 pb-3">
+                  <h3 class="font-black text-base text-brand-700 flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600"></i>
                     <span>Administrative Direct Override Control</span>
                   </h3>
-                  <p class="text-xs text-slate-400 mt-1">Intervensi langsung data santri spesifik jika petugas seksi berhalangan.</p>
+                  <p class="text-xs text-slate-500 mt-1">Intervensi langsung data santri spesifik jika petugas seksi berhalangan.</p>
                 </div>
 
                 <form @submit.prevent="handleAdminOverride()" class="space-y-4 text-xs">
                   <div>
-                    <label class="block text-slate-300 font-bold mb-1">Target No Registrasi Santri</label>
-                    <input type="text" x-model="overrideForm.targetRegNo" placeholder="Contoh: PSB2027-0001" class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 font-mono font-bold uppercase" required>
+                    <label class="block text-slate-700 font-bold mb-1">Target No Registrasi Santri</label>
+                    <input type="text" x-model="overrideForm.targetRegNo" placeholder="Contoh: PSB2027-0001" class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-brand-800 font-mono font-bold uppercase focus:bg-white focus:border-brand-700 focus:outline-none" required>
                   </div>
 
                   <div>
-                    <label class="block text-slate-300 font-bold mb-1">Modul Target Intervensi</label>
-                    <select x-model="overrideForm.module" class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                    <label class="block text-slate-700 font-bold mb-1">Modul Target Intervensi</label>
+                    <select x-model="overrideForm.module" class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                       <option value="PAYMENT">PEMBAYARAN BUKTI TRANSFER</option>
                       <option value="DOC">DOKUMEN/BERKAS SANTRI</option>
                       <option value="BIODATA">KUNCI / BUKA BIODATA SANTRI</option>
@@ -2424,8 +2424,8 @@
 
                   <template x-if="overrideForm.module === 'PAYMENT'">
                     <div>
-                      <label class="block text-slate-300 font-bold mb-1">Jenis Pembayaran</label>
-                      <select x-model="overrideForm.subType" class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-bold mb-1">Jenis Pembayaran</label>
+                      <select x-model="overrideForm.subType" class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                         <option value="PENDAFTARAN">PENDAFTARAN</option>
                         <option value="DAFTAR_ULANG">DAFTAR ULANG</option>
                       </select>
@@ -2434,8 +2434,8 @@
 
                   <template x-if="overrideForm.module === 'DOC'">
                     <div>
-                      <label class="block text-slate-300 font-bold mb-1">Jenis Dokumen Berkas</label>
-                      <select x-model="overrideForm.subType" class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                      <label class="block text-slate-700 font-bold mb-1">Jenis Dokumen Berkas</label>
+                      <select x-model="overrideForm.subType" class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                         <option value="NISN">NISN</option>
                         <option value="KK">Kartu Keluarga (KK)</option>
                         <option value="AKTA">Akta Kelahiran</option>
@@ -2449,8 +2449,8 @@
                   </template>
 
                   <div>
-                    <label class="block text-slate-300 font-bold mb-1">Set Status Baru</label>
-                    <select x-model="overrideForm.status" class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-emerald-400 font-bold">
+                    <label class="block text-slate-700 font-bold mb-1">Set Status Baru</label>
+                    <select x-model="overrideForm.status" class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-emerald-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                       <option value="VERIFIED">VERIFIED (Terverifikasi / Lulus)</option>
                       <option value="PENDING">PENDING (Menunggu)</option>
                       <option value="REVISION">REVISION (Minta Revisi)</option>
@@ -2463,11 +2463,11 @@
                   </div>
 
                   <div>
-                    <label class="block text-slate-300 font-bold mb-1">Catatan Super Admin</label>
-                    <textarea x-model="overrideForm.note" rows="2" placeholder="Tuliskan catatan penjelasan..." class="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white"></textarea>
+                    <label class="block text-slate-700 font-bold mb-1">Catatan Super Admin</label>
+                    <textarea x-model="overrideForm.note" rows="2" placeholder="Tuliskan catatan penjelasan..." class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none"></textarea>
                   </div>
 
-                  <button type="submit" :disabled="isSubmitting" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow transition">
+                  <button type="submit" :disabled="isSubmitting" class="w-full py-3.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold shadow-md transition disabled:opacity-50">
                     <span x-text="isSubmitting ? 'Memproses Intervensi...' : 'Jalankan Override Sekarang'"></span>
                   </button>
                 </form>
@@ -2476,20 +2476,20 @@
 
             <!-- TAB 6: AUDIT LOGS -->
             <div x-show="superAdminTab === 'logs'" class="space-y-6">
-              <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                  <h3 class="font-black text-base text-white">System Activity Audit Trail</h3>
-                  <p class="text-xs text-slate-400">Catatan riwayat aktivitas aksi penting pengguna & petugas dalam sistem.</p>
+                  <h3 class="font-black text-base text-slate-900">System Activity Audit Trail</h3>
+                  <p class="text-xs text-slate-500">Catatan riwayat aktivitas aksi penting pengguna & petugas dalam sistem.</p>
                 </div>
-                <button @click="fetchSuperAdminData()" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white">
+                <button @click="fetchSuperAdminData()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600">
                   <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
               </div>
 
-              <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow">
+              <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <div class="overflow-x-auto">
                   <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+                    <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
                       <tr>
                         <th class="p-3.5">Waktu (Timestamp)</th>
                         <th class="p-3.5">User / RegNo</th>
@@ -2497,13 +2497,13 @@
                         <th class="p-3.5">Detail Catatan</th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800 text-slate-300">
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
                       <template x-for="(lg, idx) in saData.logs" :key="idx">
-                        <tr class="hover:bg-slate-800/40 font-mono text-[11px]">
+                        <tr class="hover:bg-slate-50 font-mono text-[11px]">
                           <td class="p-3.5 text-slate-400" x-text="lg.timestamp"></td>
-                          <td class="p-3.5 font-bold text-amber-400" x-text="lg.userRegNo + ' (' + lg.role + ')'"></td>
-                          <td class="p-3.5 text-emerald-400 font-bold" x-text="lg.action"></td>
-                          <td class="p-3.5 text-slate-200" x-text="lg.details"></td>
+                          <td class="p-3.5 font-bold text-brand-700" x-text="lg.userRegNo + ' (' + lg.role + ')'"></td>
+                          <td class="p-3.5 text-emerald-700 font-bold" x-text="lg.action"></td>
+                          <td class="p-3.5 text-slate-600" x-text="lg.details"></td>
                         </tr>
                       </template>
                     </tbody>
@@ -2517,23 +2517,23 @@
 
         <!-- MODAL: ADD / EDIT STAFF -->
         <div x-show="showStaffModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-slate-900 text-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-800 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 class="font-bold text-sm text-amber-400" x-text="staffModalForm.regNo ? 'Edit Staff Panitia' : 'Tambah Staff Baru'"></h4>
-              <button @click="showStaffModal = false" class="text-slate-400 hover:text-white">
+          <div class="bg-white text-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 class="font-bold text-sm text-slate-900" x-text="staffModalForm.regNo ? 'Edit Staff Panitia' : 'Tambah Staff Baru'"></h4>
+              <button @click="showStaffModal = false" class="text-slate-400 hover:text-slate-600">
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
 
             <form @submit.prevent="handleSaveStaff()" class="space-y-3 text-xs">
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Nama Lengkap Petugas</label>
-                <input type="text" x-model="staffModalForm.namaLengkap" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold" required>
+                <label class="block text-slate-700 font-semibold mb-1">Nama Lengkap Petugas</label>
+                <input type="text" x-model="staffModalForm.namaLengkap" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none" required>
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Pilih Hak Akses / Role Panitia</label>
-                <select x-model="staffModalForm.role" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold" required>
+                <label class="block text-slate-700 font-semibold mb-1">Pilih Hak Akses / Role Panitia</label>
+                <select x-model="staffModalForm.role" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none" required>
                   <option value="KETUA_PANITIA">KETUA PANITIA (Eksekutif & Approval)</option>
                   <option value="BENDAHARA">BENDAHARA (Verifikasi Keuangan)</option>
                   <option value="ADMIN_BERKAS">ADMIN PEMBERKASAN (Validasi Berkas)</option>
@@ -2543,23 +2543,23 @@
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Nomor WhatsApp</label>
-                <input type="text" x-model="staffModalForm.noWa" placeholder="081234567890" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
+                <label class="block text-slate-700 font-semibold mb-1">Nomor WhatsApp</label>
+                <input type="text" x-model="staffModalForm.noWa" placeholder="081234567890" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none">
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Email</label>
-                <input type="email" x-model="staffModalForm.email" placeholder="staff@alumm.sch.id" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
+                <label class="block text-slate-700 font-semibold mb-1">Email</label>
+                <input type="email" x-model="staffModalForm.email" placeholder="staff@alumm.sch.id" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none">
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1" x-text="staffModalForm.regNo ? 'Password Baru (Kosongkan jika tak diubah)' : 'Password Akun'"></label>
-                <input type="password" x-model="staffModalForm.password" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
+                <label class="block text-slate-700 font-semibold mb-1" x-text="staffModalForm.regNo ? 'Password Baru (Kosongkan jika tak diubah)' : 'Password Akun'"></label>
+                <input type="password" x-model="staffModalForm.password" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none">
               </div>
 
               <div class="pt-2 flex justify-end gap-2">
-                <button type="button" @click="showStaffModal = false" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold">Batal</button>
-                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold">Simpan Staff</button>
+                <button type="button" @click="showStaffModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Batal</button>
+                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold transition">Simpan Staff</button>
               </div>
             </form>
           </div>
@@ -2567,28 +2567,28 @@
 
         <!-- MODAL: RESET PASSWORD ANY USER -->
         <div x-show="showResetUserPassModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-slate-900 text-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-800 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 class="font-bold text-sm text-amber-400">Reset Password User / Santri / Staff</h4>
-              <button @click="showResetUserPassModal = false" class="text-slate-400 hover:text-white">
+          <div class="bg-white text-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 class="font-bold text-sm text-slate-900">Reset Password User / Santri / Staff</h4>
+              <button @click="showResetUserPassModal = false" class="text-slate-400 hover:text-slate-600">
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
 
             <form @submit.prevent="handleResetUserPassword()" class="space-y-3 text-xs">
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Target No Registrasi / ID</label>
-                <input type="text" x-model="resetPassForm.targetRegNo" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 font-mono font-bold uppercase" required>
+                <label class="block text-slate-700 font-semibold mb-1">Target No Registrasi / ID</label>
+                <input type="text" x-model="resetPassForm.targetRegNo" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-brand-800 font-mono font-bold uppercase focus:bg-white focus:border-brand-700 focus:outline-none" required>
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Password Baru (Min 6 Karakter)</label>
-                <input type="password" x-model="resetPassForm.newPassword" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required>
+                <label class="block text-slate-700 font-semibold mb-1">Password Baru (Min 6 Karakter)</label>
+                <input type="password" x-model="resetPassForm.newPassword" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none" required>
               </div>
 
               <div class="pt-2 flex justify-end gap-2">
-                <button type="button" @click="showResetUserPassModal = false" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold">Batal</button>
-                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold">Reset Password</button>
+                <button type="button" @click="showResetUserPassModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Batal</button>
+                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold transition">Reset Password</button>
               </div>
             </form>
           </div>
@@ -2596,38 +2596,38 @@
 
         <!-- MODAL: ADD / EDIT SLIDE -->
         <div x-show="showSlideModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-slate-900 text-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-800 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 class="font-bold text-sm text-amber-400" x-text="slideModalForm.id ? 'Edit Slide Banner' : 'Tambah Slide Banner'"></h4>
-              <button @click="showSlideModal = false" class="text-slate-400 hover:text-white">
+          <div class="bg-white text-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 class="font-bold text-sm text-slate-900" x-text="slideModalForm.id ? 'Edit Slide Banner' : 'Tambah Slide Banner'"></h4>
+              <button @click="showSlideModal = false" class="text-slate-400 hover:text-slate-600">
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
 
             <form @submit.prevent="handleSaveSlide()" class="space-y-3 text-xs">
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Badge Teks Singkat</label>
-                <input type="text" x-model="slideModalForm.badge" placeholder="Contoh: PROMO EARLY BIRD" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
+                <label class="block text-slate-700 font-semibold mb-1">Badge Teks Singkat</label>
+                <input type="text" x-model="slideModalForm.badge" placeholder="Contoh: PROMO EARLY BIRD" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none">
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Judul Banner</label>
-                <input type="text" x-model="slideModalForm.title" placeholder="Judul slide promo..." class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold" required>
+                <label class="block text-slate-700 font-semibold mb-1">Judul Banner</label>
+                <input type="text" x-model="slideModalForm.title" placeholder="Judul slide promo..." class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none" required>
               </div>
 
               <div>
-                <label class="block text-slate-400 font-semibold mb-1">Isi Deskripsi Banner</label>
-                <textarea x-model="slideModalForm.content" rows="3" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required></textarea>
+                <label class="block text-slate-700 font-semibold mb-1">Isi Deskripsi Banner</label>
+                <textarea x-model="slideModalForm.content" rows="3" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 focus:bg-white focus:border-brand-700 focus:outline-none" required></textarea>
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-slate-400 font-semibold mb-1">Urutan Tampil</label>
-                  <input type="number" x-model="slideModalForm.order" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                  <label class="block text-slate-700 font-semibold mb-1">Urutan Tampil</label>
+                  <input type="number" x-model="slideModalForm.order" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                 </div>
                 <div>
-                  <label class="block text-slate-400 font-semibold mb-1">Status Banner</label>
-                  <select x-model="slideModalForm.isActive" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold">
+                  <label class="block text-slate-700 font-semibold mb-1">Status Banner</label>
+                  <select x-model="slideModalForm.isActive" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                     <option :value="true">AKTIF</option>
                     <option :value="false">NON-AKTIF</option>
                   </select>
@@ -2635,8 +2635,8 @@
               </div>
 
               <div class="pt-2 flex justify-end gap-2">
-                <button type="button" @click="showSlideModal = false" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold">Batal</button>
-                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold">Simpan Slide</button>
+                <button type="button" @click="showSlideModal = false" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Batal</button>
+                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold transition">Simpan Slide</button>
               </div>
             </form>
           </div>
