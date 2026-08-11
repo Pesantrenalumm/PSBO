@@ -935,21 +935,45 @@
 
             <!-- Navigation Links -->
             <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
-              <template x-for="item in [
-                { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
-                { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
-                { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
-                { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
-                { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
-                { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
-                { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
-              ]" :key="item.id">
-                <button @click="activeTab = item.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
-                        :class="activeTab === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
-                  <i :data-lucide="item.icon" class="w-5 h-5 flex-shrink-0"></i>
-                  <span x-show="sidebarExpanded" class="truncate" x-text="item.label"></span>
-                </button>
+              <!-- PESERTA NAV MENU -->
+              <template x-if="currentUser.role === 'PESERTA'">
+                <div class="space-y-1.5">
+                  <template x-for="item in [
+                    { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
+                    { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
+                    { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
+                    { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
+                    { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
+                    { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
+                    { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
+                  ]" :key="item.id">
+                    <button @click="activeTab = item.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                            :class="activeTab === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                      <i :data-lucide="item.icon" class="w-5 h-5 flex-shrink-0"></i>
+                      <span x-show="sidebarExpanded" class="truncate" x-text="item.label"></span>
+                    </button>
+                  </template>
+                </div>
+              </template>
+
+              <!-- SUPER ADMIN NAV MENU -->
+              <template x-if="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN'">
+                <div class="space-y-1.5">
+                  <template x-for="item in [
+                    { id: 'sys_dashboard', label: 'Dashboard Sistem', icon: 'layout-dashboard' },
+                    { id: 'config_psb', label: 'Konfigurasi PSB', icon: 'sliders' },
+                    { id: 'slides_mgmt', label: 'Banner & Slide', icon: 'image' },
+                    { id: 'users_mgmt', label: 'Manajemen Pengguna', icon: 'users' }
+                  ]" :key="'admin-' + item.id">
+                    <button @click="activeTab = item.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                            :class="activeTab === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                      <i :data-lucide="item.icon" class="w-5 h-5 flex-shrink-0"></i>
+                      <span x-show="sidebarExpanded" class="truncate" x-text="item.label"></span>
+                    </button>
+                  </template>
+                </div>
               </template>
 
               <!-- Helpdesk External WA Direct Link Button -->
@@ -2579,7 +2603,14 @@
               self.currentUser = res.data;
               self.isLoggedIn = true;
               self.showToast('Login Berhasil!', 'success');
-              self.fetchDashboardData();
+
+              if (self.currentUser.role === 'SUPER_ADMIN' || self.currentUser.role === 'ADMIN') {
+                self.activeTab = 'sys_dashboard';
+                self.fetchAdminDashboardData();
+              } else {
+                self.activeTab = 'home';
+                self.fetchDashboardData();
+              }
             } else {
               self.showToast(res.message || 'Login gagal');
             }
@@ -2588,6 +2619,102 @@
             self.isSubmitting = false;
             self.showToast(err.message || 'Terjadi kesalahan jaringan.');
           });
+        },
+
+        fetchAdminDashboardData() {
+          var self = this;
+          this.isDashLoading = true;
+          this.postRequest('getAdminData', {})
+            .then(function(res) {
+              self.isDashLoading = false;
+              if (res.ok && res.data) {
+                self.adminData = Object.assign({}, self.adminData, res.data);
+              }
+              self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+            })
+            .catch(function(err) {
+              self.isDashLoading = false;
+              self.showToast('Gagal memuat data admin: ' + err.message);
+            });
+        },
+
+        handleToggleConfigKey(key) {
+          var current = (this.adminData.config[key] || 'BUKA').toUpperCase();
+          this.adminData.config[key] = (current === 'BUKA') ? 'TUTUP' : 'BUKA';
+        },
+
+        saveAdminConfig() {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('saveAdminConfig', { config: this.adminData.config })
+            .then(function(res) {
+              self.isSubmitting = false;
+              if (res.ok) {
+                self.showToast('Konfigurasi PSB berhasil diperbarui!', 'success');
+                self.fetchAdminDashboardData();
+              } else {
+                self.showToast(res.message || 'Gagal menyimpan konfigurasi.');
+              }
+            })
+            .catch(function(err) {
+              self.isSubmitting = false;
+              self.showToast(err.message);
+            });
+        },
+
+        handleSaveSlide() {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('saveSlide', { slide: this.slideModalData })
+            .then(function(res) {
+              self.isSubmitting = false;
+              if (res.ok) {
+                self.showToast('Slide banner berhasil disimpan!', 'success');
+                self.fetchAdminDashboardData();
+              } else {
+                self.showToast(res.message);
+              }
+            })
+            .catch(function(err) {
+              self.isSubmitting = false;
+              self.showToast(err.message);
+            });
+        },
+
+        handleDeleteSlide(id) {
+          if (!confirm('Apakah Anda yakin ingin menghapus slide ini?')) return;
+          var self = this;
+          this.postRequest('deleteSlide', { id: id })
+            .then(function(res) {
+              if (res.ok) {
+                self.showToast('Slide berhasil dihapus.', 'success');
+                self.fetchAdminDashboardData();
+              } else {
+                self.showToast(res.message);
+              }
+            })
+            .catch(function(err) {
+              self.showToast(err.message);
+            });
+        },
+
+        handleCreateStaffUser() {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('createStaffUser', this.newStaffForm)
+            .then(function(res) {
+              self.isSubmitting = false;
+              if (res.ok) {
+                self.showToast('Akun panitia (' + res.data.regNo + ') berhasil dibuat!', 'success');
+                self.fetchAdminDashboardData();
+              } else {
+                self.showToast(res.message);
+              }
+            })
+            .catch(function(err) {
+              self.isSubmitting = false;
+              self.showToast(err.message);
+            });
         },
 
         fetchDashboardData() {
