@@ -986,7 +986,7 @@
     <!-- ============================================================= -->
     <!-- VIEW SECTION B: PARTICIPANT DASHBOARD (When LOGGED IN)        -->
     <!-- ============================================================= -->
-    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer()">
+    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer() && !isDocAdmin()">
       <div x-transition:enter="transition ease-out duration-500 transform"
            x-transition:enter-start="opacity-0 scale-[0.99] translate-y-3"
            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -4250,7 +4250,7 @@
         isDocAdmin() {
           if (!this.currentUser || !this.currentUser.role) return false;
           var r = String(this.currentUser.role).trim().toUpperCase();
-          return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA';
+          return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA' || r === 'KETUA_PANITIA' || r === 'KOORDINATOR_UJIAN';
         },
 
         docAdminTab: 'overview',
