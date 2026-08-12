@@ -38,6 +38,27 @@
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <style>
+    :root {
+      --app-brand-50: #e6f4ea;
+      --app-brand-100: #c3e4cd;
+      --app-brand-500: #1b804e;
+      --app-brand-700: #0f5834;
+      --app-brand-800: #0b4126;
+      --app-brand-900: #062b19;
+      --app-brand-950: #03190e;
+
+      --app-success: #059669;
+      --app-warning: #d97706;
+      --app-danger: #e11d48;
+      --app-info: #2563eb;
+
+      --app-surface-dark: #020617;
+      --app-surface-light: #ffffff;
+      --app-border-light: #e2e8f0;
+      --app-text-dark: #0f172a;
+      --app-text-muted: #64748b;
+    }
+
     [x-cloak] { display: none !important; }
     
     /* Custom Scrollbar */
@@ -58,7 +79,7 @@
 
     /* Glassmorphism Styles */
     .glass-card {
-      background: rgba(15, 88, 52, 0.45);
+      background: color-mix(in srgb, var(--app-brand-700) 45%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -75,9 +96,58 @@
       transition: all 0.2s ease-in-out;
     }
     .glass-input:focus {
-      background: #ffffff;
-      border-color: #1b804e;
+      background: var(--app-surface-light);
+      border-color: var(--app-brand-500);
       box-shadow: 0 0 0 3px rgba(27, 128, 78, 0.2);
+    }
+
+    /* Shared Component Theme */
+    .app-button-primary {
+      background: var(--app-brand-700);
+      color: #ffffff;
+    }
+
+    .app-button-primary:hover {
+      background: var(--app-brand-800);
+    }
+
+    .app-button-success {
+      background: var(--app-success);
+      color: #ffffff;
+    }
+
+    .app-button-warning {
+      background: var(--app-warning);
+      color: #ffffff;
+    }
+
+    .app-button-danger {
+      background: var(--app-danger);
+      color: #ffffff;
+    }
+
+    .app-badge-success {
+      background: var(--app-brand-50);
+      color: var(--app-brand-800);
+      border-color: var(--app-brand-100);
+    }
+
+    .app-badge-warning {
+      background: #fffbeb;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    .app-badge-danger {
+      background: #fff1f2;
+      color: #9f1239;
+      border-color: #fecdd3;
+    }
+
+    .app-panel-light {
+      background: var(--app-surface-light);
+      color: var(--app-text-dark);
+      border-color: var(--app-border-light);
     }
 
     /* Skeleton Animation */
