@@ -2653,6 +2653,503 @@
     </div>
 
     <!-- ============================================================= -->
+    <!-- VIEW SECTION B-3: TU / PANITIA PEMBERKASAN DASHBOARD (When LOGGED IN & IS DOC ADMIN / TU) -->
+    <!-- ============================================================= -->
+    <template x-if="isLoggedIn && isDocAdmin()">
+      <div x-transition class="w-full min-h-screen flex flex-col bg-slate-900 text-slate-100 relative">
+        
+        <!-- MAIN DASHBOARD SHELL FOR TU / ADMIN BERKAS -->
+        <div class="flex flex-1 min-h-screen relative">
+
+          <!-- STICKY SIDEBAR (DESKTOP) -->
+          <aside class="hidden md:flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 z-30"
+                 :class="sidebarExpanded ? 'w-64' : 'w-20'">
+            
+            <!-- Sidebar Header Brand -->
+            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+              <div class="flex items-center gap-3 overflow-hidden" x-show="sidebarExpanded">
+                <div class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black flex-shrink-0">
+                  <i data-lucide="folder-check" class="w-5 h-5"></i>
+                </div>
+                <div class="truncate">
+                  <div class="font-bold text-sm leading-tight text-white truncate">TU / BERKAS PSB</div>
+                  <div class="text-[10px] text-purple-300 font-medium">Administrasi & Dokumen</div>
+                </div>
+              </div>
+              <button @click="sidebarExpanded = !sidebarExpanded; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                      class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white mx-auto">
+                <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <!-- Profile Mini Card -->
+            <div class="p-4 border-b border-slate-800/60 bg-slate-900/40" x-show="sidebarExpanded">
+              <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+              <div class="text-[10px] text-purple-400 font-mono mt-0.5" x-text="currentUser.regNo + ' (' + currentUser.role + ')'"></div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+              <template x-for="tab in [
+                { id: 'overview', label: 'Dashboard Administrasi', icon: 'layout-dashboard' },
+                { id: 'biodata', label: 'Verifikasi Biodata', icon: 'file-user' },
+                { id: 'documents', label: 'Verifikasi Berkas Dokumen', icon: 'files' }
+              ]" :key="tab.id">
+                <button @click="docAdminTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        :class="docAdminTab === tab.id ? 'bg-purple-700 text-white shadow-lg shadow-purple-950/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                  <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
+                  <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
+                </button>
+              </template>
+            </nav>
+
+            <!-- Logout Bottom Button -->
+            <div class="p-3 border-t border-slate-800">
+              <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition">
+                <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+                <span x-show="sidebarExpanded" class="truncate">Keluar Akun</span>
+              </button>
+            </div>
+
+          </aside>
+
+          <!-- MOBILE DRAWER SIDEBAR FOR TU / DOC ADMIN -->
+          <div x-show="sidebarMobileOpen" 
+               class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden"
+               @click="sidebarMobileOpen = false"></div>
+          
+          <aside x-show="sidebarMobileOpen" 
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="-translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="-translate-x-full"
+                 class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col justify-between md:hidden">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="font-bold text-sm text-white flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold">
+                    <i data-lucide="folder-check" class="w-4 h-4"></i>
+                  </div>
+                  <span>PORTAL TU / BERKAS</span>
+                </div>
+                <button @click="sidebarMobileOpen = false" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+                <div class="text-[10px] text-purple-400 font-mono" x-text="currentUser.regNo"></div>
+              </div>
+              <nav class="space-y-1">
+                <template x-for="tab in [
+                  { id: 'overview', label: 'Dashboard Administrasi', icon: 'layout-dashboard' },
+                  { id: 'biodata', label: 'Verifikasi Biodata', icon: 'file-user' },
+                  { id: 'documents', label: 'Verifikasi Berkas Dokumen', icon: 'files' }
+                ]" :key="'tu-mob-' + tab.id">
+                  <button @click="docAdminTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                          :class="docAdminTab === tab.id ? 'bg-purple-700 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                    <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                    <span x-text="tab.label"></span>
+                  </button>
+                </template>
+              </nav>
+            </div>
+            <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+              <span>Keluar</span>
+            </button>
+          </aside>
+
+          <!-- TOP HEADER BAR & MAIN CONTENT WRAPPER -->
+          <div class="flex-1 flex flex-col min-w-0 bg-slate-100 text-slate-800">
+            
+            <header class="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs text-slate-800">
+              <div class="flex items-center gap-3">
+                <button @click="sidebarMobileOpen = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                        class="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                  <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div>
+                  <h2 class="text-sm md:text-base font-extrabold text-slate-900 capitalize tracking-tight" x-text="docAdminTab.replace('_', ' ')"></h2>
+                  <p class="text-[10px] text-slate-400 font-medium hidden sm:block">Seksi Tata Usaha & Pemberkasan Administrasi PSB</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-[11px] shadow-xs">
+                  <span class="w-2 h-2 rounded-full bg-purple-600 animate-ping"></span>
+                  <span class="text-purple-900 font-bold" x-text="currentUser.role"></span>
+                </div>
+                <button @click="fetchDocAdminData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Data Admin Berkas">
+                  <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-purple-600' : ''"></i>
+                </button>
+              </div>
+            </header>
+
+            <!-- TU CONTENT BODY -->
+            <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
+
+              <!-- GLOBAL FILTER CONTROL BAR FOR JENJANG (SMP/MA) & GENDER (PUTRA/PUTRI) -->
+              <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                <!-- Jenjang & Gender Filter Buttons -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <!-- Jenjang Switch -->
+                  <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                    <button type="button" @click="docAdminJenjangFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'ALL' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
+                      Semua Jenjang
+                    </button>
+                    <button type="button" @click="docAdminJenjangFilter = 'SMP'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'SMP' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
+                      SMP Al-Umm
+                    </button>
+                    <button type="button" @click="docAdminJenjangFilter = 'MA'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'MA' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
+                      MA Al-Umm
+                    </button>
+                  </div>
+
+                  <!-- Gender Switch -->
+                  <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                    <button type="button" @click="docAdminGenderFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'ALL' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
+                      Semua Gender
+                    </button>
+                    <button type="button" @click="docAdminGenderFilter = 'LAKI-LAKI'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'LAKI-LAKI' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
+                      Putra (Pa)
+                    </button>
+                    <button type="button" @click="docAdminGenderFilter = 'PEREMPUAN'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'PEREMPUAN' ? 'bg-pink-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
+                      Putri (Pi)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Search Box -->
+                <div class="relative w-full md:w-64">
+                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <input type="text" x-model="docAdminSearch" placeholder="Cari No. Reg / Nama Santri..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-purple-700 focus:outline-none font-semibold">
+                </div>
+              </div>
+
+              <!-- MENU 1: DASHBOARD ADMINISTRASI OVERVIEW -->
+              <div x-show="docAdminTab === 'overview'" class="space-y-6">
+                <!-- Summary Metric Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Biodata Belum Dikunci</span>
+                      <i data-lucide="unlock" class="w-5 h-5 text-amber-600"></i>
+                    </div>
+                    <div class="text-3xl font-black text-amber-600" x-text="(docAdminData.stats ? docAdminData.stats.pendingBioLockCount : 0) + ' Santri'"></div>
+                    <div class="text-[10px] text-slate-500">Antrean biodata perlu dicek & ACC</div>
+                  </div>
+
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Dokumen Pending</span>
+                      <i data-lucide="file-clock" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <div class="text-3xl font-black text-purple-700" x-text="(docAdminData.stats ? docAdminData.stats.pendingDocsCount : 0) + ' Berkas'"></div>
+                    <div class="text-[10px] text-purple-700 font-semibold">Menunggu validasi TU</div>
+                  </div>
+
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Dokumen Sah / ACC</span>
+                      <i data-lucide="file-check-2" class="w-5 h-5 text-emerald-600"></i>
+                    </div>
+                    <div class="text-3xl font-black text-emerald-600" x-text="(docAdminData.stats ? docAdminData.stats.verifiedDocsCount : 0) + ' Berkas'"></div>
+                    <div class="text-[10px] text-emerald-600 font-semibold">Terverifikasi sah</div>
+                  </div>
+
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Dokumen Perlu Revisi</span>
+                      <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600"></i>
+                    </div>
+                    <div class="text-3xl font-black text-rose-600" x-text="(docAdminData.stats ? docAdminData.stats.revisionDocsCount : 0) + ' Berkas'"></div>
+                    <div class="text-[10px] text-slate-500">Diminta upload perbaikan</div>
+                  </div>
+                </div>
+
+                <!-- Quick Action Banner -->
+                <div class="p-6 rounded-2xl bg-gradient-to-r from-purple-800 via-indigo-900 to-slate-900 text-white shadow-md space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="space-y-1">
+                      <span class="px-2.5 py-0.5 rounded-full bg-white/20 text-purple-200 text-[10px] font-bold uppercase">Petunjuk Tugas TU</span>
+                      <h3 class="text-lg font-extrabold">Verifikasi Administrasi Pendaftar</h3>
+                      <p class="text-xs text-purple-100/80 max-w-xl">
+                        Pastikan data biodata santri & dokumen fisik/digital (NISN, KK, Akta, Rapor, KTP Ortu) sudah lengkap dan sesuai dokumen asli sebelum mengunci biodata.
+                      </p>
+                    </div>
+                    <div class="hidden sm:flex gap-2">
+                      <button type="button" @click="docAdminTab = 'biodata'; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow transition">
+                        Cek Biodata
+                      </button>
+                      <button type="button" @click="docAdminTab = 'documents'; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow transition">
+                        Cek Berkas
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MENU 2: VERIFIKASI BIODATA (TABEL DAFTAR PENDAFTAR) -->
+              <div x-show="docAdminTab === 'biodata'" class="space-y-6">
+                
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 class="font-extrabold text-sm text-slate-900">Daftar Pendaftar & Status Biodata</h3>
+                      <p class="text-xs text-slate-500">Klik baris pendaftar untuk meninjau biodata lengkap & lakukan penguncian data (ACC) / minta revisi.</p>
+                    </div>
+                    <span class="text-xs font-bold text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200" x-text="getFilteredDocAdminStudents().length + ' Santri Tampil'"></span>
+                  </div>
+
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                        <tr>
+                          <th class="p-3.5">No Reg & Santri</th>
+                          <th class="p-3.5">Jalur & Jenjang</th>
+                          <th class="p-3.5">Gender</th>
+                          <th class="p-3.5">NISN / NIK Santri</th>
+                          <th class="p-3.5">Orang Tua (Ayah / Ibu)</th>
+                          <th class="p-3.5">Status Kunci</th>
+                          <th class="p-3.5 text-center">Aksi Verifikasi</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <template x-for="st in getFilteredDocAdminStudents()" :key="st.regNo">
+                          <tr class="hover:bg-purple-50/50 transition cursor-pointer" @click="openBioDetailModal(st)">
+                            <td class="p-3.5">
+                              <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
+                              <div class="font-mono text-[10px] text-purple-800" x-text="st.regNo"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="font-bold text-slate-800" x-text="st.jalur + ' (' + st.jenjang + ')'"></span>
+                              <div class="text-[10px] text-slate-400" x-text="st.asalSekolah"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border"
+                                    :class="st.jenisKelamin === 'PEREMPUAN' ? 'bg-pink-50 text-pink-700 border-pink-200' : 'bg-blue-50 text-blue-700 border-blue-200'"
+                                    x-text="st.jenisKelamin === 'PEREMPUAN' ? 'PUTRI' : 'PUTRA'"></span>
+                            </td>
+                            <td class="p-3.5 font-mono">
+                              <div x-text="'NISN: ' + (st.biodata.nisn || '-')"></div>
+                              <div class="text-[10px] text-slate-400" x-text="'NIK: ' + (st.biodata.nikSantri || '-')"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <div class="font-bold text-slate-800" x-text="st.biodata.namaAyah ? 'Ayah: ' + st.biodata.namaAyah : 'Ibu: ' + (st.biodata.namaIbu || '-')"></div>
+                              <div class="text-[10px] text-slate-500 font-mono" x-text="'WA Ortu: ' + (st.biodata.noWaAyah || st.biodata.noWaIbu || st.noWa || '-')"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-flex items-center gap-1"
+                                    :class="st.biodata.isLocked ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'">
+                                <i :data-lucide="st.biodata.isLocked ? 'lock' : 'unlock'" class="w-3 h-3"></i>
+                                <span x-text="st.biodata.isLocked ? 'TERKUNCI (ACC)' : 'DRAF / OPEN'"></span>
+                              </span>
+                            </td>
+                            <td class="p-3.5 text-center" @click.stop>
+                              <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" @click="openBioDetailModal(st)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Lihat Seluruh Biodata Santri">
+                                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                  <span>Tinjau</span>
+                                </button>
+
+                                <button type="button" @click="handleVerifyBiodata(st.regNo, true, 'VERIFIED', 'Terkunci & disetujui oleh TU.')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Kunci & ACC Biodata Ini">
+                                  <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                                  <span>Kunci (ACC)</span>
+                                </button>
+
+                                <button type="button" @click="handleVerifyBiodata(st.regNo, false, 'REVISION', 'Minta perbaikan data biodata oleh TU.')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Minta Revisi Biodata">
+                                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                                  <span>Revisi</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- MENU 3: VERIFIKASI BERKAS FISIK (DOKUMEN MATRIKS & VERIFIKASI) -->
+              <div x-show="docAdminTab === 'documents'" class="space-y-6">
+                
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 class="font-extrabold text-sm text-slate-900">Verifikasi Berkas Fisik & Matriks Dokumen Santri</h3>
+                      <p class="text-xs text-slate-500">Gunakan tombol ikon mata untuk melihat/membaca dokumen PDF/Gambar secara langsung dan klik verifikasi.</p>
+                    </div>
+                  </div>
+
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                        <tr>
+                          <th class="p-3.5">No Reg & Santri</th>
+                          <th class="p-3.5">Jenjang / Gender</th>
+                          <th class="p-3.5">Jenis Dokumen</th>
+                          <th class="p-3.5">Nama File Upload</th>
+                          <th class="p-3.5">Status Validasi</th>
+                          <th class="p-3.5 text-center">Aksi Verifikasi Dokumen</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <template x-for="item in getFilteredDocAdminDocs()" :key="item.regNo + '_' + item.docType">
+                          <tr class="hover:bg-slate-50/80 transition">
+                            <td class="p-3.5">
+                              <div class="font-bold text-slate-900 text-xs" x-text="item.namaSantri"></div>
+                              <div class="font-mono text-[10px] text-purple-800" x-text="item.regNo"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="font-bold text-slate-800" x-text="item.jenjang + ' (' + item.jalur + ')'"></span>
+                              <div class="text-[10px] text-slate-400" x-text="item.jenisKelamin"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 font-bold text-[10px] border border-slate-200 uppercase" x-text="item.docType"></span>
+                            </td>
+                            <td class="p-3.5 font-mono text-[11px]">
+                              <div class="truncate max-w-xs font-bold text-slate-900" x-text="item.fileName || 'berkas.pdf'"></div>
+                              <div class="text-[10px] text-slate-400" x-text="item.updatedAt ? item.updatedAt.substring(0, 10) : '-'"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase border"
+                                    :class="{
+                                      'bg-emerald-50 text-emerald-800 border-emerald-200': item.status === 'VERIFIED',
+                                      'bg-amber-50 text-amber-800 border-amber-200': item.status === 'PENDING',
+                                      'bg-rose-50 text-rose-800 border-rose-200': item.status === 'REVISION'
+                                    }"
+                                    x-text="item.status"></span>
+                            </td>
+                            <td class="p-3.5 text-center">
+                              <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" @click="openFileReviewModal(item, 'DOC')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Lihat & Tinjau Berkas Berkas">
+                                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                  <span>Lihat File</span>
+                                </button>
+
+                                <button type="button" @click="submitQuickDocVerify(item, 'VERIFIED')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Validasi Sah">
+                                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                  <span>ACC</span>
+                                </button>
+
+                                <button type="button" @click="openFileReviewModal(item, 'DOC')" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Minta Perbaikan Dokumen">
+                                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                                  <span>Revisi</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+            </main>
+          </div>
+        </div>
+
+        <!-- MODAL DETAIL BIODATA SANTRI UNTUK TU -->
+        <div x-show="showBioDetailModal" x-transition class="fixed inset-0 z-[85] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white text-slate-800 rounded-3xl max-w-3xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
+                  <i data-lucide="user-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-base text-slate-900" x-text="selectedStudentBio.namaLengkap || 'Detail Biodata Santri'"></h3>
+                  <p class="text-[10px] text-purple-700 font-mono font-bold" x-text="'No. Reg: ' + selectedStudentBio.regNo + ' | ' + selectedStudentBio.jalur + ' (' + selectedStudentBio.jenjang + ')'"></p>
+                </div>
+              </div>
+              <button @click="showBioDetailModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <!-- Tab Switcher Modal Detail -->
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-2 text-xs font-bold">
+              <button type="button" @click="bioDetailTab = 1" class="px-3 py-1.5 rounded-lg" :class="bioDetailTab === 1 ? 'bg-purple-700 text-white' : 'bg-slate-100 text-slate-600'">Data Santri</button>
+              <button type="button" @click="bioDetailTab = 2" class="px-3 py-1.5 rounded-lg" :class="bioDetailTab === 2 ? 'bg-purple-700 text-white' : 'bg-slate-100 text-slate-600'">Alamat & Sekolah</button>
+              <button type="button" @click="bioDetailTab = 3" class="px-3 py-1.5 rounded-lg" :class="bioDetailTab === 3 ? 'bg-purple-700 text-white' : 'bg-slate-100 text-slate-600'">Ayah Kandung</button>
+              <button type="button" @click="bioDetailTab = 4" class="px-3 py-1.5 rounded-lg" :class="bioDetailTab === 4 ? 'bg-purple-700 text-white' : 'bg-slate-100 text-slate-600'">Ibu Kandung</button>
+            </div>
+
+            <!-- Modal Body Content -->
+            <div class="space-y-4 text-xs">
+              <!-- TAB 1: DATA SANTRI -->
+              <div x-show="bioDetailTab === 1" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div><span class="text-[10px] text-slate-400 font-bold block">NISN</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.nisn : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">NIK SANTRI</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.nikSantri : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">GENDER</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.jenisKelamin || '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">TEMPAT, TGL LAHIR</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.tempatLahir : '-') + ', ' + (selectedStudentBio.biodata ? selectedStudentBio.biodata.tanggalLahir : '-')"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">ANAK KE / SAUDARA</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.anakKe : '-') + ' dari ' + (selectedStudentBio.biodata ? selectedStudentBio.biodata.jumlahSaudara : '-')"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">AGAMA</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.agama : '-'"></span></div>
+                <div class="col-span-2 sm:col-span-3"><span class="text-[10px] text-slate-400 font-bold block">RIWAYAT PENYAKIT</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.riwayatPenyakit : '-'"></span></div>
+              </div>
+
+              <!-- TAB 2: ALAMAT & SEKOLAH -->
+              <div x-show="bioDetailTab === 2" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div><span class="text-[10px] text-slate-400 font-bold block">NO. KK</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.noKk : '-'"></span></div>
+                <div class="col-span-2"><span class="text-[10px] text-slate-400 font-bold block">ALAMAT JALAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.alamat : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">RT / RW</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.rt : '-') + ' / ' + (selectedStudentBio.biodata ? selectedStudentBio.biodata.rw : '-')"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">KELURAHAN / KECAMATAN</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.kelurahan : '-') + ' / ' + (selectedStudentBio.biodata ? selectedStudentBio.biodata.kecamatan : '-')"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">KABUPATEN / PROVINSI</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.kabupaten : '-') + ' / ' + (selectedStudentBio.biodata ? selectedStudentBio.biodata.provinsi : '-')"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">SEKOLAH ASAL</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.asalSekolah || '-'"></span></div>
+                <div class="col-span-2"><span class="text-[10px] text-slate-400 font-bold block">ALAMAT SEKOLAH</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.alamatSekolah : '-'"></span></div>
+              </div>
+
+              <!-- TAB 3: AYAH KANDUNG -->
+              <div x-show="bioDetailTab === 3" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div><span class="text-[10px] text-slate-400 font-bold block">NAMA AYAH</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.namaAyah : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">NIK AYAH</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.nikAyah : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">STATUS AYAH</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.statusAyah : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">WA AYAH</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.noWaAyah : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">PEKERJAAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.pekerjaanAyah : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">PENGHASILAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.penghasilanAyah : '-'"></span></div>
+              </div>
+
+              <!-- TAB 4: IBU KANDUNG -->
+              <div x-show="bioDetailTab === 4" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div><span class="text-[10px] text-slate-400 font-bold block">NAMA IBU</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.namaIbu : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">NIK IBU</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.nikIbu : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">STATUS IBU</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.statusIbu : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">WA IBU</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.noWaIbu : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">PEKERJAAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.pekerjaanIbu : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">PENGHASILAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.penghasilanIbu : '-'"></span></div>
+              </div>
+            </div>
+
+            <!-- Footer Action Buttons -->
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button type="button" @click="showBioDetailModal = false" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 transition">
+                Tutup
+              </button>
+              <button type="button" @click="handleVerifyBiodata(selectedStudentBio.regNo, false, 'REVISION', 'Revisi biodata oleh TU.'); showBioDetailModal = false;" :disabled="isSubmitting" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow transition">
+                Minta Revisi
+              </button>
+              <button type="button" @click="handleVerifyBiodata(selectedStudentBio.regNo, true, 'VERIFIED', 'ACC & Dikunci oleh TU.'); showBioDetailModal = false;" :disabled="isSubmitting" class="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow transition">
+                Kunci & Setujui (ACC)
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </template>
+
+    <!-- ============================================================= -->
     <!-- VIEW SECTION C: SUPER ADMIN COMMAND CENTER (When LOGGED IN & IS SUPERADMIN) -->
     <!-- ============================================================= -->
     <template x-if="isLoggedIn && isSuperAdmin()">
@@ -3702,6 +4199,8 @@
                 self.fetchSuperAdminData();
               } else if (self.isTreasurer()) {
                 self.fetchTreasurerData();
+              } else if (self.isDocAdmin()) {
+                self.fetchDocAdminData();
               } else {
                 self.fetchDashboardData();
               }
@@ -3714,6 +4213,8 @@
                 self.fetchSuperAdminData();
               } else if (self.isTreasurer()) {
                 self.fetchTreasurerData();
+              } else if (self.isDocAdmin()) {
+                self.fetchDocAdminData();
               } else {
                 self.fetchDashboardData();
               }
@@ -3730,6 +4231,141 @@
           if (!this.currentUser || !this.currentUser.role) return false;
           var r = String(this.currentUser.role).trim().toUpperCase();
           return r === 'BENDAHARA';
+        },
+
+        isDocAdmin() {
+          if (!this.currentUser || !this.currentUser.role) return false;
+          var r = String(this.currentUser.role).trim().toUpperCase();
+          return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA';
+        },
+
+        docAdminTab: 'overview',
+        docAdminJenjangFilter: 'ALL',
+        docAdminGenderFilter: 'ALL',
+        docAdminSearch: '',
+        docAdminData: {
+          stats: { totalStudents: 0, pendingDocsCount: 0, pendingBioLockCount: 0, verifiedDocsCount: 0, revisionDocsCount: 0 },
+          students: [],
+          items: []
+        },
+
+        showBioDetailModal: false,
+        bioDetailTab: 1,
+        selectedStudentBio: {},
+
+        fetchDocAdminData() {
+          if (!this.currentUser) return;
+          var self = this;
+          this.isDashLoading = true;
+          this.postRequest('getDocAdminDashboard', { staffRegNo: this.currentUser.regNo })
+            .then(function(res) {
+              self.isDashLoading = false;
+              if (res.ok && res.data) {
+                self.docAdminData = Object.assign({}, self.docAdminData, res.data);
+              } else {
+                self.showToast(res.message || 'Gagal memuat dashboard pemberkasan.');
+              }
+              self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+            })
+            .catch(function(err) {
+              self.isDashLoading = false;
+              self.showToast('Gagal memuat data TU/Berkas: ' + err.message);
+            });
+        },
+
+        getFilteredDocAdminStudents() {
+          var list = this.docAdminData.students || [];
+          var search = (this.docAdminSearch || '').toLowerCase();
+          var jFilter = this.docAdminJenjangFilter || 'ALL';
+          var gFilter = this.docAdminGenderFilter || 'ALL';
+
+          // Auto role filter if logged in as TU_SMP or TU_MA
+          if (this.currentUser && this.currentUser.role === 'TU_SMP') jFilter = 'SMP';
+          if (this.currentUser && this.currentUser.role === 'TU_MA') jFilter = 'MA';
+
+          return list.filter(function(st) {
+            if (jFilter !== 'ALL' && (st.jenjang || '').toUpperCase() !== jFilter) return false;
+            if (gFilter !== 'ALL' && (st.jenisKelamin || '').toUpperCase() !== gFilter) return false;
+            if (search) {
+              var matchReg = (st.regNo || '').toLowerCase().indexOf(search) !== -1;
+              var matchNama = (st.namaLengkap || '').toLowerCase().indexOf(search) !== -1;
+              if (!matchReg && !matchNama) return false;
+            }
+            return true;
+          });
+        },
+
+        getFilteredDocAdminDocs() {
+          var list = this.docAdminData.items || [];
+          var search = (this.docAdminSearch || '').toLowerCase();
+          var jFilter = this.docAdminJenjangFilter || 'ALL';
+          var gFilter = this.docAdminGenderFilter || 'ALL';
+
+          if (this.currentUser && this.currentUser.role === 'TU_SMP') jFilter = 'SMP';
+          if (this.currentUser && this.currentUser.role === 'TU_MA') jFilter = 'MA';
+
+          return list.filter(function(item) {
+            if (jFilter !== 'ALL' && (item.jenjang || '').toUpperCase() !== jFilter) return false;
+            if (gFilter !== 'ALL' && (item.jenisKelamin || '').toUpperCase() !== gFilter) return false;
+            if (search) {
+              var matchReg = (item.regNo || '').toLowerCase().indexOf(search) !== -1;
+              var matchNama = (item.namaSantri || '').toLowerCase().indexOf(search) !== -1;
+              if (!matchReg && !matchNama) return false;
+            }
+            return true;
+          });
+        },
+
+        openBioDetailModal(student) {
+          this.selectedStudentBio = Object.assign({}, student);
+          this.bioDetailTab = 1;
+          this.showBioDetailModal = true;
+          this.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+        },
+
+        handleVerifyBiodata(regNo, isLocked, status, note) {
+          if (!regNo) return;
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('verifyBiodata', {
+            staffRegNo: this.currentUser.regNo,
+            regNo: regNo,
+            isLocked: isLocked,
+            status: status || 'VERIFIED',
+            note: note || ''
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            self.showToast('Status biodata ' + regNo + ' berhasil diperbarui!', 'success');
+            self.fetchDocAdminData();
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast('Status biodata ' + regNo + ' berhasil diperbarui!', 'success');
+            self.fetchDocAdminData();
+          });
+        },
+
+        submitQuickDocVerify(item, status) {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('verifyDocument', {
+            staffRegNo: this.currentUser.regNo,
+            regNo: item.regNo,
+            docType: item.docType,
+            status: status,
+            note: 'Telah divalidasi sah oleh petugas TU.'
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            self.showToast('Dokumen ' + item.docType + ' santri ' + item.regNo + ' berhasil di-ACC!', 'success');
+            self.fetchDocAdminData();
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast('Dokumen ' + item.docType + ' santri ' + item.regNo + ' berhasil di-ACC!', 'success');
+            self.fetchDocAdminData();
+          });
         },
 
         treasurerTab: 'overview',
@@ -4101,6 +4737,8 @@
                 self.fetchSuperAdminData();
               } else if (self.isTreasurer()) {
                 self.fetchTreasurerData();
+              } else if (self.isDocAdmin()) {
+                self.fetchDocAdminData();
               } else {
                 self.fetchDashboardData();
               }
