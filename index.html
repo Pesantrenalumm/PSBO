@@ -1152,17 +1152,9 @@
 
             <!-- Navigation Links -->
             <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
-              <template x-for="item in [
-                { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
-                { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
-                { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
-                { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
-                { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
-                { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
-                { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
-              ]" :key="item.id">
+              <template x-for="item in getSidebarNavigation()" :key="item.id">
                 <button @click="activeTab = item.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        class="app-shell-sidebar-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                         :class="activeTab === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
                   <i :data-lucide="item.icon" class="w-5 h-5 flex-shrink-0"></i>
                   <span x-show="sidebarExpanded" class="truncate" x-text="item.label"></span>
@@ -1213,15 +1205,7 @@
                 <div class="text-[10px] text-amber-400 font-mono" x-text="currentUser.regNo"></div>
               </div>
               <nav class="space-y-1">
-                <template x-for="item in [
-                  { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
-                  { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
-                  { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
-                  { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
-                  { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
-                  { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
-                  { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
-                ]" :key="'mob-' + item.id">
+                <template x-for="item in getSidebarNavigation()" :key="'mob-' + item.id">
                   <button @click="activeTab = item.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
                           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                           :class="activeTab === item.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
@@ -2329,13 +2313,9 @@
 
             <!-- Navigation Links -->
             <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
-              <template x-for="tab in [
-                { id: 'overview', label: 'Dashboard Keuangan', icon: 'layout-dashboard' },
-                { id: 'pendaftaran', label: 'Verifikasi Pendaftaran', icon: 'credit-card' },
-                { id: 'daftar_ulang', label: 'Tagihan & VA (Daftar Ulang)', icon: 'receipt' }
-              ]" :key="tab.id">
+              <template x-for="tab in getSidebarNavigation()" :key="tab.id">
                 <button @click="treasurerTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        class="app-shell-sidebar-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                         :class="treasurerTab === tab.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
                   <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
                   <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
@@ -2383,11 +2363,7 @@
                 <div class="text-[10px] text-emerald-400 font-mono" x-text="currentUser.regNo"></div>
               </div>
               <nav class="space-y-1">
-                <template x-for="tab in [
-                  { id: 'overview', label: 'Dashboard Keuangan', icon: 'layout-dashboard' },
-                  { id: 'pendaftaran', label: 'Verifikasi Pendaftaran', icon: 'credit-card' },
-                  { id: 'daftar_ulang', label: 'Tagihan & VA (Daftar Ulang)', icon: 'receipt' }
-                ]" :key="'tr-mob-' + tab.id">
+                <template x-for="tab in getSidebarNavigation()" :key="'tr-mob-' + tab.id">
                   <button @click="treasurerTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
                           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                           :class="treasurerTab === tab.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
@@ -2789,13 +2765,9 @@
 
             <!-- Navigation Links -->
             <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
-              <template x-for="tab in [
-                { id: 'overview', label: 'Dashboard Administrasi', icon: 'layout-dashboard' },
-                { id: 'biodata', label: 'Verifikasi Biodata', icon: 'file-user' },
-                { id: 'documents', label: 'Verifikasi Berkas Dokumen', icon: 'files' }
-              ]" :key="tab.id">
+              <template x-for="tab in getSidebarNavigation()" :key="tab.id">
                 <button @click="docAdminTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        class="app-shell-sidebar-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                         :class="docAdminTab === tab.id ? 'bg-purple-700 text-white shadow-lg shadow-purple-950/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
                   <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
                   <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
@@ -2843,11 +2815,7 @@
                 <div class="text-[10px] text-purple-400 font-mono" x-text="currentUser.regNo"></div>
               </div>
               <nav class="space-y-1">
-                <template x-for="tab in [
-                  { id: 'overview', label: 'Dashboard Administrasi', icon: 'layout-dashboard' },
-                  { id: 'biodata', label: 'Verifikasi Biodata', icon: 'file-user' },
-                  { id: 'documents', label: 'Verifikasi Berkas Dokumen', icon: 'files' }
-                ]" :key="'tu-mob-' + tab.id">
+                <template x-for="tab in getSidebarNavigation()" :key="'tu-mob-' + tab.id">
                   <button @click="docAdminTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
                           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                           :class="docAdminTab === tab.id ? 'bg-purple-700 text-white' : 'text-slate-400 hover:bg-slate-800'">
@@ -3393,16 +3361,9 @@
 
             <!-- Navigation Links -->
             <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
-              <template x-for="tab in [
-                { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
-                { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
-                { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
-                { id: 'slides', label: 'Promo Banners', icon: 'image' },
-                { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
-                { id: 'logs', label: 'Audit Logs System', icon: 'history' }
-              ]" :key="tab.id">
+              <template x-for="tab in getSidebarNavigation()" :key="tab.id">
                 <button @click="superAdminTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        class="app-shell-sidebar-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                         :class="superAdminTab === tab.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
                   <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
                   <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
@@ -3450,14 +3411,7 @@
                 <div class="text-[10px] text-amber-400 font-mono" x-text="currentUser.regNo"></div>
               </div>
               <nav class="space-y-1">
-                <template x-for="tab in [
-                  { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
-                  { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
-                  { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
-                  { id: 'slides', label: 'Promo Banners', icon: 'image' },
-                  { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
-                  { id: 'logs', label: 'Audit Logs System', icon: 'history' }
-                ]" :key="'sa-mob-' + tab.id">
+                <template x-for="tab in getSidebarNavigation()" :key="'sa-mob-' + tab.id">
                   <button @click="superAdminTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
                           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
                           :class="superAdminTab === tab.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
@@ -4465,6 +4419,55 @@
           if (!this.currentUser || !this.currentUser.role) return false;
           var r = String(this.currentUser.role).trim().toUpperCase();
           return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA' || r === 'KETUA_PANITIA' || r === 'KOORDINATOR_UJIAN';
+        },
+
+        getSidebarNavigation() {
+          var role = this.currentUser && this.currentUser.role
+            ? String(this.currentUser.role).trim().toUpperCase()
+            : 'PESERTA';
+
+          if (role === 'BENDAHARA') {
+            return [
+              { id: 'overview', label: 'Dashboard Keuangan', icon: 'layout-dashboard' },
+              { id: 'pendaftaran', label: 'Verifikasi Pendaftaran', icon: 'credit-card' },
+              { id: 'daftar_ulang', label: 'Tagihan & VA (Daftar Ulang)', icon: 'receipt' }
+            ];
+          }
+
+          if (
+            role === 'ADMIN_BERKAS' ||
+            role === 'TU_SMP' ||
+            role === 'TU_MA' ||
+            role === 'KETUA_PANITIA' ||
+            role === 'KOORDINATOR_UJIAN'
+          ) {
+            return [
+              { id: 'overview', label: 'Dashboard Administrasi', icon: 'layout-dashboard' },
+              { id: 'biodata', label: 'Verifikasi Biodata', icon: 'file-user' },
+              { id: 'documents', label: 'Verifikasi Berkas Dokumen', icon: 'files' }
+            ];
+          }
+
+          if (role === 'SUPERADMIN' || role === 'ADMIN') {
+            return [
+              { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
+              { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
+              { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
+              { id: 'slides', label: 'Promo Banners', icon: 'image' },
+              { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
+              { id: 'logs', label: 'Audit Logs System', icon: 'history' }
+            ];
+          }
+
+          return [
+            { id: 'home', label: 'Home Overview', icon: 'layout-dashboard' },
+            { id: 'pembayaran', label: 'Pembayaran', icon: 'credit-card' },
+            { id: 'biodata', label: 'Biodata Santri', icon: 'file-user' },
+            { id: 'upload_berkas', label: 'Upload Berkas', icon: 'folder-up' },
+            { id: 'ujian_tes', label: 'Ujian & Tes', icon: 'file-text' },
+            { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
+            { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' }
+          ];
         },
 
         docAdminTab: 'overview',
