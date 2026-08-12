@@ -3079,58 +3079,42 @@
                     <table class="w-full text-left text-xs">
                       <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
                         <tr>
-                          <th class="p-3.5">No Reg & Santri</th>
-                          <th class="p-3.5">Jenjang / Gender</th>
-                          <th class="p-3.5">Jenis Dokumen</th>
-                          <th class="p-3.5">Nama File Upload</th>
-                          <th class="p-3.5">Status Validasi</th>
-                          <th class="p-3.5 text-center">Aksi Verifikasi Dokumen</th>
+                          <th class="p-3.5">Nama Santri</th>
+                          <th class="p-3.5">Jenjang</th>
+                          <th class="p-3.5">Progress Berkas</th>
+                          <th class="p-3.5 text-center">Aksi</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                        <template x-for="item in getPaginatedDocAdminDocs()" :key="item.regNo + '_' + item.docType">
+                        <template x-for="student in getPaginatedDocAdminStudents()" :key="'docs-' + student.regNo">
                           <tr class="hover:bg-slate-50/80 transition">
                             <td class="p-3.5">
-                              <div class="font-bold text-slate-900 text-xs" x-text="item.namaSantri"></div>
-                              <div class="font-mono text-[10px] text-purple-800" x-text="item.regNo"></div>
+                              <div class="font-bold text-slate-900 text-xs" x-text="student.namaLengkap"></div>
+                              <div class="font-mono text-[10px] text-purple-800" x-text="student.regNo"></div>
                             </td>
                             <td class="p-3.5">
-                              <span class="font-bold text-slate-800" x-text="item.jenjang + ' (' + item.jalur + ')'"></span>
-                              <div class="text-[10px] text-slate-400" x-text="item.jenisKelamin"></div>
+                              <div class="font-bold text-slate-800" x-text="student.jenjang + ' (' + student.jenisKelamin + ')'"></div>
+                              <div class="text-[10px] text-slate-400" x-text="student.jalur"></div>
                             </td>
                             <td class="p-3.5">
-                              <span class="px-2 py-1 rounded bg-slate-100 text-slate-800 font-bold text-[10px] border border-slate-200 uppercase" x-text="item.docType"></span>
-                            </td>
-                            <td class="p-3.5 font-mono text-[11px]">
-                              <div class="truncate max-w-xs font-bold text-slate-900" x-text="item.fileName || 'berkas.pdf'"></div>
-                              <div class="text-[10px] text-slate-400" x-text="item.updatedAt ? item.updatedAt.substring(0, 10) : '-'"></div>
-                            </td>
-                            <td class="p-3.5">
-                              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase border"
-                                    :class="{
-                                      'bg-emerald-50 text-emerald-800 border-emerald-200': item.status === 'VERIFIED',
-                                      'bg-amber-50 text-amber-800 border-amber-200': item.status === 'PENDING',
-                                      'bg-rose-50 text-rose-800 border-rose-200': item.status === 'REVISION'
-                                    }"
-                                    x-text="item.status"></span>
+                              <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200"
+                                      x-text="getStudentDocumentProgress(student).uploaded + ' upload'"></span>
+                                <span class="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200"
+                                      x-text="getStudentDocumentProgress(student).pending + ' pending'"></span>
+                                <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                      x-text="getStudentDocumentProgress(student).verified + ' verified'"></span>
+                                <span class="px-2 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200"
+                                      x-text="getStudentDocumentProgress(student).revision + ' revision'"></span>
+                              </div>
                             </td>
                             <td class="p-3.5 text-center">
-                              <div class="flex items-center justify-center gap-1.5">
-                                <button type="button" @click="openFileReviewModal(item, 'DOC')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Lihat & Tinjau Berkas Berkas">
-                                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                                  <span>Lihat File</span>
-                                </button>
-
-                                <button type="button" @click="submitQuickDocVerify(item, 'VERIFIED')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Validasi Sah">
-                                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                  <span>ACC</span>
-                                </button>
-
-                                <button type="button" @click="openFileReviewModal(item, 'DOC')" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Minta Perbaikan Dokumen">
-                                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
-                                  <span>Revisi</span>
-                                </button>
-                              </div>
+                              <button type="button"
+                                      @click="openDocumentDetailModal(student)"
+                                      class="px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] inline-flex items-center gap-1.5 shadow-sm transition">
+                                <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                                <span>Lihat Detail</span>
+                              </button>
                             </td>
                           </tr>
                         </template>
@@ -3230,6 +3214,135 @@
               </button>
             </div>
 
+          </div>
+        </div>
+
+        <!-- MODAL DETAIL BERKAS PER SANTRI -->
+        <div x-show="showDocumentDetailModal" x-transition class="fixed inset-0 z-[86] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white text-slate-800 rounded-3xl max-w-3xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="font-extrabold text-base text-slate-900" x-text="selectedDocumentStudent.namaLengkap || 'Detail Berkas Santri'"></h3>
+                <p class="text-[10px] text-purple-700 font-mono font-bold"
+                   x-text="'No. Reg: ' + (selectedDocumentStudent.regNo || '-') + ' | ' + (selectedDocumentStudent.jenjang || '-')"></p>
+              </div>
+              <button type="button" @click="showDocumentDetailModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-extrabold text-purple-900">Progress Berkas</div>
+                <div class="text-[11px] text-purple-800">
+                  Berkas pending/revisi yang dapat diproses:
+                  <span class="font-black" x-text="bulkAccCount"></span>
+                </div>
+              </div>
+
+              <button type="button"
+                      x-show="bulkAccCount > 0"
+                      @click="requestBulkAccDocuments()"
+                      :disabled="isSubmitting"
+                      class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition disabled:opacity-50">
+                <i data-lucide="check-check" class="w-4 h-4"></i>
+                <span>ACC Semua Berkas Terunggah</span>
+              </button>
+
+              <span x-show="bulkAccCount === 0"
+                    class="px-3 py-2 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold">
+                Semua berkas yang dapat diproses sudah terverifikasi
+              </span>
+            </div>
+
+            <div class="space-y-2">
+              <template x-for="detail in selectedDocumentDetails" :key="detail.docType">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
+                      <i data-lucide="file-text" class="w-4 h-4 text-purple-700"></i>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-slate-900" x-text="detail.title"></div>
+                      <div class="text-[10px] text-slate-500 font-mono" x-text="detail.docType"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border"
+                          :class="{
+                            'bg-emerald-50 text-emerald-800 border-emerald-200': detail.status === 'VERIFIED',
+                            'bg-amber-50 text-amber-800 border-amber-200': detail.status === 'PENDING',
+                            'bg-rose-50 text-rose-800 border-rose-200': detail.status === 'REVISION',
+                            'bg-slate-100 text-slate-600 border-slate-200': detail.status === 'BELUM_UPLOAD'
+                          }"
+                          x-text="detail.status"></span>
+
+                    <template x-if="detail.fileUrl">
+                      <a :href="detail.fileUrl" target="_blank"
+                         class="p-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white"
+                         title="Lihat berkas">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                      </a>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+              <button type="button"
+                      @click="showDocumentDetailModal = false"
+                      class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL KONFIRMASI ACC SELURUH BERKAS -->
+        <div x-show="showBulkAccModal" x-transition class="fixed inset-0 z-[95] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white text-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <i data-lucide="check-check" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm text-slate-900">ACC Seluruh Berkas?</h3>
+                <p class="text-[11px] text-slate-500">Konfirmasi tindakan massal</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Sistem akan menyetujui
+              <strong x-text="bulkAccCount"></strong>
+              berkas yang sudah diunggah dan masih berstatus pending atau revision.
+              Berkas yang belum diunggah tidak akan diproses.
+            </p>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button"
+                      @click="showBulkAccModal = false"
+                      :disabled="isSubmitting"
+                      class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 disabled:opacity-50">
+                Batal
+              </button>
+              <button type="button"
+                      @click="confirmBulkAccDocuments()"
+                      :disabled="isSubmitting"
+                      class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 disabled:opacity-50">
+                <template x-if="isSubmitting">
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Memproses...
+                  </span>
+                </template>
+                <template x-if="!isSubmitting">
+                  <span>Ya, ACC Semua</span>
+                </template>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -4463,6 +4576,12 @@
         bioDetailTab: 1,
         selectedStudentBio: {},
 
+        showDocumentDetailModal: false,
+        showBulkAccModal: false,
+        selectedDocumentStudent: {},
+        selectedDocumentDetails: [],
+        bulkAccCount: 0,
+
         fetchDocAdminData() {
           if (!this.currentUser) return;
           var self = this;
@@ -4539,6 +4658,121 @@
           this.bioDetailTab = 1;
           this.showBioDetailModal = true;
           this.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+        },
+
+        getStudentDocumentProgress(student) {
+          var items = this.docAdminData.items || [];
+          var studentItems = items.filter(function(item) {
+            return item.regNo === student.regNo;
+          });
+
+          var uploaded = 0;
+          var pending = 0;
+          var verified = 0;
+          var revision = 0;
+
+          for (var i = 0; i < studentItems.length; i++) {
+            var item = studentItems[i];
+            if (item.fileUrl) uploaded++;
+            if (item.status === 'PENDING') pending++;
+            if (item.status === 'VERIFIED') verified++;
+            if (item.status === 'REVISION') revision++;
+          }
+
+          return {
+            uploaded: uploaded,
+            pending: pending,
+            verified: verified,
+            revision: revision,
+            total: Object.keys(this.docLabels || {}).length
+          };
+        },
+
+        openDocumentDetailModal(student) {
+          var progress = this.getStudentDocumentProgress(student);
+          var items = this.docAdminData.items || [];
+          var details = [];
+          var labels = this.docLabels || {};
+
+          for (var key in labels) {
+            if (!Object.prototype.hasOwnProperty.call(labels, key)) {
+              continue;
+            }
+
+            var found = null;
+
+            for (var i = 0; i < items.length; i++) {
+              if (
+                items[i].regNo === student.regNo &&
+                items[i].docType === key
+              ) {
+                found = items[i];
+                break;
+              }
+            }
+
+            details.push({
+              docType: key,
+              title: labels[key].title,
+              status: found && found.status ? found.status : 'BELUM_UPLOAD',
+              fileUrl: found ? (found.fileUrl || '') : '',
+              note: found ? (found.note || '') : ''
+            });
+          }
+
+          this.selectedDocumentStudent = Object.assign({}, student);
+          this.selectedDocumentDetails = details;
+          this.bulkAccCount = progress.pending + progress.revision;
+          this.showDocumentDetailModal = true;
+
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        requestBulkAccDocuments() {
+          if (this.bulkAccCount <= 0) {
+            this.showToast('Tidak ada berkas pending atau revisi yang dapat di-ACC.');
+            return;
+          }
+
+          this.showBulkAccModal = true;
+
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        confirmBulkAccDocuments() {
+          var self = this;
+          var regNo = this.selectedDocumentStudent.regNo;
+
+          this.isSubmitting = true;
+
+          this.postRequest('verifyAllDocuments', {
+            staffRegNo: this.currentUser.regNo,
+            regNo: regNo
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            self.showBulkAccModal = false;
+
+            if (res.ok && res.data) {
+              self.showToast(
+                res.data.message || 'Seluruh berkas berhasil diproses.',
+                'success'
+              );
+              self.showDocumentDetailModal = false;
+              self.fetchDocAdminData();
+            } else {
+              self.showToast(res.message || 'Gagal melakukan ACC seluruh berkas.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showBulkAccModal = false;
+            self.showToast(err.message || 'Gagal melakukan ACC seluruh berkas.');
+          });
         },
 
         handleVerifyBiodata(regNo, isLocked, status, note) {
