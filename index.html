@@ -3736,6 +3736,8 @@
               self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.treasurerData = Object.assign({}, self.treasurerData, res.data);
+              } else {
+                self.showToast(res.message || 'Gagal memuat dashboard bendahara.');
               }
               self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
             })
