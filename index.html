@@ -31,6 +31,9 @@
   <!-- HTML2PDF CDN for PDF Download -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -2423,22 +2426,22 @@
                 <!-- Filter & Search Bar -->
                 <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                   <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-                    <button @click="treasurerFilter = 'PENDING'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                    <button @click="treasurerFilter = 'PENDING'; pagination.payments = 1" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
                             :class="treasurerFilter === 'PENDING' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
                       <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                       <span>Pending (Menunggu)</span>
                     </button>
-                    <button @click="treasurerFilter = 'VERIFIED'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                    <button @click="treasurerFilter = 'VERIFIED'; pagination.payments = 1" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
                             :class="treasurerFilter === 'VERIFIED' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
                       <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
                       <span>Terverifikasi (ACC)</span>
                     </button>
-                    <button @click="treasurerFilter = 'REVISION'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                    <button @click="treasurerFilter = 'REVISION'; pagination.payments = 1" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
                             :class="treasurerFilter === 'REVISION' ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
                       <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
                       <span>Revisi</span>
                     </button>
-                    <button @click="treasurerFilter = 'ALL'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                    <button @click="treasurerFilter = 'ALL'; pagination.payments = 1" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
                             :class="treasurerFilter === 'ALL' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
                       <span>Semua Status</span>
                     </button>
@@ -2465,7 +2468,7 @@
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                        <template x-for="item in getFilteredTreasurerPayments('PENDAFTARAN')" :key="item.paymentId">
+                        <template x-for="item in getPaginatedTreasurerPayments('PENDAFTARAN')" :key="item.paymentId">
                           <tr class="hover:bg-slate-50/80 transition">
                             <td class="p-3.5">
                               <div class="font-mono font-bold text-brand-800 text-xs" x-text="item.regNo"></div>
@@ -2513,6 +2516,37 @@
                       </tbody>
                     </table>
                   </div>
+
+                  <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="text-slate-500">
+                      Halaman <span x-text="pagination.payments"></span> dari
+                      <span x-text="getTotalPages(getFilteredTreasurerPayments('PENDAFTARAN'))"></span>
+                    </span>
+
+                    <div class="flex items-center gap-1">
+                      <button type="button"
+                              @click="setPaginationPage('payments', pagination.payments - 1)"
+                              :disabled="pagination.payments <= 1"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Sebelumnya
+                      </button>
+
+                      <template x-for="page in getPageNumbers('payments')" :key="'payment-page-' + page">
+                        <button type="button"
+                                @click="setPaginationPage('payments', page)"
+                                class="min-w-8 px-2 py-1.5 rounded-lg border font-bold"
+                                :class="pagination.payments === page ? 'bg-brand-700 text-white border-brand-700' : 'bg-white text-slate-700 border-slate-300'"
+                                x-text="page"></button>
+                      </template>
+
+                      <button type="button"
+                              @click="setPaginationPage('payments', pagination.payments + 1)"
+                              :disabled="pagination.payments >= getTotalPages(getFilteredTreasurerPayments('PENDAFTARAN'))"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Berikutnya
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
               </div>
@@ -2544,7 +2578,7 @@
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                        <template x-for="st in treasurerData.passedStudents" :key="st.regNo">
+                        <template x-for="st in getPaginatedPassedStudents()" :key="st.regNo">
                           <tr class="hover:bg-slate-50/80 transition">
                             <td class="p-3.5">
                               <div class="font-bold text-slate-900 text-xs" x-text="st.namaSantri"></div>
@@ -2584,6 +2618,37 @@
                         </template>
                       </tbody>
                     </table>
+                  </div>
+
+                  <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="text-slate-500">
+                      Halaman <span x-text="pagination.passedStudents"></span> dari
+                      <span x-text="getTotalPages(treasurerData.passedStudents)"></span>
+                    </span>
+
+                    <div class="flex items-center gap-1">
+                      <button type="button"
+                              @click="setPaginationPage('passedStudents', pagination.passedStudents - 1)"
+                              :disabled="pagination.passedStudents <= 1"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Sebelumnya
+                      </button>
+
+                      <template x-for="page in getPageNumbers('passedStudents')" :key="'passed-page-' + page">
+                        <button type="button"
+                                @click="setPaginationPage('passedStudents', page)"
+                                class="min-w-8 px-2 py-1.5 rounded-lg border font-bold"
+                                :class="pagination.passedStudents === page ? 'bg-brand-700 text-white border-brand-700' : 'bg-white text-slate-700 border-slate-300'"
+                                x-text="page"></button>
+                      </template>
+
+                      <button type="button"
+                              @click="setPaginationPage('passedStudents', pagination.passedStudents + 1)"
+                              :disabled="pagination.passedStudents >= getTotalPages(treasurerData.passedStudents)"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Berikutnya
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2889,12 +2954,34 @@
                       <button type="button" @click="docAdminTab = 'documents'; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow transition">
                         Cek Berkas
                       </button>
+                  </div>
+
+                  <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="text-slate-500">
+                      Halaman <span x-text="pagination.staff"></span> dari
+                      <span x-text="getTotalPages(saData.staffList)"></span>
+                    </span>
+
+                    <div class="flex items-center gap-1">
+                      <button type="button"
+                              @click="setPaginationPage('staff', pagination.staff - 1)"
+                              :disabled="pagination.staff <= 1"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
+                        Sebelumnya
+                      </button>
+                      <button type="button"
+                              @click="setPaginationPage('staff', pagination.staff + 1)"
+                              :disabled="pagination.staff >= getTotalPages(saData.staffList)"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
+                        Berikutnya
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- MENU 2: VERIFIKASI BIODATA (TABEL DAFTAR PENDAFTAR) -->
+            <!-- TAB 3: MASTER CONFIGURATION -->
               <div x-show="docAdminTab === 'biodata'" class="space-y-6">
                 
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -2920,7 +3007,7 @@
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                        <template x-for="st in getFilteredDocAdminStudents()" :key="st.regNo">
+                        <template x-for="st in getPaginatedDocAdminStudents()" :key="st.regNo">
                           <tr class="hover:bg-purple-50/50 transition cursor-pointer" @click="openBioDetailModal(st)">
                             <td class="p-3.5">
                               <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
@@ -3001,7 +3088,7 @@
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                        <template x-for="item in getFilteredDocAdminDocs()" :key="item.regNo + '_' + item.docType">
+                        <template x-for="item in getPaginatedDocAdminDocs()" :key="item.regNo + '_' + item.docType">
                           <tr class="hover:bg-slate-50/80 transition">
                             <td class="p-3.5">
                               <div class="font-bold text-slate-900 text-xs" x-text="item.namaSantri"></div>
@@ -3339,6 +3426,87 @@
                 </div>
               </div>
 
+              <!-- SUPER ADMIN REGISTRATION CHARTS -->
+              <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900">Perkembangan Pendaftar Tiap Gelombang</h4>
+                      <p class="text-xs text-slate-500">Akumulasi pendaftar berdasarkan jenjang dan gender.</p>
+                    </div>
+                    <i data-lucide="trending-up" class="w-5 h-5 text-emerald-600"></i>
+                  </div>
+                  <div class="h-72">
+                    <canvas id="waveProgressChart"></canvas>
+                  </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900">Pembagian Total Pendaftar</h4>
+                      <p class="text-xs text-slate-500">Berdasarkan jenjang dan jenis kelamin.</p>
+                    </div>
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-purple-600"></i>
+                  </div>
+                  <div class="h-72 flex justify-center">
+                    <canvas id="studentDistributionChart"></canvas>
+                  </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900">Status Pemberkasan</h4>
+                      <p class="text-xs text-slate-500">Perbandingan pendaftar, berkas lengkap, dan berkas ACC.</p>
+                    </div>
+                    <i data-lucide="files" class="w-5 h-5 text-blue-600"></i>
+                  </div>
+                  <div class="h-64">
+                    <canvas id="documentStatusChart"></canvas>
+                  </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900">Status Pembayaran</h4>
+                      <p class="text-xs text-slate-500">Perbandingan pendaftar, sudah membayar, dan pembayaran ACC.</p>
+                    </div>
+                    <i data-lucide="credit-card" class="w-5 h-5 text-amber-600"></i>
+                  </div>
+                  <div class="h-64">
+                    <canvas id="paymentStatusChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 class="font-extrabold text-sm text-slate-900">Jumlah Pendaftar per Bulan</h4>
+                    <p class="text-xs text-slate-500">Jumlah akun peserta yang dibuat berdasarkan bulan.</p>
+                  </div>
+                  <i data-lucide="calendar-days" class="w-5 h-5 text-emerald-600"></i>
+                </div>
+                <div class="h-64">
+                  <canvas id="monthlyRegistrationChart"></canvas>
+                </div>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 class="font-extrabold text-sm text-slate-900">Jumlah Pendaftar per Gelombang</h4>
+                    <p class="text-xs text-slate-500">Total pendaftar yang tercatat pada setiap gelombang.</p>
+                  </div>
+                  <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i>
+                </div>
+                <div class="h-64">
+                  <canvas id="waveTotalChart"></canvas>
+                </div>
+              </div>
+
               <!-- BOTTLENECK DETECTOR ALERT CARD -->
               <div class="p-6 rounded-2xl bg-white border border-amber-200/80 shadow-sm space-y-4">
                 <div class="flex items-center gap-3">
@@ -3402,7 +3570,7 @@
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                      <template x-for="st in saData.staffList" :key="st.regNo">
+                      <template x-for="st in paginate(saData.staffList, 'staff')" :key="st.regNo">
                         <tr class="hover:bg-slate-50/80 transition">
                           <td class="p-4 font-mono font-bold text-brand-700" x-text="st.regNo"></td>
                           <td class="p-4 font-bold text-slate-900" x-text="st.namaLengkap"></td>
@@ -3541,7 +3709,7 @@
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <template x-for="s in saData.slides" :key="s.id">
+                <template x-for="s in paginate(saData.slides, 'slides')" :key="s.id">
                   <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
                     <div class="space-y-2">
                       <div class="flex items-center justify-between">
@@ -3667,7 +3835,7 @@
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700">
-                      <template x-for="(lg, idx) in saData.logs" :key="idx">
+                      <template x-for="(lg, idx) in paginate(saData.logs, 'logs')" :key="idx">
                         <tr class="hover:bg-slate-50 font-mono text-[11px]">
                           <td class="p-3.5 text-slate-400" x-text="lg.timestamp"></td>
                           <td class="p-3.5 font-bold text-brand-700" x-text="lg.userRegNo + ' (' + lg.role + ')'"></td>
@@ -3847,7 +4015,7 @@
 
   <!-- Alpine.js Application Logic -->
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAUPEbSZDzosSz5FzBkhsj5XobQIh8vZ5M1cZLxOnAqk2KLQ71xj4-LixzmjNNzPA7VA/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwmLCxEBouo85NhcZvNY13y0qM8CuKBZ-ImohX9c-UeWYFli9v32gU4JNNfPBPiPQB02Q/exec';
 
     function psbApp() {
       return {
@@ -4122,8 +4290,22 @@
           bioStats: { locked: 0, unlocked: 0, revisionRequested: 0 },
           staffList: [],
           slides: [],
-          logs: []
+          logs: [],
+          chartData: {
+            waveLabels: [],
+            waveDatasets: [],
+            categoryLabels: [],
+            categoryValues: [],
+            monthlyLabels: [],
+            monthlyValues: [],
+            documentLabels: [],
+            documentValues: [],
+            paymentLabels: [],
+            paymentValues: []
+          }
         },
+
+        chartInstances: {},
 
         showStaffModal: false,
         staffModalForm: { regNo: '', namaLengkap: '', email: '', noWa: '', role: 'BENDAHARA', password: '' },
@@ -4344,6 +4526,14 @@
           });
         },
 
+        getPaginatedDocAdminStudents() {
+          return this.paginate(this.getFilteredDocAdminStudents(), 'docStudents');
+        },
+
+        getPaginatedDocAdminDocs() {
+          return this.paginate(this.getFilteredDocAdminDocs(), 'docItems');
+        },
+
         openBioDetailModal(student) {
           this.selectedStudentBio = Object.assign({}, student);
           this.bioDetailTab = 1;
@@ -4475,6 +4665,14 @@
           });
         },
 
+        getPaginatedTreasurerPayments(pType) {
+          return this.paginate(this.getFilteredTreasurerPayments(pType), 'payments');
+        },
+
+        getPaginatedPassedStudents() {
+          return this.paginate(this.treasurerData.passedStudents || [], 'passedStudents');
+        },
+
         quickApprovePayment(item) {
           var self = this;
           item.status = 'VERIFIED'; // Optimistic local UI update
@@ -4556,6 +4754,87 @@
         sidebarExpanded: true,
         sidebarMobileOpen: false,
         isDashLoading: false,
+
+        pagination: {
+          payments: 1,
+          passedStudents: 1,
+          docStudents: 1,
+          docItems: 1,
+          staff: 1,
+          slides: 1,
+          logs: 1
+        },
+        pageSize: 10,
+
+        paginate(list, key) {
+          var source = Array.isArray(list) ? list : [];
+          var totalPages = Math.max(1, Math.ceil(source.length / this.pageSize));
+          var currentPage = Number(this.pagination[key]) || 1;
+
+          if (currentPage > totalPages) {
+            currentPage = totalPages;
+            this.pagination[key] = currentPage;
+          }
+
+          if (currentPage < 1) {
+            currentPage = 1;
+            this.pagination[key] = currentPage;
+          }
+
+          var start = (currentPage - 1) * this.pageSize;
+          return source.slice(start, start + this.pageSize);
+        },
+
+        getTotalPages(list) {
+          var source = Array.isArray(list) ? list : [];
+          return Math.max(1, Math.ceil(source.length / this.pageSize));
+        },
+
+        setPaginationPage(key, page) {
+          var targetPage = Number(page) || 1;
+          var totalPages = this.getTotalPages(this.getPaginationSource(key));
+
+          if (targetPage < 1) targetPage = 1;
+          if (targetPage > totalPages) targetPage = totalPages;
+
+          this.pagination[key] = targetPage;
+        },
+
+        getPaginationSource(key) {
+          if (key === 'payments') {
+            return this.getFilteredTreasurerPayments('PENDAFTARAN');
+          }
+          if (key === 'passedStudents') {
+            return this.treasurerData.passedStudents || [];
+          }
+          if (key === 'docStudents') {
+            return this.getFilteredDocAdminStudents();
+          }
+          if (key === 'docItems') {
+            return this.getFilteredDocAdminDocs();
+          }
+          if (key === 'staff') {
+            return this.saData.staffList || [];
+          }
+          if (key === 'slides') {
+            return this.saData.slides || [];
+          }
+          if (key === 'logs') {
+            return this.saData.logs || [];
+          }
+          return [];
+        },
+
+        getPageNumbers(key) {
+          var totalPages = this.getTotalPages(this.getPaginationSource(key));
+          var pages = [];
+
+          for (var i = 1; i <= totalPages; i++) {
+            pages.push(i);
+          }
+
+          return pages;
+        },
 
         paymentSubTab: 'pendaftaran',
         showRevisionModal: false,
@@ -4802,6 +5081,282 @@
           });
         },
 
+        renderSuperAdminCharts() {
+          if (!window.Chart || !this.saData || !this.saData.chartData) {
+            return;
+          }
+
+          var data = this.saData.chartData;
+          var self = this;
+
+          var chartIds = [
+            'waveProgressChart',
+            'studentDistributionChart',
+            'documentStatusChart',
+            'paymentStatusChart',
+            'monthlyRegistrationChart',
+            'waveTotalChart'
+          ];
+
+          for (var i = 0; i < chartIds.length; i++) {
+            var existingChart = this.chartInstances[chartIds[i]];
+            if (existingChart) {
+              existingChart.destroy();
+            }
+          }
+
+          this.chartInstances.waveProgressChart = new Chart(
+            document.getElementById('waveProgressChart'),
+            {
+              type: 'line',
+              data: {
+                labels: data.waveLabels || [],
+                datasets: [
+                  {
+                    label: 'SMP Pa',
+                    data: data.waveDatasets.map(function(row) { return row[0] || 0; }),
+                    borderColor: '#dc2626',
+                    backgroundColor: '#dc2626',
+                    tension: 0.35,
+                    borderWidth: 2,
+                    pointRadius: 2
+                  },
+                  {
+                    label: 'SMP Pi',
+                    data: data.waveDatasets.map(function(row) { return row[1] || 0; }),
+                    borderColor: '#2563eb',
+                    backgroundColor: '#2563eb',
+                    tension: 0.35,
+                    borderWidth: 2,
+                    pointRadius: 2
+                  },
+                  {
+                    label: 'MA Pa',
+                    data: data.waveDatasets.map(function(row) { return row[2] || 0; }),
+                    borderColor: '#16a34a',
+                    backgroundColor: '#16a34a',
+                    tension: 0.35,
+                    borderWidth: 2,
+                    pointRadius: 2
+                  },
+                  {
+                    label: 'MA Pi',
+                    data: data.waveDatasets.map(function(row) { return row[3] || 0; }),
+                    borderColor: '#9333ea',
+                    backgroundColor: '#9333ea',
+                    tension: 0.35,
+                    borderWidth: 2,
+                    pointRadius: 2
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                  intersect: false,
+                  mode: 'index'
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      precision: 0
+                    }
+                  }
+                }
+              }
+            }
+          );
+
+          this.chartInstances.studentDistributionChart = new Chart(
+            document.getElementById('studentDistributionChart'),
+            {
+              type: 'doughnut',
+              data: {
+                labels: data.categoryLabels || [],
+                datasets: [
+                  {
+                    data: data.categoryValues || [],
+                    backgroundColor: ['#dc2626', '#2563eb', '#16a34a', '#9333ea'],
+                    borderColor: '#ffffff',
+                    borderWidth: 3
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom'
+                  }
+                }
+              }
+            }
+          );
+
+          this.chartInstances.documentStatusChart = new Chart(
+            document.getElementById('documentStatusChart'),
+            {
+              type: 'bar',
+              data: {
+                labels: data.documentLabels || [],
+                datasets: [
+                  {
+                    label: 'Jumlah Peserta',
+                    data: data.documentValues || [],
+                    backgroundColor: ['#64748b', '#2563eb', '#16a34a'],
+                    borderRadius: 8
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      precision: 0
+                    }
+                  }
+                }
+              }
+            }
+          );
+
+          this.chartInstances.paymentStatusChart = new Chart(
+            document.getElementById('paymentStatusChart'),
+            {
+              type: 'bar',
+              data: {
+                labels: data.paymentLabels || [],
+                datasets: [
+                  {
+                    label: 'Jumlah Peserta',
+                    data: data.paymentValues || [],
+                    backgroundColor: ['#64748b', '#f59e0b', '#16a34a'],
+                    borderRadius: 8
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      precision: 0
+                    }
+                  }
+                }
+              }
+            }
+          );
+
+          this.chartInstances.monthlyRegistrationChart = new Chart(
+            document.getElementById('monthlyRegistrationChart'),
+            {
+              type: 'bar',
+              data: {
+                labels: data.monthlyLabels || [],
+                datasets: [
+                  {
+                    label: 'Pendaftar',
+                    data: data.monthlyValues || [],
+                    backgroundColor: '#0f766e',
+                    borderRadius: 8
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      precision: 0
+                    }
+                  }
+                }
+              }
+            }
+          );
+
+          var waveTotals = [];
+          var waveRows = data.waveDatasets || [];
+
+          for (var w = 0; w < waveRows.length; w++) {
+            var rowTotal = 0;
+
+            for (var c = 0; c < waveRows[w].length; c++) {
+              var previousTotal = w > 0 ? (data.waveDatasets[w - 1][c] || 0) : 0;
+              rowTotal += Math.max(0, (waveRows[w][c] || 0) - previousTotal);
+            }
+
+            waveTotals.push(rowTotal);
+          }
+
+          this.chartInstances.waveTotalChart = new Chart(
+            document.getElementById('waveTotalChart'),
+            {
+              type: 'bar',
+              data: {
+                labels: data.waveLabels || [],
+                datasets: [
+                  {
+                    label: 'Pendaftar',
+                    data: waveTotals,
+                    backgroundColor: '#4f46e5',
+                    borderRadius: 8
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      precision: 0
+                    }
+                  }
+                }
+              }
+            }
+          );
+
+          self.$nextTick(function() {
+            if (window.lucide) {
+              window.lucide.createIcons();
+            }
+          });
+        },
+
         fetchSuperAdminData() {
           if (!this.currentUser) return;
           var self = this;
@@ -4811,13 +5366,34 @@
               self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.saData = Object.assign({}, self.saData, res.data);
+
+                self.$nextTick(function() {
+                  self.renderSuperAdminCharts();
+
+                  if (window.lucide) {
+                    window.lucide.createIcons();
+                  }
+                });
+              } else {
+                self.showToast(res.message || 'Gagal memuat data Super Admin.');
               }
-              self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
             })
             .catch(function(err) {
               self.isDashLoading = false;
               self.showToast('Gagal memuat data Super Admin: ' + err.message);
             });
+        },
+
+        getPaginatedStaff() {
+          return this.paginate(this.saData.staffList || [], 'staff');
+        },
+
+        getPaginatedSlides() {
+          return this.paginate(this.saData.slides || [], 'slides');
+        },
+
+        getPaginatedLogs() {
+          return this.paginate(this.saData.logs || [], 'logs');
         },
 
         openAddStaffModal() {
