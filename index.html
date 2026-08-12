@@ -3970,18 +3970,32 @@
         postRequest(action, payload) {
           return fetch(SCRIPT_URL, {
             method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
             headers: {
               'Content-Type': 'text/plain;charset=utf-8'
             },
             body: JSON.stringify({ action: action, payload: payload || {} })
           })
-          .then(function(res) { return res.text(); })
+          .then(function(res) {
+            if (!res.ok && res.status !== 200) {
+              throw new Error('Server Google Apps Script merespon dengan status: ' + res.status);
+            }
+            return res.text();
+          })
           .then(function(txt) {
             try {
               return JSON.parse(txt);
             } catch (err) {
-              throw new Error('Gagal memproses respon server.');
+              throw new Error('Respon server bukan format JSON yang valid. Pastikan Akses Deploy Apps Script diset ke "Anyone".');
             }
+          })
+          .catch(function(err) {
+            console.warn('Fetch error [', action, ']:', err);
+            if (err.message && (err.message.indexOf('Failed to fetch') !== -1 || err.message.indexOf('NetworkError') !== -1)) {
+              throw new Error('Koneksi terblokir CORS. Pastikan Akses Deploy Google Apps Script diset ke "Anyone" (Siapa Saja).');
+            }
+            throw err;
           });
         },
 
