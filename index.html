@@ -2090,56 +2090,151 @@
     <template x-if="isLoggedIn && isSuperAdmin()">
       <div x-transition class="w-full min-h-screen flex flex-col bg-slate-900 text-slate-100 relative">
         
-        <!-- GLOBAL SUPER ADMIN TOPBAR HEADER SHELL -->
-        <header class="h-16 border-b border-slate-200 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs text-slate-800">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-sm flex-shrink-0">
-              <i data-lucide="shield-check" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <div class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                <span>SUPER ADMIN COMMAND CENTER</span>
-                <span class="hidden sm:inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300">FULL MASTER ACCESS</span>
+        <!-- MAIN DASHBOARD SHELL (HEADER & SIDEBAR) FOR SUPER ADMIN -->
+        <div class="flex flex-1 min-h-screen relative">
+
+          <!-- STICKY SIDEBAR (DESKTOP) -->
+          <aside class="hidden md:flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 z-30"
+                 :class="sidebarExpanded ? 'w-64' : 'w-20'">
+            
+            <!-- Sidebar Header Brand -->
+            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+              <div class="flex items-center gap-3 overflow-hidden" x-show="sidebarExpanded">
+                <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black flex-shrink-0">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <div class="truncate">
+                  <div class="font-bold text-sm leading-tight text-white truncate">COMMAND CENTER</div>
+                  <div class="text-[10px] text-amber-400 font-medium">Super Admin Portal</div>
+                </div>
               </div>
-              <div class="text-[10px] text-slate-500 font-medium" x-text="currentUser.namaLengkap + ' (' + currentUser.regNo + ')'"></div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3">
-            <button @click="fetchSuperAdminData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Dashboard Stats">
-              <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-amber-600' : ''"></i>
-            </button>
-            <button @click="logout()" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs transition flex items-center gap-1.5 shadow-xs">
-              <i data-lucide="log-out" class="w-4 h-4"></i>
-              <span class="hidden sm:inline">Keluar</span>
-            </button>
-          </div>
-        </header>
-
-        <!-- SUPER ADMIN MAIN CONTAINER -->
-        <div class="flex-1 flex flex-col md:flex-row min-h-0 bg-slate-100 text-slate-800">
-          
-          <!-- SUPER ADMIN SIDEBAR NAV -->
-          <aside class="w-full md:w-64 border-r border-slate-800 bg-slate-950 p-4 space-y-1.5 flex-shrink-0 text-slate-100">
-            <template x-for="tab in [
-              { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
-              { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
-              { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
-              { id: 'slides', label: 'Promo Banners', icon: 'image' },
-              { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
-              { id: 'logs', label: 'Audit Logs System', icon: 'history' }
-            ]" :key="tab.id">
-              <button @click="superAdminTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
-                      class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition"
-                      :class="superAdminTab === tab.id ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'">
-                <i :data-lucide="tab.icon" class="w-4 h-4 flex-shrink-0"></i>
-                <span x-text="tab.label"></span>
+              <button @click="sidebarExpanded = !sidebarExpanded; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                      class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white mx-auto">
+                <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-5 h-5"></i>
               </button>
-            </template>
+            </div>
+
+            <!-- Profile Mini Card -->
+            <div class="p-4 border-b border-slate-800/60 bg-slate-900/40" x-show="sidebarExpanded">
+              <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+              <div class="text-[10px] text-amber-400 font-mono mt-0.5" x-text="currentUser.regNo"></div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+              <template x-for="tab in [
+                { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
+                { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
+                { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
+                { id: 'slides', label: 'Promo Banners', icon: 'image' },
+                { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
+                { id: 'logs', label: 'Audit Logs System', icon: 'history' }
+              ]" :key="tab.id">
+                <button @click="superAdminTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        :class="superAdminTab === tab.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                  <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
+                  <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
+                </button>
+              </template>
+            </nav>
+
+            <!-- Logout Bottom Button -->
+            <div class="p-3 border-t border-slate-800">
+              <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition">
+                <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+                <span x-show="sidebarExpanded" class="truncate">Keluar Akun</span>
+              </button>
+            </div>
+
           </aside>
 
-          <!-- SUPER ADMIN TAB CONTENT BODY (LIGHT THEME) -->
-          <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
+          <!-- MOBILE DRAWER SIDEBAR FOR SUPER ADMIN -->
+          <div x-show="sidebarMobileOpen" 
+               class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden"
+               @click="sidebarMobileOpen = false"></div>
+          
+          <aside x-show="sidebarMobileOpen" 
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="-translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="-translate-x-full"
+                 class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col justify-between md:hidden">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="font-bold text-sm text-white flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                  </div>
+                  <span>COMMAND CENTER</span>
+                </div>
+                <button @click="sidebarMobileOpen = false" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+                <div class="text-[10px] text-amber-400 font-mono" x-text="currentUser.regNo"></div>
+              </div>
+              <nav class="space-y-1">
+                <template x-for="tab in [
+                  { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
+                  { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
+                  { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
+                  { id: 'slides', label: 'Promo Banners', icon: 'image' },
+                  { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
+                  { id: 'logs', label: 'Audit Logs System', icon: 'history' }
+                ]" :key="'sa-mob-' + tab.id">
+                  <button @click="superAdminTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                          :class="superAdminTab === tab.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                    <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                    <span x-text="tab.label"></span>
+                  </button>
+                </template>
+              </nav>
+            </div>
+            <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+              <span>Keluar</span>
+            </button>
+          </aside>
+
+          <!-- TOP HEADER BAR & MAIN CONTENT WRAPPER -->
+          <div class="flex-1 flex flex-col min-w-0 bg-slate-100 text-slate-800">
+            
+            <!-- GLOBAL SUPER ADMIN TOPBAR HEADER SHELL -->
+            <header class="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs text-slate-800">
+              <div class="flex items-center gap-3">
+                <button @click="sidebarMobileOpen = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                        class="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                  <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div>
+                  <h2 class="text-sm md:text-base font-extrabold text-slate-900 capitalize tracking-tight" x-text="superAdminTab.replace('_', ' ')"></h2>
+                  <p class="text-[10px] text-slate-400 font-medium hidden sm:block">Super Admin Command Center</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] shadow-xs">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                  <span class="text-amber-900 font-bold">FULL MASTER ACCESS</span>
+                </div>
+                <button @click="fetchSuperAdminData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Dashboard Stats">
+                  <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-amber-600' : ''"></i>
+                </button>
+                <button @click="logout()" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs transition flex items-center gap-1.5 shadow-xs">
+                  <i data-lucide="log-out" class="w-4 h-4"></i>
+                  <span class="hidden sm:inline">Keluar</span>
+                </button>
+              </div>
+            </header>
+
+            <!-- SUPER ADMIN TAB CONTENT BODY (LIGHT THEME) -->
+            <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
 
             <!-- TAB 1: OVERVIEW & BOTTLENECK COMMAND CENTER -->
             <div x-show="superAdminTab === 'overview'" class="space-y-6">
