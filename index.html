@@ -120,6 +120,114 @@
       </div>
     </div>
 
+    <!-- ELEMEN GLOBAL: MODAL PENINJAUAN & VERIFIKASI BERKAS / BUKTI TRANSFER -->
+    <div x-show="showFileReviewModal" x-transition
+         class="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="bg-white text-slate-800 rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-5 shadow-2xl border border-slate-200 overflow-y-auto max-h-[90vh]">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center font-bold">
+              <i data-lucide="file-search" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-sm md:text-base" x-text="reviewModalData.title || 'Peninjauan Berkas / Transfer'"></h3>
+              <p class="text-[11px] text-slate-500" x-text="'No. Reg: ' + reviewModalData.regNo"></p>
+            </div>
+          </div>
+          <button @click="showFileReviewModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Ringkasan Identitas Santri -->
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Nama Santri</span>
+            <span class="font-bold text-slate-900 truncate block" x-text="reviewModalData.namaSantri || '-'"></span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Jalur / Jenjang</span>
+            <span class="font-bold text-slate-900" x-text="(reviewModalData.jalur || '-') + ' (' + (reviewModalData.jenjang || '-') + ')'"></span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Status Saat Ini</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border inline-block mt-0.5"
+                  :class="{
+                    'bg-emerald-100 text-emerald-800 border-emerald-300': reviewModalData.currentStatus === 'VERIFIED',
+                    'bg-amber-100 text-amber-800 border-amber-300': reviewModalData.currentStatus === 'PENDING',
+                    'bg-rose-100 text-rose-800 border-rose-300': reviewModalData.currentStatus === 'REVISION',
+                    'bg-slate-100 text-slate-600 border-slate-300': reviewModalData.currentStatus === 'BELUM_UPLOAD'
+                  }"
+                  x-text="reviewModalData.currentStatus"></span>
+          </div>
+          <template x-if="reviewModalData.amount">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Nominal Transfer</span>
+              <span class="font-mono font-extrabold text-brand-700" x-text="'Rp ' + Number(reviewModalData.amount).toLocaleString('id-ID')"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Pratinjau Gambar / Dokumen PDF -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Pratinjau Berkas File</label>
+          <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 flex flex-col items-center justify-center min-h-[180px] text-center space-y-3">
+            
+            <!-- Tampilan Foto/Struk -->
+            <template x-if="isImageFile(reviewModalData.fileUrl, reviewModalData.fileName)">
+              <div class="w-full flex justify-center">
+                <img :src="reviewModalData.fileUrl" alt="Pratinjau Berkas" class="max-h-64 object-contain rounded-xl border border-slate-300 shadow-sm">
+              </div>
+            </template>
+
+            <!-- Tampilan PDF/Document -->
+            <template x-if="!isImageFile(reviewModalData.fileUrl, reviewModalData.fileName)">
+              <div class="space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
+                  <i data-lucide="file-text" class="w-6 h-6"></i>
+                </div>
+                <div class="text-xs font-bold text-slate-800 truncate max-w-sm" x-text="reviewModalData.fileName || 'Dokumen_Santri.pdf'"></div>
+                <p class="text-[10px] text-slate-500">File berupa dokumen PDF / Google Drive link.</p>
+              </div>
+            </template>
+
+            <template x-if="reviewModalData.fileUrl">
+              <a :href="reviewModalData.fileUrl" target="_blank" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 shadow transition">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                <span>Buka Ukuran Penuh di Tab Baru</span>
+              </a>
+            </template>
+          </div>
+        </div>
+
+        <!-- Input Catatan Revisi / Instruksi Perbaikan -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Catatan / Alasan Revisi (Wajib Diisi Jika Minta Perbaikan)</label>
+          <textarea x-model="reviewModalData.note" rows="2" placeholder="Contoh: Struk transfer terpotong, mohon foto ulang bukti transfer yang jelas..." class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-xs font-semibold focus:bg-white focus:border-brand-700 focus:outline-none"></textarea>
+        </div>
+
+        <!-- Tombol Aksi Verifikasi -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" @click="showFileReviewModal = false" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 transition">
+            Batal
+          </button>
+
+          <button type="button" @click="submitFileReview('REVISION')" :disabled="isSubmitting" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 disabled:opacity-50">
+            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+            <span>Minta Revisi</span>
+          </button>
+
+          <button type="button" @click="submitFileReview('VERIFIED')" :disabled="isSubmitting" class="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 disabled:opacity-50">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            <span>ACC / Setujui Berkas</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
     <!-- MAIN CONTAINER BOX (LOGIN / REGISTER / SUCCESS) -->
     <div x-show="!isLoggedIn" class="w-full max-w-6xl rounded-3xl glass-card shadow-2xl overflow-hidden border border-white/10 flex flex-col my-auto">
       
@@ -878,7 +986,7 @@
     <!-- ============================================================= -->
     <!-- VIEW SECTION B: PARTICIPANT DASHBOARD (When LOGGED IN)        -->
     <!-- ============================================================= -->
-    <template x-if="isLoggedIn && !isSuperAdmin()">
+    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer()">
       <div x-transition:enter="transition ease-out duration-500 transform"
            x-transition:enter-start="opacity-0 scale-[0.99] translate-y-3"
            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -2085,6 +2193,466 @@
     </template>
 
     <!-- ============================================================= -->
+    <!-- VIEW SECTION B-2: TREASURER DASHBOARD (When LOGGED IN & IS TREASURER) -->
+    <!-- ============================================================= -->
+    <template x-if="isLoggedIn && isTreasurer()">
+      <div x-transition class="w-full min-h-screen flex flex-col bg-slate-900 text-slate-100 relative">
+        
+        <!-- MAIN DASHBOARD SHELL (HEADER & SIDEBAR) FOR TREASURER -->
+        <div class="flex flex-1 min-h-screen relative">
+
+          <!-- STICKY SIDEBAR (DESKTOP) -->
+          <aside class="hidden md:flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 z-30"
+                 :class="sidebarExpanded ? 'w-64' : 'w-20'">
+            
+            <!-- Sidebar Header Brand -->
+            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+              <div class="flex items-center gap-3 overflow-hidden" x-show="sidebarExpanded">
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black flex-shrink-0">
+                  <i data-lucide="wallet" class="w-5 h-5"></i>
+                </div>
+                <div class="truncate">
+                  <div class="font-bold text-sm leading-tight text-white truncate">BENDAHARA PSB</div>
+                  <div class="text-[10px] text-emerald-400 font-medium">Portal Keuangan</div>
+                </div>
+              </div>
+              <button @click="sidebarExpanded = !sidebarExpanded; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                      class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white mx-auto">
+                <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <!-- Profile Mini Card -->
+            <div class="p-4 border-b border-slate-800/60 bg-slate-900/40" x-show="sidebarExpanded">
+              <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+              <div class="text-[10px] text-emerald-400 font-mono mt-0.5" x-text="currentUser.regNo + ' (BENDAHARA)'"></div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+              <template x-for="tab in [
+                { id: 'overview', label: 'Dashboard Keuangan', icon: 'layout-dashboard' },
+                { id: 'pendaftaran', label: 'Verifikasi Pendaftaran', icon: 'credit-card' },
+                { id: 'daftar_ulang', label: 'Tagihan & VA (Daftar Ulang)', icon: 'receipt' }
+              ]" :key="tab.id">
+                <button @click="treasurerTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                        :class="treasurerTab === tab.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                  <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
+                  <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
+                </button>
+              </template>
+            </nav>
+
+            <!-- Logout Bottom Button -->
+            <div class="p-3 border-t border-slate-800">
+              <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition">
+                <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+                <span x-show="sidebarExpanded" class="truncate">Keluar Akun</span>
+              </button>
+            </div>
+
+          </aside>
+
+          <!-- MOBILE DRAWER SIDEBAR FOR TREASURER -->
+          <div x-show="sidebarMobileOpen" 
+               class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden"
+               @click="sidebarMobileOpen = false"></div>
+          
+          <aside x-show="sidebarMobileOpen" 
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="-translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="-translate-x-full"
+                 class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col justify-between md:hidden">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="font-bold text-sm text-white flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                  </div>
+                  <span>PORTAL BENDAHARA</span>
+                </div>
+                <button @click="sidebarMobileOpen = false" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+                <div class="text-[10px] text-emerald-400 font-mono" x-text="currentUser.regNo"></div>
+              </div>
+              <nav class="space-y-1">
+                <template x-for="tab in [
+                  { id: 'overview', label: 'Dashboard Keuangan', icon: 'layout-dashboard' },
+                  { id: 'pendaftaran', label: 'Verifikasi Pendaftaran', icon: 'credit-card' },
+                  { id: 'daftar_ulang', label: 'Tagihan & VA (Daftar Ulang)', icon: 'receipt' }
+                ]" :key="'tr-mob-' + tab.id">
+                  <button @click="treasurerTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                          :class="treasurerTab === tab.id ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                    <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                    <span x-text="tab.label"></span>
+                  </button>
+                </template>
+              </nav>
+            </div>
+            <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+              <span>Keluar</span>
+            </button>
+          </aside>
+
+          <!-- TOP HEADER BAR & MAIN CONTENT WRAPPER -->
+          <div class="flex-1 flex flex-col min-w-0 bg-slate-100 text-slate-800">
+            
+            <header class="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs text-slate-800">
+              <div class="flex items-center gap-3">
+                <button @click="sidebarMobileOpen = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                        class="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                  <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div>
+                  <h2 class="text-sm md:text-base font-extrabold text-slate-900 capitalize tracking-tight" x-text="treasurerTab.replace('_', ' ')"></h2>
+                  <p class="text-[10px] text-slate-400 font-medium hidden sm:block">Sistem Verifikasi & Validasi Keuangan PSB</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] shadow-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+                  <span class="text-emerald-900 font-bold">SEKSI BENDAHARA</span>
+                </div>
+                <button @click="fetchTreasurerData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Data Keuangan">
+                  <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-emerald-600' : ''"></i>
+                </button>
+              </div>
+            </header>
+
+            <!-- TREASURER CONTENT BODY -->
+            <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
+
+              <!-- MENU 1: DASHBOARD KEUANGAN -->
+              <div x-show="treasurerTab === 'overview'" class="space-y-6">
+                
+                <!-- Financial Metrics Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Total Dana Tervalidasi</span>
+                      <i data-lucide="badge-check" class="w-5 h-5 text-emerald-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-brand-700" x-text="'Rp ' + (treasurerData.stats ? treasurerData.stats.totalIncome.toLocaleString('id-ID') : 0)"></div>
+                    <div class="text-[10px] text-emerald-600 font-semibold" x-text="(treasurerData.stats ? treasurerData.stats.verifiedCount : 0) + ' Transaksi ACC'"></div>
+                  </div>
+
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Total Tunggakan / Pending</span>
+                      <i data-lucide="clock" class="w-5 h-5 text-amber-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-amber-600" x-text="'Rp ' + (treasurerData.stats ? treasurerData.stats.pendingAmount.toLocaleString('id-ID') : 0)"></div>
+                    <div class="text-[10px] text-amber-600 font-semibold" x-text="(treasurerData.stats ? treasurerData.stats.pendingCount : 0) + ' Berkas Menunggu Verifikasi'"></div>
+                  </div>
+
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Membutuhkan Revisi</span>
+                      <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-rose-600" x-text="(treasurerData.stats ? treasurerData.stats.revisionCount : 0) + ' Berkas'"></div>
+                    <div class="text-[10px] text-slate-500">Diminta foto ulang struk</div>
+                  </div>
+
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between text-slate-500">
+                      <span class="text-xs font-bold uppercase">Santri Lulus (Tagihan VA)</span>
+                      <i data-lucide="graduation-cap" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-slate-900" x-text="(treasurerData.passedStudents ? treasurerData.passedStudents.length : 0) + ' Santri'"></div>
+                    <div class="text-[10px] text-blue-600 font-semibold">Siap diisi VA & Daftar Ulang</div>
+                  </div>
+                </div>
+
+                <!-- Daily Registration & Payment Trend Chart -->
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Tren Pendaftaran & Verifikasi Pembayaran Harian</span>
+                      </h4>
+                      <p class="text-xs text-slate-500 mt-0.5">Statistik harian pendaftar dan total nominal transfer yang terverifikasi.</p>
+                    </div>
+                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase border">Real-time Stats</span>
+                  </div>
+
+                  <!-- Visual Bar Chart Component -->
+                  <div class="pt-4 border-t border-slate-100 space-y-3">
+                    <template x-if="treasurerData.dailyStats && treasurerData.dailyStats.length > 0">
+                      <div class="space-y-2.5">
+                        <template x-for="st in treasurerData.dailyStats" :key="st.date">
+                          <div class="space-y-1">
+                            <div class="flex items-center justify-between text-xs font-semibold">
+                              <span class="font-mono text-slate-700" x-text="st.date"></span>
+                              <span class="text-slate-900 font-bold" x-text="st.count + ' Transaksi (' + 'Rp ' + st.total.toLocaleString('id-ID') + ')'"></span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+                              <div class="bg-gradient-to-r from-brand-700 to-emerald-500 h-full rounded-full transition-all duration-500"
+                                   :style="'width: ' + Math.min(100, Math.max(8, (st.total / Math.max(1, getmaxDailyTotal())) * 100)) + '%'"></div>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
+
+                    <template x-if="!treasurerData.dailyStats || treasurerData.dailyStats.length === 0">
+                      <div class="p-8 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        Belum ada riwayat transaksi terverifikasi untuk menampilkan grafik tren.
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- MENU 2: VERIFIKASI PEMBAYARAN (PENDAFTARAN) -->
+              <div x-show="treasurerTab === 'pendaftaran'" class="space-y-6">
+                
+                <!-- Filter & Search Bar -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                  <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                    <button @click="treasurerFilter = 'PENDING'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                            :class="treasurerFilter === 'PENDING' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                      <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                      <span>Pending (Menunggu)</span>
+                    </button>
+                    <button @click="treasurerFilter = 'VERIFIED'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                            :class="treasurerFilter === 'VERIFIED' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                      <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                      <span>Terverifikasi (ACC)</span>
+                    </button>
+                    <button @click="treasurerFilter = 'REVISION'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                            :class="treasurerFilter === 'REVISION' ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                      <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                      <span>Revisi</span>
+                    </button>
+                    <button @click="treasurerFilter = 'ALL'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0"
+                            :class="treasurerFilter === 'ALL' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                      <span>Semua Status</span>
+                    </button>
+                  </div>
+
+                  <div class="relative w-full md:w-64">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" x-model="treasurerSearch" placeholder="Cari No. Reg / Nama..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-700 focus:outline-none font-semibold">
+                  </div>
+                </div>
+
+                <!-- Payments Verification Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                        <tr>
+                          <th class="p-3.5">No Reg / Tanggal</th>
+                          <th class="p-3.5">Nama Santri</th>
+                          <th class="p-3.5">Jalur & Jenjang</th>
+                          <th class="p-3.5">Nominal Transfer</th>
+                          <th class="p-3.5">Status</th>
+                          <th class="p-3.5 text-center">Aksi Verifikasi</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <template x-for="item in getFilteredTreasurerPayments('PENDAFTARAN')" :key="item.paymentId">
+                          <tr class="hover:bg-slate-50/80 transition">
+                            <td class="p-3.5">
+                              <div class="font-mono font-bold text-brand-800 text-xs" x-text="item.regNo"></div>
+                              <div class="text-[10px] text-slate-400" x-text="item.updatedAt ? item.updatedAt.substring(0, 10) : '-'"></div>
+                            </td>
+                            <td class="p-3.5">
+                              <div class="font-bold text-slate-900 text-xs" x-text="item.namaSantri"></div>
+                              <div class="text-[10px] text-slate-500 font-mono" x-text="'WA: ' + item.noWa"></div>
+                            </td>
+                            <td class="p-3.5 font-bold text-slate-800" x-text="item.jalur + ' (' + item.jenjang + ')'"></td>
+                            <td class="p-3.5 font-mono font-extrabold text-brand-700" x-text="'Rp ' + Number(item.amount || 250000).toLocaleString('id-ID')"></td>
+                            <td class="p-3.5">
+                              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase border"
+                                    :class="{
+                                      'bg-emerald-50 text-emerald-800 border-emerald-200': item.status === 'VERIFIED',
+                                      'bg-amber-50 text-amber-800 border-amber-200': item.status === 'PENDING',
+                                      'bg-rose-50 text-rose-800 border-rose-200': item.status === 'REVISION'
+                                    }"
+                                    x-text="item.status"></span>
+                            </td>
+                            <td class="p-3.5 text-center">
+                              <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" @click="openFileReviewModal(item, 'PAYMENT')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Peninjauan Lengkap Berkas Struk">
+                                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                  <span>Lihat Bukti</span>
+                                </button>
+
+                                <button type="button" @click="quickApprovePayment(item)" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Validasi / Setujui">
+                                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                  <span>Approve</span>
+                                </button>
+
+                                <button type="button" @click="openFileReviewModal(item, 'PAYMENT')" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition" title="Tolak & Minta Revisi Struk">
+                                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                                  <span>Revisi</span>
+                                </button>
+
+                                <button type="button" @click="openReceiptModal(item)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Cetak Kwitansi Struk">
+                                  <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- MENU 3: TAGIHAN & VIRTUAL ACCOUNT (DAFTAR ULANG) -->
+              <div x-show="treasurerTab === 'daftar_ulang'" class="space-y-6">
+                
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div>
+                    <h3 class="font-extrabold text-base text-slate-900">Tagihan & Virtual Account (Daftar Ulang Santri Lulus)</h3>
+                    <p class="text-xs text-slate-500">Input nomor Virtual Account (VA) tagihan daftar ulang dan validasi pembayaran daftar ulang santri.</p>
+                  </div>
+                  <div class="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold">
+                    Khusus Status LULUS
+                  </div>
+                </div>
+
+                <!-- Passed Students Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                        <tr>
+                          <th class="p-3.5">No Reg & Santri</th>
+                          <th class="p-3.5">Jalur / Jenjang</th>
+                          <th class="p-3.5">Nomor Virtual Account (VA) Tagihan</th>
+                          <th class="p-3.5">Status Daftar Ulang</th>
+                          <th class="p-3.5 text-center">Aksi Verifikasi</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <template x-for="st in treasurerData.passedStudents" :key="st.regNo">
+                          <tr class="hover:bg-slate-50/80 transition">
+                            <td class="p-3.5">
+                              <div class="font-bold text-slate-900 text-xs" x-text="st.namaSantri"></div>
+                              <div class="font-mono text-[10px] text-brand-800" x-text="st.regNo"></div>
+                            </td>
+                            <td class="p-3.5 font-bold text-slate-800" x-text="st.jalur + ' (' + st.jenjang + ')'"></td>
+                            <td class="p-3.5">
+                              <div class="flex items-center gap-2">
+                                <input type="text" x-model="st.vaNumber" placeholder="Contoh: 8870123456" class="p-2 rounded-xl text-xs font-mono font-bold border border-slate-300 bg-slate-50 focus:bg-white focus:border-brand-700 focus:outline-none w-40">
+                                <button type="button" @click="handleSaveVaNumber(st.regNo, st.vaNumber)" :disabled="isSubmitting" class="p-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-xs transition disabled:opacity-50" title="Simpan No. VA">
+                                  <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                                </button>
+                              </div>
+                            </td>
+                            <td class="p-3.5">
+                              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase border"
+                                    :class="{
+                                      'bg-emerald-50 text-emerald-800 border-emerald-200': st.paymentStatus === 'VERIFIED',
+                                      'bg-amber-50 text-amber-800 border-amber-200': st.paymentStatus === 'PENDING',
+                                      'bg-rose-50 text-rose-800 border-rose-200': st.paymentStatus === 'REVISION',
+                                      'bg-slate-100 text-slate-600 border-slate-200': st.paymentStatus === 'BELUM_UPLOAD'
+                                    }"
+                                    x-text="st.paymentStatus"></span>
+                            </td>
+                            <td class="p-3.5 text-center">
+                              <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" @click="openFileReviewModal({ regNo: st.regNo, namaSantri: st.namaSantri, jalur: st.jalur, jenjang: st.jenjang, type: 'DAFTAR_ULANG', amount: st.paymentAmount, proofUrl: st.proofUrl, proofFileName: st.proofFileName, status: st.paymentStatus, note: st.note }, 'PAYMENT')" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition">
+                                  <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                                  <span>Tinjau Daftar Ulang</span>
+                                </button>
+                                <button type="button" @click="openReceiptModal({ regNo: st.regNo, namaSantri: st.namaSantri, type: 'DAFTAR_ULANG', amount: st.paymentAmount || 5000000, status: st.paymentStatus, updatedAt: new Date().toISOString() })" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Cetak Kwitansi Daftar Ulang">
+                                  <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+            </main>
+          </div>
+        </div>
+
+      </div>
+    </template>
+
+    <!-- MODAL KWITANSI / STRUK BUKTI PEMBAYARAN PRINTABLE -->
+    <div x-show="showReceiptModal" x-transition class="fixed inset-0 z-[85] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="bg-white text-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+        
+        <div id="receiptPrintableArea" class="p-6 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 space-y-4">
+          <div class="text-center border-b border-slate-200 pb-3">
+            <h3 class="font-extrabold text-base text-slate-900 uppercase">KUITANSI PEMBAYARAN RESMI</h3>
+            <p class="text-[10px] text-slate-500 font-semibold">Pondok Pesantren Al-Umm Malang</p>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-semibold">No. Registrasi:</span>
+              <span class="font-mono font-bold text-brand-800" x-text="receiptData.regNo"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-semibold">Nama Santri:</span>
+              <span class="font-bold text-slate-900" x-text="receiptData.namaSantri"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-semibold">Jenis Pembayaran:</span>
+              <span class="font-bold text-slate-800 uppercase" x-text="receiptData.type"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-semibold">Nominal Terbayar:</span>
+              <span class="font-mono font-black text-brand-700 text-sm" x-text="'Rp ' + Number(receiptData.amount || 250000).toLocaleString('id-ID')"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-semibold">Status Validasi:</span>
+              <span class="font-bold text-emerald-800 uppercase" x-text="receiptData.status"></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-semibold">Tanggal ACC:</span>
+              <span class="font-mono text-slate-600" x-text="receiptData.updatedAt ? receiptData.updatedAt.substring(0, 10) : '-'"></span>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
+            <span>Diterbitkan oleh Bendahara PSB</span>
+            <span class="font-bold text-emerald-700">SAH & TERVERIFIKASI</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button type="button" @click="showReceiptModal = false" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 transition">
+            Tutup
+          </button>
+          <button type="button" @click="printReceiptModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow transition flex items-center gap-1.5">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Cetak Kwitansi PDF</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
     <!-- VIEW SECTION C: SUPER ADMIN COMMAND CENTER (When LOGGED IN & IS SUPERADMIN) -->
     <!-- ============================================================= -->
     <template x-if="isLoggedIn && isSuperAdmin()">
@@ -2225,10 +2793,6 @@
                 </div>
                 <button @click="fetchSuperAdminData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Dashboard Stats">
                   <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-amber-600' : ''"></i>
-                </button>
-                <button @click="logout()" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs transition flex items-center gap-1.5 shadow-xs">
-                  <i data-lucide="log-out" class="w-4 h-4"></i>
-                  <span class="hidden sm:inline">Keluar</span>
                 </button>
               </div>
             </header>
@@ -3052,8 +3616,239 @@
         slideModalForm: { id: '', badge: '', title: '', content: '', isActive: true, order: 1 },
         overrideForm: { targetRegNo: '', module: 'PAYMENT', subType: 'PENDAFTARAN', status: 'VERIFIED', note: '' },
 
+        // STATE & METODE ELEMEN GLOBAL PENINJAUAN BERKAS
+        showFileReviewModal: false,
+        reviewModalData: {
+          category: 'PAYMENT',
+          itemKey: '',
+          regNo: '',
+          namaSantri: '',
+          jalur: '',
+          jenjang: '',
+          title: '',
+          amount: '',
+          fileUrl: '',
+          fileName: '',
+          currentStatus: 'PENDING',
+          note: ''
+        },
+
+        openFileReviewModal(item, category) {
+          category = category || 'PAYMENT';
+          var itemKey = category === 'PAYMENT' ? (item.type || 'PENDAFTARAN') : (item.docType || 'NISN');
+          this.reviewModalData = {
+            category: category,
+            itemKey: itemKey,
+            regNo: item.regNo || '',
+            namaSantri: item.namaSantri || item.namaLengkap || '-',
+            jalur: item.jalur || '-',
+            jenjang: item.jenjang || '-',
+            title: category === 'PAYMENT' ? ('Bukti Transfer ' + itemKey) : ('Berkas Dokumen ' + itemKey),
+            amount: category === 'PAYMENT' ? (item.amount || '') : '',
+            fileUrl: category === 'PAYMENT' ? (item.proofUrl || item.fileUrl || '') : (item.fileUrl || ''),
+            fileName: category === 'PAYMENT' ? (item.proofFileName || item.fileName || '') : (item.fileName || ''),
+            currentStatus: item.status || 'PENDING',
+            note: item.note || ''
+          };
+          this.showFileReviewModal = true;
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        isImageFile(url, fileName) {
+          if (!url && !fileName) return false;
+          var str = ((fileName || '') + ' ' + (url || '')).toLowerCase();
+          return str.indexOf('.jpg') !== -1 || str.indexOf('.jpeg') !== -1 || str.indexOf('.png') !== -1 || str.indexOf('.webp') !== -1;
+        },
+
+        submitFileReview(newStatus) {
+          if (newStatus === 'REVISION' && !this.reviewModalData.note.trim()) {
+            this.showToast('Mohon tuliskan catatan/alasan revisi terlebih dahulu.');
+            return;
+          }
+
+          var self = this;
+          this.isSubmitting = true;
+
+          var actionName = this.reviewModalData.category === 'PAYMENT' ? 'verifyPayment' : 'verifyDocument';
+          var payload = {
+            staffRegNo: this.currentUser ? this.currentUser.regNo : 'STAFF',
+            regNo: this.reviewModalData.regNo,
+            type: this.reviewModalData.itemKey,
+            docType: this.reviewModalData.itemKey,
+            status: newStatus,
+            note: this.reviewModalData.note
+          };
+
+          this.postRequest(actionName, payload)
+            .then(function(res) {
+              self.isSubmitting = false;
+              if (res.ok) {
+                self.showFileReviewModal = false;
+                self.showToast('Status berkas berhasil diperbarui!', 'success');
+                if (self.isSuperAdmin()) {
+                  self.fetchSuperAdminData();
+                } else if (self.activeTab) {
+                  self.fetchDashboardData();
+                }
+              } else {
+                self.showToast(res.message || 'Gagal memperbarui status berkas.');
+              }
+            })
+            .catch(function(err) {
+              self.isSubmitting = false;
+              self.showToast(err.message || 'Terjadi kesalahan jaringan.');
+            });
+        },
+
         isSuperAdmin() {
-          return !!(this.currentUser && (this.currentUser.role === 'SUPERADMIN' || this.currentUser.role === 'ADMIN'));
+          if (!this.currentUser || !this.currentUser.role) return false;
+          var r = String(this.currentUser.role).trim().toUpperCase();
+          return r === 'SUPERADMIN' || r === 'ADMIN';
+        },
+
+        isTreasurer() {
+          if (!this.currentUser || !this.currentUser.role) return false;
+          var r = String(this.currentUser.role).trim().toUpperCase();
+          return r === 'BENDAHARA';
+        },
+
+        treasurerTab: 'overview',
+        treasurerSearch: '',
+        treasurerFilter: 'PENDING',
+        treasurerData: {
+          stats: { pendingCount: 0, verifiedCount: 0, revisionCount: 0, totalIncome: 0, pendingAmount: 0 },
+          items: [],
+          dailyStats: [],
+          passedStudents: []
+        },
+
+        showReceiptModal: false,
+        receiptData: { regNo: '', namaSantri: '', type: '', amount: 0, status: '', updatedAt: '' },
+
+        fetchTreasurerData() {
+          if (!this.currentUser) return;
+          var self = this;
+          this.isDashLoading = true;
+          this.postRequest('getTreasurerDashboard', { staffRegNo: this.currentUser.regNo })
+            .then(function(res) {
+              self.isDashLoading = false;
+              if (res.ok && res.data) {
+                self.treasurerData = Object.assign({}, self.treasurerData, res.data);
+              }
+              self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+            })
+            .catch(function(err) {
+              self.isDashLoading = false;
+              self.showToast('Gagal memuat data Bendahara: ' + err.message);
+            });
+        },
+
+        getmaxDailyTotal() {
+          var ds = this.treasurerData.dailyStats || [];
+          var max = 1;
+          for (var i = 0; i < ds.length; i++) {
+            if (ds[i].total > max) max = ds[i].total;
+          }
+          return max;
+        },
+
+        getFilteredTreasurerPayments(pType) {
+          pType = pType || 'PENDAFTARAN';
+          var list = this.treasurerData.items || [];
+          var search = (this.treasurerSearch || '').toLowerCase();
+          var filter = this.treasurerFilter || 'ALL';
+
+          return list.filter(function(item) {
+            if (item.type !== pType) return false;
+            if (filter !== 'ALL' && item.status !== filter) return false;
+            if (search) {
+              var matchReg = (item.regNo || '').toLowerCase().indexOf(search) !== -1;
+              var matchNama = (item.namaSantri || '').toLowerCase().indexOf(search) !== -1;
+              if (!matchReg && !matchNama) return false;
+            }
+            return true;
+          });
+        },
+
+        quickApprovePayment(item) {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('verifyPayment', {
+            staffRegNo: this.currentUser.regNo,
+            regNo: item.regNo,
+            type: item.type,
+            status: 'VERIFIED',
+            note: 'Telah diverifikasi oleh bendahara.'
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showToast('Pembayaran ' + item.regNo + ' berhasil di-ACC!', 'success');
+              self.fetchTreasurerData();
+            } else {
+              self.showToast(res.message || 'Gagal verifikasi pembayaran.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleSaveVaNumber(regNo, vaNum) {
+          if (!regNo) return;
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('saveVaNumber', {
+            staffRegNo: this.currentUser.regNo,
+            regNo: regNo,
+            vaNumber: vaNum || ''
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showToast('Nomor VA untuk ' + regNo + ' tersimpan!', 'success');
+              self.fetchTreasurerData();
+            } else {
+              self.showToast(res.message || 'Gagal menyimpan VA.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        openReceiptModal(item) {
+          this.receiptData = {
+            regNo: item.regNo || '',
+            namaSantri: item.namaSantri || '-',
+            type: item.type || 'PENDAFTARAN',
+            amount: item.amount || 250000,
+            status: item.status || 'VERIFIED',
+            updatedAt: item.updatedAt || new Date().toISOString()
+          };
+          this.showReceiptModal = true;
+          this.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+        },
+
+        printReceiptModal() {
+          var elem = document.getElementById('receiptPrintableArea');
+          if (!elem) return;
+          if (window.html2pdf) {
+            var opt = {
+              margin: 0.5,
+              filename: 'Kwitansi_PSB_' + (this.receiptData.regNo || 'Santri') + '.pdf',
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2 },
+              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            window.html2pdf().set(opt).from(elem).save();
+          } else {
+            window.print();
+          }
         },
 
         isLoggedIn: false,
@@ -3289,6 +4084,8 @@
               self.showToast('Login Berhasil!', 'success');
               if (self.isSuperAdmin()) {
                 self.fetchSuperAdminData();
+              } else if (self.isTreasurer()) {
+                self.fetchTreasurerData();
               } else {
                 self.fetchDashboardData();
               }
