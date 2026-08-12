@@ -4193,6 +4193,14 @@
               }
             }
           }
+          if (this.docAdminData && this.docAdminData.items) {
+            for (var d = 0; d < this.docAdminData.items.length; d++) {
+              if (this.docAdminData.items[d].regNo === targetReg && this.docAdminData.items[d].docType === targetKey) {
+                this.docAdminData.items[d].status = newStatus;
+                this.docAdminData.items[d].note = this.reviewModalData.note;
+              }
+            }
+          }
 
           var actionName = this.reviewModalData.category === 'PAYMENT' ? 'verifyPayment' : 'verifyDocument';
           var payload = {
@@ -4340,6 +4348,24 @@
         handleVerifyBiodata(regNo, isLocked, status, note) {
           if (!regNo) return;
           var self = this;
+          // Optimistic local state update
+          if (this.docAdminData && this.docAdminData.students) {
+            for (var s = 0; s < this.docAdminData.students.length; s++) {
+              if (this.docAdminData.students[s].regNo === regNo) {
+                if (!this.docAdminData.students[s].biodata) this.docAdminData.students[s].biodata = {};
+                this.docAdminData.students[s].biodata.isLocked = isLocked;
+                this.docAdminData.students[s].biodata.revisionStatus = status || 'VERIFIED';
+                this.docAdminData.students[s].biodata.revisionNote = note || '';
+                break;
+              }
+            }
+          }
+          if (this.selectedStudentBio && this.selectedStudentBio.regNo === regNo) {
+            if (!this.selectedStudentBio.biodata) this.selectedStudentBio.biodata = {};
+            this.selectedStudentBio.biodata.isLocked = isLocked;
+            this.selectedStudentBio.biodata.revisionStatus = status || 'VERIFIED';
+            this.selectedStudentBio.biodata.revisionNote = note || '';
+          }
           this.isSubmitting = true;
           this.postRequest('verifyBiodata', {
             staffRegNo: this.currentUser.regNo,
@@ -4362,6 +4388,7 @@
 
         submitQuickDocVerify(item, status) {
           var self = this;
+          item.status = status; // Optimistic local UI update
           this.isSubmitting = true;
           this.postRequest('verifyDocument', {
             staffRegNo: this.currentUser.regNo,
