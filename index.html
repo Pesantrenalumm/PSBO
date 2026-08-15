@@ -125,7 +125,7 @@
 
     <!-- ELEMEN GLOBAL: MODAL PENINJAUAN & VERIFIKASI BERKAS / BUKTI TRANSFER -->
     <div x-show="showFileReviewModal" x-transition
-         class="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+         class="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
       <div class="bg-white text-slate-800 rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-5 shadow-2xl border border-slate-200 overflow-y-auto max-h-[90vh]">
         
         <!-- Modal Header -->
@@ -989,7 +989,7 @@
     <!-- ============================================================= -->
     <!-- VIEW SECTION B: PARTICIPANT DASHBOARD (When LOGGED IN)        -->
     <!-- ============================================================= -->
-    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer() && !isDocAdmin()">
+    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer() && !isDocAdmin() && !isExamCoordinator()">
       <div x-transition:enter="transition ease-out duration-500 transform"
            x-transition:enter-start="opacity-0 scale-[0.99] translate-y-3"
            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -1244,7 +1244,7 @@
                       <div class="text-[11px] text-emerald-800">Pembayaran diisi & diverifikasi. Silakan bergabung ke grup koordinasi peserta.</div>
                     </div>
                   </div>
-                  <a :href="dashData.config.WA_GROUP_STAGE1 || '#'" target="_blank" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex-shrink-0 transition shadow-sm">
+                  <a :href="getGroupWaLink('new')" target="_blank" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex-shrink-0 transition">
                     Gabung Grup WA
                   </a>
                 </div>
@@ -2124,9 +2124,9 @@
                   <p class="text-xs text-slate-500 leading-relaxed" x-text="dashData.announcement.notes || 'Hasil seleksi akan diumumkan sesuai jadwal.'"></p>
 
                   <template x-if="dashData.announcement.status === 'LULUS'">
-                    <a :href="dashData.announcement.waGroupLink2 || '#'" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition">
+                    <a :href="getGroupWaLink('passed')" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition">
                       <i data-lucide="message-square-check" class="w-4 h-4"></i>
-                      <span>Gabung Grup WA Tahap 2 (Santri Diterima)</span>
+                      <span>Gabung Grup WA Kelas</span>
                     </a>
                   </template>
                 </div>
@@ -2551,7 +2551,7 @@
 
               </div>
 
-              <!-- MENU 3: TAGIHAN & VIRTUAL ACCOUNT (DAFTAR ULANG) -->
+                <!-- MENU 3: TAGIHAN & VIRTUAL ACCOUNT (DAFTAR ULANG) -->
               <div x-show="treasurerTab === 'daftar_ulang'" class="space-y-6">
                 
                 <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
@@ -2561,6 +2561,118 @@
                   </div>
                   <div class="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold">
                     Khusus Status LULUS
+                  </div>
+                </div>
+
+                <!-- VENDOR VA CONTROL PANEL -->
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div>
+                      <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                        <i data-lucide="database" class="w-4 h-4 text-blue-700"></i>
+                        <span>Spreadsheet Vendor Virtual Account</span>
+                      </h3>
+                      <p class="text-xs text-slate-500 mt-1">
+                        Satu spreadsheet digunakan untuk setiap tahun ajaran aktif.
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span class="px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-extrabold uppercase">
+                        <span x-text="vendorVaData.schoolYear || config.TAHUN_AJARAN || 'Belum Ditentukan'"></span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Email Vendor</label>
+                      <input type="email"
+                             x-model="vendorVaEmail"
+                             placeholder="vendor@example.com"
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-[10px] text-slate-400 font-bold uppercase">Spreadsheet Vendor</div>
+                      <div class="text-xs font-bold text-slate-800 truncate"
+                           x-text="vendorVaData.spreadsheetUrl ? 'Spreadsheet sudah tersedia' : 'Spreadsheet belum dibuat'"></div>
+                      <div class="text-[10px] text-slate-500 mt-1"
+                           x-text="vendorVaData.lastPush ? 'Push terakhir: ' + vendorVaData.lastPush.substring(0, 19).replace('T', ' ') : 'Belum pernah sinkronisasi'"></div>
+                      <div class="text-[10px] text-slate-500"
+                           x-text="vendorVaData.lastPull ? 'Pull terakhir: ' + vendorVaData.lastPull.substring(0, 19).replace('T', ' ') : 'Belum pernah menarik VA'"></div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="p-3 rounded-xl bg-blue-50 border border-blue-200">
+                      <div class="text-[10px] text-blue-700 font-bold uppercase">Total Lulus</div>
+                      <div class="text-xl font-black text-blue-900" x-text="vendorVaData.totalStudents || 0"></div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                      <div class="text-[10px] text-emerald-700 font-bold uppercase">Sudah Memiliki VA</div>
+                      <div class="text-xl font-black text-emerald-900" x-text="vendorVaData.withVaCount || 0"></div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                      <div class="text-[10px] text-amber-700 font-bold uppercase">Belum Memiliki VA</div>
+                      <div class="text-xl font-black text-amber-900" x-text="vendorVaData.withoutVaCount || 0"></div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200">
+                      <div class="text-[10px] text-rose-700 font-bold uppercase">Error Sinkronisasi</div>
+                      <div class="text-xl font-black text-rose-900" x-text="vendorVaData.errorCount || 0"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 pt-2 border-t border-slate-100">
+                    <button type="button"
+                            @click="handleCreateVendorVaSpreadsheet()"
+                            :disabled="isSubmitting"
+                            class="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                      <template x-if="isSubmitting">
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      </template>
+                      <template x-if="!isSubmitting">
+                        <i data-lucide="file-plus" class="w-4 h-4"></i>
+                      </template>
+                      <span>Buat Spreadsheet Vendor</span>
+                    </button>
+
+                    <button type="button"
+                            @click="handleSyncVendorVaStudents()"
+                            :disabled="isSubmitting"
+                            class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                      <template x-if="isSubmitting">
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      </template>
+                      <template x-if="!isSubmitting">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                      </template>
+                      <span>Sinkronkan Peserta Lulus</span>
+                    </button>
+
+                    <button type="button"
+                            @click="handlePullVendorVaNumbers()"
+                            :disabled="isSubmitting"
+                            class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                      <template x-if="isSubmitting">
+                        <span class="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                      </template>
+                      <template x-if="!isSubmitting">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                      </template>
+                      <span>Tarik VA dari Vendor</span>
+                    </button>
+
+                    <a x-show="vendorVaData.spreadsheetUrl"
+                       :href="vendorVaData.spreadsheetUrl"
+                       target="_blank"
+                       class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                      <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                      <span>Buka Spreadsheet Vendor</span>
+                    </a>
                   </div>
                 </div>
 
@@ -2659,9 +2771,350 @@
         </div>
 
       </div>
-    </template>
+   </template>
 
-    <!-- MODAL KWITANSI / STRUK BUKTI PEMBAYARAN PRINTABLE -->
+   <!-- ============================================================= -->
+   <!-- VIEW SECTION B-4: EXAM COORDINATOR DASHBOARD (When LOGGED IN & IS EXAM COORDINATOR) -->
+   <!-- ============================================================= -->
+   <template x-if="isLoggedIn && isExamCoordinator()">
+     <div x-transition class="w-full min-h-screen flex flex-col bg-slate-900 text-slate-100 relative">
+       
+       <!-- MAIN DASHBOARD SHELL FOR EXAM COORDINATOR -->
+       <div class="flex flex-1 min-h-screen relative">
+
+         <!-- STICKY SIDEBAR (DESKTOP) -->
+         <aside class="hidden md:flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 z-30"
+                :class="sidebarExpanded ? 'w-64' : 'w-20'">
+           
+           <!-- Sidebar Header Brand -->
+           <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+             <div class="flex items-center gap-3 overflow-hidden" x-show="sidebarExpanded">
+               <div class="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black flex-shrink-0">
+                 <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+               </div>
+               <div class="truncate">
+                 <div class="font-bold text-sm leading-tight text-white truncate">KOORDINATOR UJIAN</div>
+                 <div class="text-[10px] text-teal-300 font-medium" x-text="getExamTypeLabel(examCoordinatorData.examType)"></div>
+               </div>
+             </div>
+             <button @click="sidebarExpanded = !sidebarExpanded; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                     class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white mx-auto">
+               <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-5 h-5"></i>
+             </button>
+           </div>
+
+           <!-- Profile Mini Card -->
+           <div class="p-4 border-b border-slate-800/60 bg-slate-900/40" x-show="sidebarExpanded">
+             <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+             <div class="text-[10px] text-teal-400 font-mono mt-0.5" x-text="currentUser.regNo"></div>
+           </div>
+
+           <!-- Navigation Links -->
+           <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+             <template x-for="tab in [
+               { id: 'overview', label: 'Dashboard & Vendor', icon: 'layout-dashboard' },
+               { id: 'results', label: 'Hasil Ujian Peserta', icon: 'file-text' }
+             ]" :key="tab.id">
+               <button @click="examCoordinatorTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                       class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                       :class="examCoordinatorTab === tab.id ? 'bg-teal-600 text-white shadow-lg shadow-teal-950/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                 <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
+                 <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
+               </button>
+             </template>
+           </nav>
+
+           <!-- Logout Bottom Button -->
+           <div class="p-3 border-t border-slate-800">
+             <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition">
+               <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+               <span x-show="sidebarExpanded" class="truncate">Keluar Akun</span>
+             </button>
+           </div>
+
+         </aside>
+
+         <!-- MOBILE DRAWER SIDEBAR FOR EXAM COORDINATOR -->
+         <div x-show="sidebarMobileOpen" 
+              class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden"
+              @click="sidebarMobileOpen = false"></div>
+         
+         <aside x-show="sidebarMobileOpen" 
+                x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="-translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="-translate-x-full"
+                class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col justify-between md:hidden">
+           <div class="space-y-4">
+             <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+               <div class="font-bold text-sm text-white flex items-center gap-2">
+                 <div class="w-6 h-6 rounded-lg bg-teal-600 text-white flex items-center justify-center font-bold">
+                   <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                 </div>
+                 <span>PORTAL KOORDINATOR</span>
+               </div>
+               <button @click="sidebarMobileOpen = false" class="text-slate-400 hover:text-white">
+                 <i data-lucide="x" class="w-5 h-5"></i>
+               </button>
+             </div>
+             <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+               <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+               <div class="text-[10px] text-teal-400 font-mono" x-text="currentUser.regNo"></div>
+             </div>
+             <nav class="space-y-1">
+               <template x-for="tab in [
+                 { id: 'overview', label: 'Dashboard & Vendor', icon: 'layout-dashboard' },
+                 { id: 'results', label: 'Hasil Ujian Peserta', icon: 'file-text' }
+               ]" :key="'ec-mob-' + tab.id">
+                 <button @click="examCoordinatorTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                         :class="examCoordinatorTab === tab.id ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                   <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                   <span x-text="tab.label"></span>
+                 </button>
+               </template>
+             </nav>
+           </div>
+           <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40">
+             <i data-lucide="log-out" class="w-5 h-5"></i>
+             <span>Keluar</span>
+           </button>
+         </aside>
+
+         <!-- TOP HEADER BAR & MAIN CONTENT WRAPPER -->
+         <div class="flex-1 flex flex-col min-w-0 bg-slate-100 text-slate-800">
+           
+           <header class="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs text-slate-800">
+             <div class="flex items-center gap-3">
+               <button @click="sidebarMobileOpen = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" 
+                       class="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                 <i data-lucide="menu" class="w-6 h-6"></i>
+               </button>
+               <div>
+                 <h2 class="text-sm md:text-base font-extrabold text-slate-900 capitalize tracking-tight" x-text="examCoordinatorTab.replace('_', ' ')"></h2>
+                 <p class="text-[10px] text-slate-400 font-medium hidden sm:block">Koordinator Ujian - <span x-text="getExamTypeLabel(examCoordinatorData.examType)"></span></p>
+               </div>
+             </div>
+
+             <div class="flex items-center gap-3">
+               <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[11px] shadow-xs">
+                 <span class="w-2 h-2 rounded-full bg-teal-600 animate-ping"></span>
+                 <span class="text-teal-900 font-bold" x-text="currentUser.role"></span>
+               </div>
+               <button @click="fetchExamCoordinatorData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Data">
+                 <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-teal-600' : ''"></i>
+               </button>
+             </div>
+           </header>
+
+           <!-- EXAM COORDINATOR CONTENT BODY -->
+           <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
+
+             <!-- MENU 1: OVERVIEW & VENDOR CONTROL -->
+             <div x-show="examCoordinatorTab === 'overview'" class="space-y-6">
+               
+               <!-- Summary Stats Cards -->
+               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Total Peserta</span>
+                     <i data-lucide="users" class="w-5 h-5 text-slate-600"></i>
+                   </div>
+                   <div class="text-3xl font-black text-slate-900" x-text="examCoordinatorData.stats.totalStudents || 0"></div>
+                   <div class="text-[10px] text-slate-500">Peserta yang akan mengikuti ujian ini</div>
+                 </div>
+
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Sudah Dinilai/Input</span>
+                     <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                   </div>
+                   <div class="text-3xl font-black text-emerald-600" x-text="examCoordinatorData.stats.completedCount || 0"></div>
+                   <div class="text-[10px] text-emerald-600 font-semibold">Hasil sudah ditarik ke sistem</div>
+                 </div>
+
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Belum Selesai</span>
+                     <i data-lucide="clock" class="w-5 h-5 text-amber-600"></i>
+                   </div>
+                   <div class="text-3xl font-black text-amber-600" x-text="examCoordinatorData.stats.pendingCount || 0"></div>
+                   <div class="text-[10px] text-amber-600 font-semibold">Menunggu input dari penguji</div>
+                 </div>
+               </div>
+
+               <!-- VENDOR SPREADSHEET CONTROL PANEL -->
+               <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                   <div>
+                     <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                       <i data-lucide="database" class="w-4 h-4 text-teal-700"></i>
+                       <span>Spreadsheet Vendor Penguji - <span x-text="getExamTypeLabel(examCoordinatorData.examType)"></span></span>
+                     </h3>
+                     <p class="text-xs text-slate-500 mt-1">
+                       Generate spreadsheet untuk dibagikan ke anggota penguji. Anggota penguji akan menginput nilai/kredensial di spreadsheet tersebut.
+                     </p>
+                   </div>
+                 </div>
+
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                   <div>
+                     <label class="block text-slate-700 font-semibold mb-1">Email Ketua Penguji / Vendor</label>
+                     <input type="email"
+                            x-model="examVendorEmail"
+                            placeholder="penguji@example.com"
+                            class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-teal-700 focus:outline-none">
+                   </div>
+
+                   <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                     <div class="text-[10px] text-slate-400 font-bold uppercase">Status Spreadsheet Vendor</div>
+                     <div class="text-xs font-bold text-slate-800 truncate"
+                          x-text="examCoordinatorData.vendorInfo.spreadsheetUrl ? 'Spreadsheet sudah tersedia' : 'Spreadsheet belum dibuat'"></div>
+                     <div class="text-[10px] text-slate-500 mt-1"
+                          x-text="examCoordinatorData.vendorInfo.lastPush ? 'Sync terakhir: ' + examCoordinatorData.vendorInfo.lastPush.substring(0, 19).replace('T', ' ') : 'Belum pernah sinkronisasi'"></div>
+                     <div class="text-[10px] text-slate-500"
+                          x-text="examCoordinatorData.vendorInfo.lastPull ? 'Pull terakhir: ' + examCoordinatorData.vendorInfo.lastPull.substring(0, 19).replace('T', ' ') : 'Belum pernah menarik hasil'"></div>
+                   </div>
+                 </div>
+
+                 <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 pt-2 border-t border-slate-100">
+                   <button type="button"
+                           @click="handleCreateExamVendorSpreadsheet()"
+                           :disabled="isSubmitting"
+                           class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                     <template x-if="isSubmitting">
+                       <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                     </template>
+                     <template x-if="!isSubmitting">
+                       <i data-lucide="file-plus" class="w-4 h-4"></i>
+                     </template>
+                     <span>Buat Spreadsheet Vendor</span>
+                   </button>
+
+                   <button type="button"
+                           @click="handleSyncExamVendorStudents()"
+                           :disabled="isSubmitting"
+                           class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                     <template x-if="isSubmitting">
+                       <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                     </template>
+                     <template x-if="!isSubmitting">
+                       <i data-lucide="upload" class="w-4 h-4"></i>
+                     </template>
+                     <span>Sinkronkan Nama Peserta</span>
+                   </button>
+
+                   <button type="button"
+                           @click="handlePullExamVendorResults()"
+                           :disabled="isSubmitting"
+                           class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                     <template x-if="isSubmitting">
+                       <span class="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                     </template>
+                     <template x-if="!isSubmitting">
+                       <i data-lucide="download" class="w-4 h-4"></i>
+                     </template>
+                     <span>Tarik Hasil dari Vendor</span>
+                   </button>
+
+                   <a x-show="examCoordinatorData.vendorInfo.spreadsheetUrl"
+                      :href="examCoordinatorData.vendorInfo.spreadsheetUrl"
+                      target="_blank"
+                      class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                     <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                     <span>Buka Spreadsheet</span>
+                   </a>
+                 </div>
+               </div>
+
+             </div>
+
+             <!-- MENU 2: HASIL UJIAN PESERTA -->
+             <div x-show="examCoordinatorTab === 'results'" class="space-y-6">
+               
+               <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                 <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                   <div>
+                     <h3 class="font-extrabold text-sm text-slate-900">Rekap Hasil Ujian - <span x-text="getExamTypeLabel(examCoordinatorData.examType)"></span></h3>
+                     <p class="text-xs text-slate-500">Data hasil ujian yang sudah ditarik dari spreadsheet vendor.</p>
+                   </div>
+                 </div>
+
+                 <div class="overflow-x-auto">
+                   <table class="w-full text-left text-xs">
+                     <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                       <tr>
+                         <th class="p-3.5">No Reg & Santri</th>
+                         <th class="p-3.5">Jenjang & Gender</th>
+                         <template x-if="examCoordinatorData.examType === 'CBT'">
+                           <th class="p-3.5">Username CBT</th>
+                         </template>
+                         <template x-if="examCoordinatorData.examType === 'CBT'">
+                           <th class="p-3.5">Password CBT</th>
+                         </template>
+                         <template x-if="examCoordinatorData.examType !== 'CBT'">
+                           <th class="p-3.5">Nilai</th>
+                         </template>
+                         <template x-if="examCoordinatorData.examType !== 'CBT'">
+                           <th class="p-3.5">Rekomendasi</th>
+                         </template>
+                         <template x-if="examCoordinatorData.examType !== 'CBT'">
+                           <th class="p-3.5">Catatan Penguji</th>
+                         </template>
+                       </tr>
+                     </thead>
+                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                       <!-- CBT View -->
+                       <template x-if="examCoordinatorData.examType === 'CBT'" x-for="st in examCoordinatorData.students" :key="'cbt-' + st.regNo">
+                         <tr class="hover:bg-slate-50/80 transition">
+                           <td class="p-3.5">
+                             <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
+                             <div class="font-mono text-[10px] text-teal-800" x-text="st.regNo"></div>
+                           </td>
+                           <td class="p-3.5">
+                             <span class="font-bold text-slate-800" x-text="st.jenjang + ' (' + st.jenisKelamin + ')'"></span>
+                           </td>
+                           <td class="p-3.5 font-mono text-slate-800" x-text="(getStudentCbtCredential(st.regNo) ? getStudentCbtCredential(st.regNo).cbtUsername : '-')"></td>
+                           <td class="p-3.5 font-mono text-amber-700 font-bold" x-text="(getStudentCbtCredential(st.regNo) ? getStudentCbtCredential(st.regNo).cbtPassword : '-')"></td>
+                         </tr>
+                       </template>
+
+                       <!-- Non-CBT View -->
+                       <template x-if="examCoordinatorData.examType !== 'CBT'" x-for="st in examCoordinatorData.students" :key="'res-' + st.regNo">
+                         <tr class="hover:bg-slate-50/80 transition">
+                           <td class="p-3.5">
+                             <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
+                             <div class="font-mono text-[10px] text-teal-800" x-text="st.regNo"></div>
+                           </td>
+                           <td class="p-3.5">
+                             <span class="font-bold text-slate-800" x-text="st.jenjang + ' (' + st.jenisKelamin + ')'"></span>
+                           </td>
+                           <td class="p-3.5 font-mono font-bold text-slate-800" x-text="(getStudentExamResult(st.regNo) ? getStudentExamResult(st.regNo).score : '-')"></td>
+                           <td class="p-3.5">
+                             <span x-show="getStudentExamResult(st.regNo)" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border"
+                                   :class="getStudentExamResult(st.regNo) && getStudentExamResult(st.regNo).recommendation === 'LULUS' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'"
+                                   x-text="getStudentExamResult(st.regNo) ? getStudentExamResult(st.regNo).recommendation : '-'"></span>
+                           </td>
+                           <td class="p-3.5 text-slate-600" x-text="(getStudentExamResult(st.regNo) ? getStudentExamResult(st.regNo).notes : '-')"></td>
+                         </tr>
+                       </template>
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+
+             </div>
+
+           </main>
+         </div>
+       </div>
+
+     </div>
+   </template>
+
+   <!-- MODAL KWITANSI / STRUK BUKTI PEMBAYARAN PRINTABLE -->
     <div x-show="showReceiptModal" x-transition class="fixed inset-0 z-[85] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
       <div class="bg-white text-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200">
         
@@ -2859,40 +3312,107 @@
             <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
 
               <!-- GLOBAL FILTER CONTROL BAR FOR JENJANG (SMP/MA) & GENDER (PUTRA/PUTRI) -->
-              <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <!-- Jenjang & Gender Filter Buttons -->
-                <div class="flex items-center gap-2 flex-wrap">
-                  <!-- Jenjang Switch -->
-                  <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
-                    <button type="button" @click="docAdminJenjangFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'ALL' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
-                      Semua Jenjang
-                    </button>
-                    <button type="button" @click="docAdminJenjangFilter = 'SMP'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'SMP' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
-                      SMP Al-Umm
-                    </button>
-                    <button type="button" @click="docAdminJenjangFilter = 'MA'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'MA' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
-                      MA Al-Umm
-                    </button>
+              <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                <!-- Desktop Filter Toolbar -->
+                <div class="hidden md:flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                      <button type="button" @click="docAdminJenjangFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'ALL' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Semua Jenjang</button>
+                      <button type="button" @click="docAdminJenjangFilter = 'SMP'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'SMP' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">SMP Al-Umm</button>
+                      <button type="button" @click="docAdminJenjangFilter = 'MA'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminJenjangFilter === 'MA' ? 'bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">MA Al-Umm</button>
+                    </div>
+
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                      <button type="button" @click="docAdminGenderFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'ALL' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Semua Gender</button>
+                      <button type="button" @click="docAdminGenderFilter = 'LAKI-LAKI'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'LAKI-LAKI' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Putra (Pa)</button>
+                      <button type="button" @click="docAdminGenderFilter = 'PEREMPUAN'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'PEREMPUAN' ? 'bg-pink-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Putri (Pi)</button>
+                    </div>
+
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                      <button type="button" @click="docAdminStatusFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminStatusFilter === 'ALL' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Semua Status</button>
+                      <button type="button" @click="docAdminStatusFilter = 'BELUM_UPLOAD'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminStatusFilter === 'BELUM_UPLOAD' ? 'bg-slate-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Belum Upload</button>
+                      <button type="button" @click="docAdminStatusFilter = 'PENDING'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminStatusFilter === 'PENDING' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Pending</button>
+                      <button type="button" @click="docAdminStatusFilter = 'REVISION'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminStatusFilter === 'REVISION' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Revisi</button>
+                      <button type="button" @click="docAdminStatusFilter = 'VERIFIED'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminStatusFilter === 'VERIFIED' ? 'bg-emerald-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">Verified</button>
+                    </div>
                   </div>
 
-                  <!-- Gender Switch -->
-                  <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
-                    <button type="button" @click="docAdminGenderFilter = 'ALL'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'ALL' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
-                      Semua Gender
-                    </button>
-                    <button type="button" @click="docAdminGenderFilter = 'LAKI-LAKI'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'LAKI-LAKI' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
-                      Putra (Pa)
-                    </button>
-                    <button type="button" @click="docAdminGenderFilter = 'PEREMPUAN'" class="px-3 py-1.5 rounded-lg transition" :class="docAdminGenderFilter === 'PEREMPUAN' ? 'bg-pink-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200'">
-                      Putri (Pi)
-                    </button>
+                  <div class="relative w-full md:w-64">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" x-model="docAdminSearch" placeholder="Cari No. Reg / Nama Santri..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-purple-700 focus:outline-none font-semibold">
                   </div>
                 </div>
 
-                <!-- Search Box -->
-                <div class="relative w-full md:w-64">
-                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="text" x-model="docAdminSearch" placeholder="Cari No. Reg / Nama Santri..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-purple-700 focus:outline-none font-semibold">
+                <!-- Mobile Filter Toolbar -->
+                <div class="md:hidden space-y-3">
+                  <div class="flex items-center gap-2">
+                    <button type="button" @click="showMobileDocFilters = true" class="flex-1 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold flex items-center justify-center gap-2">
+                      <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                      <span>Filter</span>
+                      <span x-show="getActiveDocFilterCount() > 0" x-text="'(' + getActiveDocFilterCount() + ')'" class="px-1.5 py-0.5 rounded-full bg-white/20"></span>
+                    </button>
+
+                    <div class="relative flex-[2]">
+                      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                      <input type="text" x-model="docAdminSearch" placeholder="Cari No. Reg / Nama..." class="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-purple-700 focus:outline-none font-semibold">
+                    </div>
+                  </div>
+
+                  <div x-show="getActiveDocFilterCount() > 0" class="flex items-center gap-1.5 overflow-x-auto">
+                    <span class="text-[10px] text-slate-400 font-bold flex-shrink-0">Aktif:</span>
+                    <span x-show="docAdminJenjangFilter !== 'ALL'" x-text="docAdminJenjangFilter" class="px-2 py-1 rounded-full bg-purple-50 text-purple-800 border border-purple-200 text-[10px] font-bold flex-shrink-0"></span>
+                    <span x-show="docAdminGenderFilter !== 'ALL'" x-text="docAdminGenderFilter === 'LAKI-LAKI' ? 'Putra' : 'Putri'" class="px-2 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold flex-shrink-0"></span>
+                    <span x-show="docAdminStatusFilter !== 'ALL'" x-text="docAdminStatusFilter" class="px-2 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold flex-shrink-0"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mobile Filter Bottom Sheet -->
+              <div x-show="showMobileDocFilters" x-transition class="fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm md:hidden">
+                <div class="absolute inset-x-0 bottom-0 bg-white text-slate-800 rounded-t-3xl p-5 space-y-5 shadow-2xl max-h-[88vh] overflow-y-auto">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <h3 class="font-extrabold text-base text-slate-900">Filter Data TU</h3>
+                      <p class="text-[11px] text-slate-500">Pilih kriteria data yang ingin ditampilkan.</p>
+                    </div>
+                    <button type="button" @click="showMobileDocFilters = false" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100">
+                      <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">Jenjang</label>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button type="button" @click="docAdminJenjangFilter = 'ALL'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminJenjangFilter === 'ALL' ? 'bg-purple-700 text-white border-purple-700' : 'border-slate-200 text-slate-600'">Semua</button>
+                      <button type="button" @click="docAdminJenjangFilter = 'SMP'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminJenjangFilter === 'SMP' ? 'bg-purple-700 text-white border-purple-700' : 'border-slate-200 text-slate-600'">SMP</button>
+                      <button type="button" @click="docAdminJenjangFilter = 'MA'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminJenjangFilter === 'MA' ? 'bg-purple-700 text-white border-purple-700' : 'border-slate-200 text-slate-600'">MA</button>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">Gender</label>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button type="button" @click="docAdminGenderFilter = 'ALL'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminGenderFilter === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-200 text-slate-600'">Semua</button>
+                      <button type="button" @click="docAdminGenderFilter = 'LAKI-LAKI'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminGenderFilter === 'LAKI-LAKI' ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-600'">Putra</button>
+                      <button type="button" @click="docAdminGenderFilter = 'PEREMPUAN'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminGenderFilter === 'PEREMPUAN' ? 'bg-pink-600 text-white border-pink-600' : 'border-slate-200 text-slate-600'">Putri</button>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">Status Dokumen</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button type="button" @click="docAdminStatusFilter = 'ALL'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminStatusFilter === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-200 text-slate-600'">Semua Status</button>
+                      <button type="button" @click="docAdminStatusFilter = 'BELUM_UPLOAD'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminStatusFilter === 'BELUM_UPLOAD' ? 'bg-slate-500 text-white border-slate-500' : 'border-slate-200 text-slate-600'">Belum Upload</button>
+                      <button type="button" @click="docAdminStatusFilter = 'PENDING'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminStatusFilter === 'PENDING' ? 'bg-amber-500 text-slate-950 border-amber-500' : 'border-slate-200 text-slate-600'">Pending</button>
+                      <button type="button" @click="docAdminStatusFilter = 'REVISION'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminStatusFilter === 'REVISION' ? 'bg-rose-600 text-white border-rose-600' : 'border-slate-200 text-slate-600'">Revisi</button>
+                      <button type="button" @click="docAdminStatusFilter = 'VERIFIED'" class="py-2.5 rounded-xl border text-xs font-bold" :class="docAdminStatusFilter === 'VERIFIED' ? 'bg-emerald-700 text-white border-emerald-700' : 'border-slate-200 text-slate-600'">Verified</button>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="resetMobileDocFilters()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">Reset Filter</button>
+                    <button type="button" @click="showMobileDocFilters = false" class="flex-1 py-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs">Terapkan Filter</button>
+                  </div>
                 </div>
               </div>
 
@@ -2905,7 +3425,7 @@
                       <span class="text-xs font-bold uppercase">Biodata Belum Dikunci</span>
                       <i data-lucide="unlock" class="w-5 h-5 text-amber-600"></i>
                     </div>
-                    <div class="text-3xl font-black text-amber-600" x-text="(docAdminData.stats ? docAdminData.stats.pendingBioLockCount : 0) + ' Santri'"></div>
+                    <div class="text-3xl font-black text-amber-600" x-text="getDocAdminOverviewStats().pendingBioLockCount + ' Santri'"></div>
                     <div class="text-[10px] text-slate-500">Antrean biodata perlu dicek & ACC</div>
                   </div>
 
@@ -2914,7 +3434,7 @@
                       <span class="text-xs font-bold uppercase">Dokumen Pending</span>
                       <i data-lucide="file-clock" class="w-5 h-5 text-purple-600"></i>
                     </div>
-                    <div class="text-3xl font-black text-purple-700" x-text="(docAdminData.stats ? docAdminData.stats.pendingDocsCount : 0) + ' Berkas'"></div>
+                    <div class="text-3xl font-black text-purple-700" x-text="getDocAdminOverviewStats().pendingDocsCount + ' Berkas'"></div>
                     <div class="text-[10px] text-purple-700 font-semibold">Menunggu validasi TU</div>
                   </div>
 
@@ -2923,7 +3443,7 @@
                       <span class="text-xs font-bold uppercase">Dokumen Sah / ACC</span>
                       <i data-lucide="file-check-2" class="w-5 h-5 text-emerald-600"></i>
                     </div>
-                    <div class="text-3xl font-black text-emerald-600" x-text="(docAdminData.stats ? docAdminData.stats.verifiedDocsCount : 0) + ' Berkas'"></div>
+                    <div class="text-3xl font-black text-emerald-600" x-text="getDocAdminOverviewStats().verifiedDocsCount + ' Berkas'"></div>
                     <div class="text-[10px] text-emerald-600 font-semibold">Terverifikasi sah</div>
                   </div>
 
@@ -2932,13 +3452,95 @@
                       <span class="text-xs font-bold uppercase">Dokumen Perlu Revisi</span>
                       <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600"></i>
                     </div>
-                    <div class="text-3xl font-black text-rose-600" x-text="(docAdminData.stats ? docAdminData.stats.revisionDocsCount : 0) + ' Berkas'"></div>
+                    <div class="text-3xl font-black text-rose-600" x-text="getDocAdminOverviewStats().revisionDocsCount + ' Berkas'"></div>
                     <div class="text-[10px] text-slate-500">Diminta upload perbaikan</div>
+                  </div>
+              </div>
+
+              <!-- Grafik Ringkas Administrasi TU -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900">Status Biodata</h4>
+                      <p class="text-xs text-slate-500">Distribusi biodata berdasarkan filter aktif.</p>
+                    </div>
+                    <i data-lucide="file-user" class="w-5 h-5 text-purple-600"></i>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div>
+                      <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-amber-700">Belum Dikunci</span>
+                        <span x-text="getDocAdminOverviewStats().pendingBioLockCount"></span>
+                      </div>
+                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-amber-500 transition-all"
+                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().pendingBioLockCount, getDocAdminOverviewStats().totalStudents) + '%'"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-emerald-700">Sudah Dikunci</span>
+                        <span x-text="getDocAdminOverviewStats().lockedBioCount"></span>
+                      </div>
+                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-emerald-600 transition-all"
+                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().lockedBioCount, getDocAdminOverviewStats().totalStudents) + '%'"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Quick Action Banner -->
-                <div class="p-6 rounded-2xl bg-gradient-to-r from-purple-800 via-indigo-900 to-slate-900 text-white shadow-md space-y-3">
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 class="font-extrabold text-sm text-slate-900">Status Dokumen</h4>
+                      <p class="text-xs text-slate-500">Status berkas santri sesuai filter aktif.</p>
+                    </div>
+                    <i data-lucide="files" class="w-5 h-5 text-purple-600"></i>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div>
+                      <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-amber-700">Pending</span>
+                        <span x-text="getDocAdminOverviewStats().pendingDocsCount"></span>
+                      </div>
+                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-amber-500 transition-all"
+                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().pendingDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-emerald-700">Verified</span>
+                        <span x-text="getDocAdminOverviewStats().verifiedDocsCount"></span>
+                      </div>
+                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-emerald-600 transition-all"
+                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().verifiedDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-xs font-bold mb-1">
+                        <span class="text-rose-700">Revisi</span>
+                        <span x-text="getDocAdminOverviewStats().revisionDocsCount"></span>
+                      </div>
+                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-rose-600 transition-all"
+                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().revisionDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Petunjuk Tugas TU dihapus -->
+                <div x-show="false" class="p-6 rounded-2xl bg-gradient-to-r from-purple-800 via-indigo-900 to-slate-900 text-white shadow-md space-y-3">
                   <div class="flex items-center justify-between">
                     <div class="space-y-1">
                       <span class="px-2.5 py-0.5 rounded-full bg-white/20 text-purple-200 text-[10px] font-bold uppercase">Petunjuk Tugas TU</span>
@@ -3096,16 +3698,28 @@
                               <div class="font-bold text-slate-800" x-text="student.jenjang + ' (' + student.jenisKelamin + ')'"></div>
                               <div class="text-[10px] text-slate-400" x-text="student.jalur"></div>
                             </td>
-                            <td class="p-3.5">
+                            <td class="p-3.5 min-w-[260px]">
+                              <div class="flex items-center justify-between mb-1.5 text-[10px] font-bold">
+                                <span class="text-slate-700">
+                                  <span x-text="getStudentDocumentProgress(student).verified"></span>/<span x-text="getStudentDocumentProgress(student).total"></span> verified
+                                </span>
+                                <span class="text-purple-700" x-text="getStudentDocumentProgress(student).percentage + '%'"></span>
+                              </div>
+
+                              <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden border border-slate-200 mb-2">
+                                <div class="h-full rounded-full bg-gradient-to-r from-purple-600 to-emerald-500 transition-all"
+                                     :style="'width: ' + getStudentDocumentProgress(student).percentage + '%'"></div>
+                              </div>
+
                               <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
                                 <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200"
-                                      x-text="getStudentDocumentProgress(student).uploaded + ' upload'"></span>
+                                      x-text="getStudentDocumentProgress(student).missing + ' belum upload'"></span>
                                 <span class="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200"
                                       x-text="getStudentDocumentProgress(student).pending + ' pending'"></span>
                                 <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200"
                                       x-text="getStudentDocumentProgress(student).verified + ' verified'"></span>
                                 <span class="px-2 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200"
-                                      x-text="getStudentDocumentProgress(student).revision + ' revision'"></span>
+                                      x-text="getStudentDocumentProgress(student).revision + ' revisi'"></span>
                               </div>
                             </td>
                             <td class="p-3.5 text-center">
@@ -3269,7 +3883,7 @@
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center justify-end gap-2">
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border"
                           :class="{
                             'bg-emerald-50 text-emerald-800 border-emerald-200': detail.status === 'VERIFIED',
@@ -3285,6 +3899,46 @@
                          title="Lihat berkas">
                         <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                       </a>
+                    </template>
+
+                    <template x-if="detail.fileUrl && detail.status !== 'VERIFIED'">
+                      <button type="button"
+                              @click="submitQuickDocVerify({
+                                regNo: selectedDocumentStudent.regNo,
+                                docType: detail.docType
+                              }, 'VERIFIED')"
+                              :disabled="isSubmitting"
+                              class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="ACC berkas ini">
+                        <template x-if="isSubmitting">
+                          <span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        </template>
+                        <template x-if="!isSubmitting">
+                          <i data-lucide="check" class="w-3 h-3"></i>
+                        </template>
+                        <span>ACC</span>
+                      </button>
+                    </template>
+
+                    <template x-if="detail.fileUrl && detail.status !== 'BELUM_UPLOAD' && detail.status !== 'VERIFIED'">
+                      <button type="button"
+                              @click="openFileReviewModal({
+                                regNo: selectedDocumentStudent.regNo,
+                                namaSantri: selectedDocumentStudent.namaLengkap,
+                                jalur: selectedDocumentStudent.jalur,
+                                jenjang: selectedDocumentStudent.jenjang,
+                                docType: detail.docType,
+                                fileUrl: detail.fileUrl,
+                                fileName: detail.fileName || '',
+                                status: detail.status,
+                                note: detail.note || ''
+                              }, 'DOC')"
+                              :disabled="isSubmitting"
+                              class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Minta revisi berkas ini">
+                        <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                        <span>Revisi</span>
+                      </button>
                     </template>
                   </div>
                 </div>
@@ -3390,6 +4044,7 @@
               <template x-for="tab in [
                 { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
                 { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
+                { id: 'passwords', label: 'Reset Password Peserta', icon: 'key-round' },
                 { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
                 { id: 'slides', label: 'Promo Banners', icon: 'image' },
                 { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
@@ -3447,6 +4102,7 @@
                 <template x-for="tab in [
                   { id: 'overview', label: 'Command Center', icon: 'layout-grid' },
                   { id: 'staff', label: 'Manajemen Staff', icon: 'users' },
+                  { id: 'passwords', label: 'Reset Password Peserta', icon: 'key-round' },
                   { id: 'config', label: 'Master Konfigurasi', icon: 'sliders' },
                   { id: 'slides', label: 'Promo Banners', icon: 'image' },
                   { id: 'override', label: 'Direct Override', icon: 'shield-alert' },
@@ -3662,10 +4318,12 @@
                   <h3 class="font-black text-base text-slate-900">Manajemen Akun Petugas & Hak Akses</h3>
                   <p class="text-xs text-slate-500">Kelola akun panitia per bagian (Ketua, Bendahara, Pemberkasan, Koordinator Ujian).</p>
                 </div>
-                <button @click="openAddStaffModal()" class="px-4 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow flex items-center gap-2 transition">
-                  <i data-lucide="user-plus" class="w-4 h-4"></i>
-                  <span>Tambah Staff Baru</span>
-                </button>
+                <div class="flex items-center gap-2">
+                  <button @click="openAddStaffModal()" class="px-4 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow flex items-center gap-2 transition">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>Tambah Staff Baru</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Staff Table -->
@@ -3693,10 +4351,10 @@
                                     'bg-amber-50 text-amber-800 border-amber-200': st.role === 'SUPERADMIN',
                                     'bg-blue-50 text-blue-800 border-blue-200': st.role === 'KETUA_PANITIA',
                                     'bg-emerald-50 text-emerald-800 border-emerald-200': st.role === 'BENDAHARA',
-                                    'bg-purple-50 text-purple-800 border-purple-200': st.role === 'ADMIN_BERKAS',
-                                    'bg-teal-50 text-teal-800 border-teal-200': st.role === 'KOORDINATOR_UJIAN'
-                                  }"
-                                  x-text="st.role"></span>
+                                   'bg-purple-50 text-purple-800 border-purple-200': st.role === 'ADMIN_BERKAS',
+                                   'bg-teal-50 text-teal-800 border-teal-200': st.role === 'KOORDINATOR_WAWANCARA_UMUM' || st.role === 'KOORDINATOR_WAWANCARA_SPIRITUAL' || st.role === 'KOORDINATOR_TES_QURAN' || st.role === 'KOORDINATOR_CBT' || st.role === 'KOORDINATOR_BAHASA_ARAB'
+                                 }"
+                                 x-text="st.role"></span>
                           </td>
                           <td class="p-4 font-mono text-slate-600" x-text="st.noWa"></td>
                           <td class="p-4 text-slate-500" x-text="st.email"></td>
@@ -3715,6 +4373,78 @@
                       </template>
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: RESET PASSWORD PESERTA -->
+            <div x-show="superAdminTab === 'passwords'" class="space-y-6">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                  <h3 class="font-black text-base text-slate-900">Manajemen Password Peserta</h3>
+                  <p class="text-xs text-slate-500">Reset password akun peserta (santri) yang lupa atau terkunci.</p>
+                </div>
+              </div>
+
+              <!-- Peserta Table -->
+              <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                      <tr>
+                        <th class="p-4">RegNo / ID</th>
+                        <th class="p-4">Nama Lengkap</th>
+                        <th class="p-4">Jenjang & Jalur</th>
+                        <th class="p-4 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                      <template x-for="st in paginate(saData.studentList, 'students')" :key="st.regNo">
+                        <tr class="hover:bg-slate-50/80 transition">
+                          <td class="p-4 font-mono font-bold text-brand-700" x-text="st.regNo"></td>
+                          <td class="p-4 font-bold text-slate-900" x-text="st.namaLengkap"></td>
+                          <td class="p-4">
+                            <span class="font-bold text-slate-800" x-text="st.jenjang + ' (' + st.jalur + ')'"></span>
+                          </td>
+                          <td class="p-4 text-center">
+                            <button @click="openResetUserPassModal(st.regNo)" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[10px] inline-flex items-center gap-1.5 border border-amber-200 transition">
+                              <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                              <span>Reset Password</span>
+                            </button>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <span class="text-slate-500">
+                    Halaman <span x-text="pagination.students"></span> dari
+                    <span x-text="getTotalPages(saData.studentList)"></span>
+                  </span>
+                  <div class="flex items-center gap-1">
+                    <button type="button"
+                            @click="setPaginationPage('students', pagination.students - 1)"
+                            :disabled="pagination.students <= 1"
+                            class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
+                      Sebelumnya
+                    </button>
+                    <template x-for="page in getPageNumbers('students')" :key="'student-page-' + page">
+                      <button type="button"
+                              @click="setPaginationPage('students', page)"
+                              class="min-w-8 px-2 py-1.5 rounded-lg border font-bold"
+                              :class="pagination.students === page ? 'bg-brand-700 text-white border-brand-700' : 'bg-white text-slate-700 border-slate-300'"
+                              x-text="page"></button>
+                    </template>
+                    <button type="button"
+                            @click="setPaginationPage('students', pagination.students + 1)"
+                            :disabled="pagination.students >= getTotalPages(saData.studentList)"
+                            class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
+                      Berikutnya
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3795,6 +4525,63 @@
                     <div>
                       <label class="block text-slate-700 font-semibold mb-1">Biaya Pendaftaran (Rp)</label>
                       <input type="text" x-model="saData.config.REGISTRATION_FEE" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pengaturan Link Grup WhatsApp -->
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-5">
+                  <h4 class="font-bold text-sm text-brand-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    <span>Pengaturan Link Grup WhatsApp</span>
+                  </h4>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Santri Baru Reguler & Mutasi</label>
+                      <input type="url"
+                             x-model="saData.config.WA_GROUP_SANTRI_BARU"
+                             placeholder="https://chat.whatsapp.com/..."
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                    </div>
+
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Peserta Jalur Inden</label>
+                      <input type="url"
+                             x-model="saData.config.WA_GROUP_INDEN"
+                             placeholder="https://chat.whatsapp.com/..."
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                    </div>
+                  </div>
+
+                  <div class="pt-3 border-t border-slate-100">
+                    <div class="text-xs font-bold text-slate-700 mb-3">
+                      Grup Kelas untuk Peserta Reguler dan Mutasi yang Lolos Seleksi
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <template x-for="item in [
+                        { key: 'WA_GROUP_SMP_VII_PA', label: 'Kelas VII SMP Pa' },
+                        { key: 'WA_GROUP_SMP_VII_PI', label: 'Kelas VII SMP Pi' },
+                        { key: 'WA_GROUP_SMP_VIII_PA', label: 'Kelas VIII SMP Pa' },
+                        { key: 'WA_GROUP_SMP_VIII_PI', label: 'Kelas VIII SMP Pi' },
+                        { key: 'WA_GROUP_SMP_IX_PA', label: 'Kelas IX SMP Pa' },
+                        { key: 'WA_GROUP_SMP_IX_PI', label: 'Kelas IX SMP Pi' },
+                        { key: 'WA_GROUP_MA_X_PA', label: 'Kelas X MA Pa' },
+                        { key: 'WA_GROUP_MA_X_PI', label: 'Kelas X MA Pi' },
+                        { key: 'WA_GROUP_MA_XI_PA', label: 'Kelas XI MA Pa' },
+                        { key: 'WA_GROUP_MA_XI_PI', label: 'Kelas XI MA Pi' },
+                        { key: 'WA_GROUP_MA_XII_PA', label: 'Kelas XII MA Pa' },
+                        { key: 'WA_GROUP_MA_XII_PI', label: 'Kelas XII MA Pi' }
+                      ]" :key="item.key">
+                        <div>
+                          <label class="block text-slate-700 font-semibold mb-1" x-text="item.label"></label>
+                          <input type="url"
+                                 x-model="saData.config[item.key]"
+                                 placeholder="https://chat.whatsapp.com/..."
+                                 class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                        </div>
+                      </template>
                     </div>
                   </div>
                 </div>
@@ -3987,7 +4774,11 @@
                   <option value="KETUA_PANITIA">KETUA PANITIA (Eksekutif & Approval)</option>
                   <option value="BENDAHARA">BENDAHARA (Verifikasi Keuangan)</option>
                   <option value="ADMIN_BERKAS">ADMIN PEMBERKASAN (Validasi Berkas)</option>
-                  <option value="KOORDINATOR_UJIAN">KOORDINATOR UJIAN (CBT & Seleksi)</option>
+                  <option value="KOORDINATOR_WAWANCARA_UMUM">KOORDINATOR WAWANCARA UMUM</option>
+                  <option value="KOORDINATOR_WAWANCARA_SPIRITUAL">KOORDINATOR WAWANCARA SPIRITUAL</option>
+                  <option value="KOORDINATOR_TES_QURAN">KOORDINATOR TES QURAN</option>
+                  <option value="KOORDINATOR_CBT">KOORDINATOR CBT (Ujian Akademik)</option>
+                  <option value="KOORDINATOR_BAHASA_ARAB">KOORDINATOR BAHASA ARAB</option>
                   <option value="SUPERADMIN">SUPER ADMIN (Full Master)</option>
                 </select>
               </div>
@@ -4128,7 +4919,7 @@
 
   <!-- Alpine.js Application Logic -->
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAUPEbSZDzosSz5FzBkhsj5XobQIh8vZ5M1cZLxOnAqk2KLQ71xj4-LixzmjNNzPA7VA/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMUqD6KWNgcMEFka4xXn7tQFH08v6tPTV84dPqDLUzC1iT5o-d3HG40dOQ0Mh_HMFu/exec';
 
     function psbApp() {
       return {
@@ -4157,12 +4948,73 @@
           STATUS_MUTASI: 'BUKA',
           STATUS_INDEN: 'BUKA',
           LINK_BROSUR: '#',
-          HELPDESK_WA: '6281234567890'
+          HELPDESK_WA: '6281234567890',
+          WA_GROUP_SANTRI_BARU: '',
+          WA_GROUP_INDEN: '',
+          WA_GROUP_SMP_VII_PA: '',
+          WA_GROUP_SMP_VII_PI: '',
+          WA_GROUP_SMP_VIII_PA: '',
+          WA_GROUP_SMP_VIII_PI: '',
+          WA_GROUP_SMP_IX_PA: '',
+          WA_GROUP_SMP_IX_PI: '',
+          WA_GROUP_MA_X_PA: '',
+          WA_GROUP_MA_X_PI: '',
+          WA_GROUP_MA_XI_PA: '',
+          WA_GROUP_MA_XI_PI: '',
+          WA_GROUP_MA_XII_PA: '',
+          WA_GROUP_MA_XII_PI: ''
         },
 
         isProgramOpen(key) {
           var status = this.config[key] || 'BUKA';
           return status.toString().trim().toUpperCase() === 'BUKA';
+        },
+
+        getGroupWaLink(type) {
+          var user = this.currentUser || {};
+          var jalur = String(user.jalur || '').trim().toUpperCase();
+          var jenjang = String(user.jenjang || '').trim().toUpperCase();
+          var gender = String(user.jenisKelamin || '').trim().toUpperCase();
+          var kelas = String(user.kelasTujuan || '').trim().toUpperCase();
+
+          if (type === 'new') {
+            if (jalur === 'INDEN') {
+              return this.dashData.config.WA_GROUP_INDEN || this.config.WA_GROUP_INDEN || '#';
+            }
+
+            return this.dashData.config.WA_GROUP_SANTRI_BARU || this.config.WA_GROUP_SANTRI_BARU || '#';
+          }
+
+          if (type === 'passed') {
+            var genderCode = gender === 'PEREMPUAN' ? 'PI' : 'PA';
+            var classCode = '';
+
+            if (kelas.indexOf('7') !== -1 || kelas.indexOf('VII') !== -1) {
+              classCode = 'VII';
+            } else if (kelas.indexOf('8') !== -1 || kelas.indexOf('VIII') !== -1) {
+              classCode = 'VIII';
+            } else if (kelas.indexOf('9') !== -1 || kelas.indexOf('IX') !== -1) {
+              classCode = 'IX';
+            } else if (kelas.indexOf('10') !== -1 || kelas.indexOf('X') !== -1) {
+              classCode = 'X';
+            } else if (kelas.indexOf('11') !== -1 || kelas.indexOf('XI') !== -1) {
+              classCode = 'XI';
+            } else if (kelas.indexOf('12') !== -1 || kelas.indexOf('XII') !== -1) {
+              classCode = 'XII';
+            }
+
+            if (jenjang === 'SMP' && classCode) {
+              return this.dashData.config['WA_GROUP_SMP_' + classCode + '_' + genderCode] ||
+                this.config['WA_GROUP_SMP_' + classCode + '_' + genderCode] || '#';
+            }
+
+            if (jenjang === 'MA' && classCode) {
+              return this.dashData.config['WA_GROUP_MA_' + classCode + '_' + genderCode] ||
+                this.config['WA_GROUP_MA_' + classCode + '_' + genderCode] || '#';
+            }
+          }
+
+          return '#';
         },
 
         getPeriodeStatus() {
@@ -4402,6 +5254,7 @@
           docStats: { verified: 0, pending: 0 },
           bioStats: { locked: 0, unlocked: 0, revisionRequested: 0 },
           staffList: [],
+          studentList: [],
           slides: [],
           logs: [],
           chartData: {
@@ -4524,6 +5377,8 @@
                 self.fetchTreasurerData();
               } else if (self.isDocAdmin()) {
                 self.fetchDocAdminData();
+              } else if (self.isExamCoordinator()) {
+                self.fetchExamCoordinatorData();
               } else {
                 self.fetchDashboardData();
               }
@@ -4538,6 +5393,8 @@
                 self.fetchTreasurerData();
               } else if (self.isDocAdmin()) {
                 self.fetchDocAdminData();
+              } else if (self.isExamCoordinator()) {
+                self.fetchExamCoordinatorData();
               } else {
                 self.fetchDashboardData();
               }
@@ -4556,16 +5413,208 @@
           return r === 'BENDAHARA';
         },
 
-        isDocAdmin() {
-          if (!this.currentUser || !this.currentUser.role) return false;
-          var r = String(this.currentUser.role).trim().toUpperCase();
-          return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA' || r === 'KETUA_PANITIA' || r === 'KOORDINATOR_UJIAN';
-        },
+      isDocAdmin() {
+        if (!this.currentUser || !this.currentUser.role) return false;
+        var r = String(this.currentUser.role).trim().toUpperCase();
+        return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA' || r === 'KETUA_PANITIA';
+      },
+
+      isExamCoordinator() {
+        if (!this.currentUser || !this.currentUser.role) return false;
+        var r = String(this.currentUser.role).trim().toUpperCase();
+        return r === 'KOORDINATOR_WAWANCARA_UMUM' || 
+               r === 'KOORDINATOR_WAWANCARA_SPIRITUAL' || 
+               r === 'KOORDINATOR_TES_QURAN' || 
+               r === 'KOORDINATOR_CBT' || 
+               r === 'KOORDINATOR_BAHASA_ARAB';
+      },
+
+      getExamTypeLabel(examType) {
+        if (examType === 'WAWANCARA_UMUM') return 'Wawancara Umum';
+        if (examType === 'WAWANCARA_SPIRITUAL') return 'Wawancara Spiritual';
+        if (examType === 'TES_QURAN') return 'Tes Al-Qur\'an';
+        if (examType === 'CBT') return 'CBT (Ujian Akademik)';
+        if (examType === 'BAHASA_ARAB') return 'Bahasa Arab';
+        return examType;
+      },
+
+      examCoordinatorTab: 'overview',
+      examCoordinatorData: {
+        examType: '',
+        config: {},
+        students: [],
+        results: [],
+        cbtCredentials: [],
+        stats: { totalStudents: 0, completedCount: 0, pendingCount: 0 },
+        vendorInfo: { spreadsheetUrl: '', lastPush: '', lastPull: '' }
+      },
+      examVendorEmail: '',
+
+      fetchExamCoordinatorData() {
+        if (!this.currentUser) return;
+        var self = this;
+        this.isDashLoading = true;
+        this.postRequest('getExamCoordinatorDashboard', { staffRegNo: this.currentUser.regNo })
+          .then(function(res) {
+            self.isDashLoading = false;
+            if (res.ok && res.data) {
+              self.examCoordinatorData = Object.assign({}, self.examCoordinatorData, res.data);
+            } else {
+              self.showToast(res.message || 'Gagal memuat dashboard koordinator ujian.');
+            }
+            self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+          })
+          .catch(function(err) {
+            self.isDashLoading = false;
+            self.showToast('Gagal memuat data Koordinator Ujian: ' + err.message);
+          });
+      },
+
+      getStudentExamResult(regNo) {
+        if (!this.examCoordinatorData || !this.examCoordinatorData.results) return null;
+        for (var i = 0; i < this.examCoordinatorData.results.length; i++) {
+          if (this.examCoordinatorData.results[i].regNo === regNo) {
+            return this.examCoordinatorData.results[i];
+          }
+        }
+        return null;
+      },
+
+      getStudentCbtCredential(regNo) {
+        if (!this.examCoordinatorData || !this.examCoordinatorData.cbtCredentials) return null;
+        for (var i = 0; i < this.examCoordinatorData.cbtCredentials.length; i++) {
+          if (this.examCoordinatorData.cbtCredentials[i].regNo === regNo) {
+            return this.examCoordinatorData.cbtCredentials[i];
+          }
+        }
+        return null;
+      },
+
+      handleCreateExamVendorSpreadsheet() {
+        var self = this;
+        var schoolYear = (
+          (this.examCoordinatorData.config || {}).TAHUN_AJARAN ||
+          (this.config || {}).TAHUN_AJARAN ||
+          ''
+        ).trim();
+
+        if (!schoolYear) {
+          this.showToast('Tahun ajaran belum tersedia.');
+          return;
+        }
+
+        this.isSubmitting = true;
+
+        this.postRequest('createExamVendorSpreadsheet', {
+          staffRegNo: this.currentUser.regNo,
+          examType: this.examCoordinatorData.examType,
+          schoolYear: schoolYear,
+          vendorEmail: this.examVendorEmail
+        })
+        .then(function(res) {
+          self.isSubmitting = false;
+          if (res.ok && res.data) {
+            self.examCoordinatorData.vendorInfo = self.examCoordinatorData.vendorInfo || {};
+            self.examCoordinatorData.vendorInfo.spreadsheetUrl = res.data.spreadsheetUrl || '';
+            self.showToast(res.data.message || 'Spreadsheet vendor berhasil dibuat.', 'success');
+          } else {
+            self.showToast(res.message || 'Gagal membuat spreadsheet vendor.');
+          }
+          self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+        })
+        .catch(function(err) {
+          self.isSubmitting = false;
+          self.showToast(err.message || 'Gagal membuat spreadsheet vendor.');
+        });
+      },
+
+      handleSyncExamVendorStudents() {
+        var self = this;
+        var schoolYear = (
+          (this.examCoordinatorData.config || {}).TAHUN_AJARAN ||
+          (this.config || {}).TAHUN_AJARAN ||
+          ''
+        ).trim();
+
+        if (!schoolYear) {
+          this.showToast('Tahun ajaran belum tersedia.');
+          return;
+        }
+
+        this.isSubmitting = true;
+
+        this.postRequest('syncExamVendorStudents', {
+          staffRegNo: this.currentUser.regNo,
+          examType: this.examCoordinatorData.examType,
+          schoolYear: schoolYear,
+          vendorEmail: this.examVendorEmail
+        })
+        .then(function(res) {
+          self.isSubmitting = false;
+          if (res.ok && res.data) {
+            self.examCoordinatorData.vendorInfo = self.examCoordinatorData.vendorInfo || {};
+            self.examCoordinatorData.vendorInfo.spreadsheetUrl = res.data.spreadsheetUrl || self.examCoordinatorData.vendorInfo.spreadsheetUrl;
+            self.examCoordinatorData.vendorInfo.lastPush = res.data.lastPush || '';
+            self.showToast(res.data.message || 'Peserta berhasil disinkronkan.', 'success');
+            self.fetchExamCoordinatorData();
+          } else {
+            self.showToast(res.message || 'Gagal menyinkronkan peserta.');
+          }
+        })
+        .catch(function(err) {
+          self.isSubmitting = false;
+          self.showToast(err.message || 'Gagal menyinkronkan peserta.');
+        });
+      },
+
+      handlePullExamVendorResults() {
+        var self = this;
+        this.isSubmitting = true;
+
+        this.postRequest('pullExamVendorResults', {
+          staffRegNo: this.currentUser.regNo,
+          examType: this.examCoordinatorData.examType
+        })
+        .then(function(res) {
+          self.isSubmitting = false;
+          if (res.ok && res.data) {
+            self.examCoordinatorData.vendorInfo = self.examCoordinatorData.vendorInfo || {};
+            self.examCoordinatorData.vendorInfo.lastPull = res.data.lastPull || '';
+            self.showToast(res.data.message || 'Hasil berhasil ditarik.', 'success');
+            self.fetchExamCoordinatorData();
+          } else {
+            self.showToast(res.message || 'Gagal menarik hasil dari vendor.');
+          }
+        })
+        .catch(function(err) {
+          self.isSubmitting = false;
+          self.showToast(err.message || 'Gagal menarik hasil dari vendor.');
+        });
+      },
 
         docAdminTab: 'overview',
         docAdminJenjangFilter: 'ALL',
         docAdminGenderFilter: 'ALL',
+        docAdminStatusFilter: 'ALL',
         docAdminSearch: '',
+        showMobileDocFilters: false,
+
+        getActiveDocFilterCount() {
+          var count = 0;
+
+          if (this.docAdminJenjangFilter !== 'ALL') count++;
+          if (this.docAdminGenderFilter !== 'ALL') count++;
+          if (this.docAdminStatusFilter !== 'ALL') count++;
+
+          return count;
+        },
+
+        resetMobileDocFilters() {
+          this.docAdminJenjangFilter = 'ALL';
+          this.docAdminGenderFilter = 'ALL';
+          this.docAdminStatusFilter = 'ALL';
+        },
+
         docAdminData: {
           stats: { totalStudents: 0, pendingDocsCount: 0, pendingBioLockCount: 0, verifiedDocsCount: 0, revisionDocsCount: 0 },
           students: [],
@@ -4607,6 +5656,7 @@
           var search = (this.docAdminSearch || '').toLowerCase();
           var jFilter = this.docAdminJenjangFilter || 'ALL';
           var gFilter = this.docAdminGenderFilter || 'ALL';
+          var statusFilter = this.docAdminStatusFilter || 'ALL';
 
           // Auto role filter if logged in as TU_SMP or TU_MA
           if (this.currentUser && this.currentUser.role === 'TU_SMP') jFilter = 'SMP';
@@ -4615,17 +5665,117 @@
           return list.filter(function(st) {
             if (jFilter !== 'ALL' && (st.jenjang || '').toUpperCase() !== jFilter) return false;
             if (gFilter !== 'ALL' && (st.jenisKelamin || '').toUpperCase() !== gFilter) return false;
+
+            if (statusFilter !== 'ALL') {
+              var studentItems = (this.docAdminData.items || []).filter(function(item) {
+                return item.regNo === st.regNo;
+              });
+
+              var hasMatchingStatus = false;
+
+              if (statusFilter === 'BELUM_UPLOAD') {
+                var knownDocumentTypes = Object.keys(this.docLabels || {});
+                for (var b = 0; b < knownDocumentTypes.length; b++) {
+                  var foundDocument = studentItems.find(function(item) {
+                    return item.docType === knownDocumentTypes[b];
+                  });
+
+                  if (!foundDocument || !foundDocument.fileUrl) {
+                    hasMatchingStatus = true;
+                    break;
+                  }
+                }
+              } else {
+                for (var si = 0; si < studentItems.length; si++) {
+                  if (String(studentItems[si].status || '').toUpperCase() === statusFilter) {
+                    hasMatchingStatus = true;
+                    break;
+                  }
+                }
+              }
+
+              if (!hasMatchingStatus) return false;
+            }
+
             if (search) {
               var matchReg = (st.regNo || '').toLowerCase().indexOf(search) !== -1;
               var matchNama = (st.namaLengkap || '').toLowerCase().indexOf(search) !== -1;
               if (!matchReg && !matchNama) return false;
             }
             return true;
+          }, this);
+        },
+
+        getDocAdminOverviewStats() {
+          var students = this.getFilteredDocAdminStudents();
+          var studentRegs = {};
+
+          for (var i = 0; i < students.length; i++) {
+            studentRegs[students[i].regNo] = true;
+          }
+
+          var items = (this.docAdminData.items || []).filter(function(item) {
+            return !!studentRegs[item.regNo];
           });
+
+          var pendingBioLockCount = 0;
+          var lockedBioCount = 0;
+
+          for (var s = 0; s < students.length; s++) {
+            var biodata = students[s].biodata || {};
+
+            if (biodata.isLocked) {
+              lockedBioCount++;
+            } else {
+              pendingBioLockCount++;
+            }
+          }
+
+          var pendingDocsCount = 0;
+          var verifiedDocsCount = 0;
+          var revisionDocsCount = 0;
+
+          for (var d = 0; d < items.length; d++) {
+            if (items[d].status === 'PENDING') {
+              pendingDocsCount++;
+            } else if (items[d].status === 'VERIFIED') {
+              verifiedDocsCount++;
+            } else if (items[d].status === 'REVISION') {
+              revisionDocsCount++;
+            }
+          }
+
+          return {
+            totalStudents: students.length,
+            pendingBioLockCount: pendingBioLockCount,
+            lockedBioCount: lockedBioCount,
+            pendingDocsCount: pendingDocsCount,
+            verifiedDocsCount: verifiedDocsCount,
+            revisionDocsCount: revisionDocsCount,
+            totalDocs: items.length
+          };
+        },
+
+        getDocAdminBarWidth(value, total) {
+          var amount = Number(value) || 0;
+          var maximum = Number(total) || 0;
+
+          if (amount <= 0 || maximum <= 0) {
+            return 0;
+          }
+
+          return Math.min(100, Math.max(4, Math.round((amount / maximum) * 100)));
         },
 
         getFilteredDocAdminDocs() {
           var list = this.docAdminData.items || [];
+          var students = this.docAdminData.students || [];
+          var studentMap = {};
+
+          for (var s = 0; s < students.length; s++) {
+            studentMap[students[s].regNo] = students[s];
+          }
+
           var search = (this.docAdminSearch || '').toLowerCase();
           var jFilter = this.docAdminJenjangFilter || 'ALL';
           var gFilter = this.docAdminGenderFilter || 'ALL';
@@ -4634,13 +5784,18 @@
           if (this.currentUser && this.currentUser.role === 'TU_MA') jFilter = 'MA';
 
           return list.filter(function(item) {
-            if (jFilter !== 'ALL' && (item.jenjang || '').toUpperCase() !== jFilter) return false;
-            if (gFilter !== 'ALL' && (item.jenisKelamin || '').toUpperCase() !== gFilter) return false;
+            var student = studentMap[item.regNo] || {};
+
+            if (jFilter !== 'ALL' && (student.jenjang || item.jenjang || '').toUpperCase() !== jFilter) return false;
+            if (gFilter !== 'ALL' && (student.jenisKelamin || item.jenisKelamin || '').toUpperCase() !== gFilter) return false;
+
             if (search) {
               var matchReg = (item.regNo || '').toLowerCase().indexOf(search) !== -1;
-              var matchNama = (item.namaSantri || '').toLowerCase().indexOf(search) !== -1;
+              var matchNama = (item.namaSantri || student.namaLengkap || '').toLowerCase().indexOf(search) !== -1;
+
               if (!matchReg && !matchNama) return false;
             }
+
             return true;
           });
         },
@@ -4670,6 +5825,7 @@
           var pending = 0;
           var verified = 0;
           var revision = 0;
+          var total = Object.keys(this.docLabels || {}).length;
 
           for (var i = 0; i < studentItems.length; i++) {
             var item = studentItems[i];
@@ -4679,12 +5835,17 @@
             if (item.status === 'REVISION') revision++;
           }
 
+          var missing = Math.max(0, total - uploaded);
+          var percentage = total > 0 ? Math.round((verified / total) * 100) : 0;
+
           return {
             uploaded: uploaded,
+            missing: missing,
             pending: pending,
             verified: verified,
             revision: revision,
-            total: Object.keys(this.docLabels || {}).length
+            total: total,
+            percentage: percentage
           };
         },
 
@@ -4849,6 +6010,19 @@
           passedStudents: []
         },
 
+        vendorVaEmail: '',
+        vendorVaData: {
+          schoolYear: '',
+          spreadsheetId: '',
+          spreadsheetUrl: '',
+          totalStudents: 0,
+          withVaCount: 0,
+          withoutVaCount: 0,
+          errorCount: 0,
+          lastPush: '',
+          lastPull: ''
+        },
+
         showReceiptModal: false,
         receiptData: { regNo: '', namaSantri: '', type: '', amount: 0, status: '', updatedAt: '' },
 
@@ -4861,6 +6035,7 @@
               self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.treasurerData = Object.assign({}, self.treasurerData, res.data);
+                self.calculateVendorVaStats();
               } else {
                 self.showToast(res.message || 'Gagal memuat dashboard bendahara.');
               }
@@ -4879,6 +6054,139 @@
             if (ds[i].total > max) max = ds[i].total;
           }
           return max;
+        },
+
+        calculateVendorVaStats() {
+          var students = this.treasurerData.passedStudents || [];
+          var withVa = 0;
+
+          for (var i = 0; i < students.length; i++) {
+            if (students[i].vaNumber) {
+              withVa++;
+            }
+          }
+
+          this.vendorVaData.totalStudents = students.length;
+          this.vendorVaData.withVaCount = withVa;
+          this.vendorVaData.withoutVaCount = Math.max(0, students.length - withVa);
+        },
+
+        handleCreateVendorVaSpreadsheet() {
+          var self = this;
+          var schoolYear = (
+            this.vendorVaData.schoolYear ||
+            (this.config || {}).TAHUN_AJARAN ||
+            (this.dashData.config || {}).TAHUN_AJARAN ||
+            ''
+          ).trim();
+
+          if (!schoolYear) {
+            this.showToast('Tahun ajaran belum tersedia.');
+            return;
+          }
+
+          this.isSubmitting = true;
+
+          this.postRequest('createVendorVaSpreadsheet', {
+            staffRegNo: this.currentUser.regNo,
+            schoolYear: schoolYear,
+            vendorEmail: this.vendorVaEmail
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+
+            if (res.ok && res.data) {
+              self.vendorVaData.schoolYear = res.data.schoolYear || schoolYear;
+              self.vendorVaData.spreadsheetId = res.data.spreadsheetId || '';
+              self.vendorVaData.spreadsheetUrl = res.data.spreadsheetUrl || '';
+              self.showToast(res.data.message || 'Spreadsheet vendor berhasil dibuat.', 'success');
+            } else {
+              self.showToast(res.message || 'Gagal membuat spreadsheet vendor.');
+            }
+
+            self.$nextTick(function() {
+              if (window.lucide) window.lucide.createIcons();
+            });
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Gagal membuat spreadsheet vendor.');
+          });
+        },
+
+        handleSyncVendorVaStudents() {
+          var self = this;
+          var schoolYear = (
+            this.vendorVaData.schoolYear ||
+            (this.config || {}).TAHUN_AJARAN ||
+            (this.dashData.config || {}).TAHUN_AJARAN ||
+            ''
+          ).trim();
+
+          if (!schoolYear) {
+            this.showToast('Tahun ajaran belum tersedia.');
+            return;
+          }
+
+          this.isSubmitting = true;
+
+          this.postRequest('syncVendorVaStudents', {
+            staffRegNo: this.currentUser.regNo,
+            schoolYear: schoolYear,
+            vendorEmail: this.vendorVaEmail
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+
+            if (res.ok && res.data) {
+              self.vendorVaData.schoolYear = res.data.schoolYear || schoolYear;
+              self.vendorVaData.spreadsheetUrl = res.data.spreadsheetUrl || self.vendorVaData.spreadsheetUrl;
+              self.vendorVaData.totalStudents = Number(res.data.totalStudents) || 0;
+              self.vendorVaData.lastPush = res.data.lastPush || '';
+              self.showToast(res.data.message || 'Peserta LULUS berhasil disinkronkan.', 'success');
+              self.fetchTreasurerData();
+            } else {
+              self.showToast(res.message || 'Gagal menyinkronkan peserta LULUS.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Gagal menyinkronkan peserta LULUS.');
+          });
+        },
+
+        handlePullVendorVaNumbers() {
+          var self = this;
+          this.isSubmitting = true;
+
+          this.postRequest('pullVendorVaNumbers', {
+            staffRegNo: this.currentUser.regNo
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+
+            if (res.ok && res.data) {
+              self.vendorVaData.lastPull = res.data.lastPull || '';
+              self.vendorVaData.errorCount = Number(res.data.errorCount) || 0;
+
+              if (res.data.errors && res.data.errors.length > 0) {
+                self.showToast(
+                  (res.data.message || 'VA berhasil ditarik.') + ' Terdapat ' + res.data.errors.length + ' peringatan.',
+                  'success'
+                );
+              } else {
+                self.showToast(res.data.message || 'Nomor VA berhasil ditarik.', 'success');
+              }
+
+              self.fetchTreasurerData();
+            } else {
+              self.showToast(res.message || 'Gagal menarik nomor VA dari vendor.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Gagal menarik nomor VA dari vendor.');
+          });
         },
 
         getFilteredTreasurerPayments(pType) {
@@ -4996,7 +6304,8 @@
           docItems: 1,
           staff: 1,
           slides: 1,
-          logs: 1
+          logs: 1,
+          students: 1
         },
         pageSize: 10,
 
@@ -5053,8 +6362,11 @@
           if (key === 'slides') {
             return this.saData.slides || [];
           }
-          if (key === 'logs') {
+         if (key === 'logs') {
             return this.saData.logs || [];
+          }
+          if (key === 'students') {
+            return this.saData.studentList || [];
           }
           return [];
         },
@@ -5595,8 +6907,17 @@
           if (!this.currentUser) return;
           var self = this;
           this.isDashLoading = true;
+          
+          var timeoutId = setTimeout(function() {
+            if (self.isDashLoading) {
+              self.isDashLoading = false;
+              self.showToast('Proses memuat data terlalu lama. Coba refresh halaman atau periksa koneksi Anda.');
+            }
+          }, 15000);
+
           this.postRequest('getSuperAdminDashboard', { regNo: this.currentUser.regNo })
             .then(function(res) {
+              clearTimeout(timeoutId);
               self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.saData = Object.assign({}, self.saData, res.data);
@@ -5613,6 +6934,7 @@
               }
             })
             .catch(function(err) {
+              clearTimeout(timeoutId);
               self.isDashLoading = false;
               self.showToast('Gagal memuat data Super Admin: ' + err.message);
             });
