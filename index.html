@@ -36,6 +36,24 @@
 
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    (function() {
+      function patchLucide() {
+        if (!window.lucide || !window.lucide.createIcons) {
+          setTimeout(patchLucide, 50);
+          return;
+        }
+        var original = window.lucide.createIcons.bind(window.lucide);
+        window.lucide.createIcons = function() {
+          document.querySelectorAll('svg[data-lucide]').forEach(function(el) {
+            el.removeAttribute('data-lucide');
+          });
+          return original();
+        };
+      }
+      patchLucide();
+    })();
+  </script>
 
   <!-- Alpine.js CDN -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -989,7 +1007,7 @@
     <!-- ============================================================= -->
     <!-- VIEW SECTION B: PARTICIPANT DASHBOARD (When LOGGED IN)        -->
     <!-- ============================================================= -->
-    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer() && !isDocAdmin() && !isExamCoordinator()">
+    <template x-if="isLoggedIn && !isSuperAdmin() && !isTreasurer() && !isDocAdmin() && !isExamCoordinator() && !isChairman()">
       <div x-transition:enter="transition ease-out duration-500 transform"
            x-transition:enter-start="opacity-0 scale-[0.99] translate-y-3"
            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -3067,7 +3085,8 @@
                      </thead>
                      <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
                        <!-- CBT View -->
-                       <template x-if="examCoordinatorData.examType === 'CBT'" x-for="st in examCoordinatorData.students" :key="'cbt-' + st.regNo">
+                       <template x-if="examCoordinatorData.examType === 'CBT'">
+                         <template x-for="st in examCoordinatorData.students" :key="'cbt-' + st.regNo">
                          <tr class="hover:bg-slate-50/80 transition">
                            <td class="p-3.5">
                              <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
@@ -3079,10 +3098,12 @@
                            <td class="p-3.5 font-mono text-slate-800" x-text="(getStudentCbtCredential(st.regNo) ? getStudentCbtCredential(st.regNo).cbtUsername : '-')"></td>
                            <td class="p-3.5 font-mono text-amber-700 font-bold" x-text="(getStudentCbtCredential(st.regNo) ? getStudentCbtCredential(st.regNo).cbtPassword : '-')"></td>
                          </tr>
+                         </template>
                        </template>
 
                        <!-- Non-CBT View -->
-                       <template x-if="examCoordinatorData.examType !== 'CBT'" x-for="st in examCoordinatorData.students" :key="'res-' + st.regNo">
+                       <template x-if="examCoordinatorData.examType !== 'CBT'">
+                         <template x-for="st in examCoordinatorData.students" :key="'res-' + st.regNo">
                          <tr class="hover:bg-slate-50/80 transition">
                            <td class="p-3.5">
                              <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
@@ -3099,6 +3120,7 @@
                            </td>
                            <td class="p-3.5 text-slate-600" x-text="(getStudentExamResult(st.regNo) ? getStudentExamResult(st.regNo).notes : '-')"></td>
                          </tr>
+                         </template>
                        </template>
                      </tbody>
                    </table>
@@ -3111,6 +3133,978 @@
          </div>
        </div>
 
+     </div>
+   </template>
+
+    <!-- MODAL OVERLAY MODE SIDANG PLENO (LAYOUT SESUAI MOCKUP GAMBAR) -->
+    <div x-show="showPlenoOverlay"
+         x-transition
+         @keydown.window="handlePlenoKeyboard($event)"
+         class="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 select-none">
+      
+      <!-- Navigasi Panah Samping Kiri (Sebelumnya) -->
+      <button type="button"
+              @click="psbPlenoBack()"
+              :disabled="isSubmitting"
+              title="Santri Sebelumnya (Tombol Panah Kiri: [<-])"
+              class="hidden md:flex flex-shrink-0 w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white items-center justify-center transition mr-3 border border-white/20 shadow-lg disabled:opacity-30">
+        <i data-lucide="chevron-left" class="w-7 h-7"></i>
+      </button>
+
+      <!-- Main Frame Box -->
+      <div class="bg-white text-slate-900 rounded-3xl max-w-5xl w-full max-h-[95vh] overflow-y-auto shadow-2xl border border-slate-300 flex flex-col justify-between p-6 sm:p-8 space-y-6">
+        
+        <!-- HEADER: Judul & Close Button -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-3">
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Penentuan Kelulusan Santri
+            </h2>
+            <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              <span x-text="plenoIndex + 1"></span> / <span x-text="getFilteredChairmanPleno().length"></span>
+            </span>
+          </div>
+
+          <button type="button"
+                  @click="closePlenoOverlay()"
+                  class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                  title="Tutup (Esc)">
+            <i data-lucide="x" class="w-6 h-6"></i>
+          </button>
+        </div>
+
+        <!-- BARIS STATUS STATISTIK (Diterima, Ditolak, Cadangan, Menunggu) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 py-2 border-b border-slate-100">
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+            <div>
+              <div class="text-xs font-bold text-slate-800">Diterima</div>
+              <div class="text-[10px] text-slate-500" x-text="getPlenoFilterLabel()"></div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 font-mono" x-text="getPlenoStatusCount('LULUS')"></div>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+            <div>
+              <div class="text-xs font-bold text-slate-800">Ditolak</div>
+              <div class="text-[10px] text-slate-500" x-text="getPlenoFilterLabel()"></div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 font-mono" x-text="getPlenoStatusCount('TIDAK_LULUS')"></div>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+            <div>
+              <div class="text-xs font-bold text-slate-800">Cadangan</div>
+              <div class="text-[10px] text-slate-500" x-text="getPlenoFilterLabel()"></div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 font-mono" x-text="getPlenoStatusCount('CADANGAN')"></div>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+            <div>
+              <div class="text-xs font-bold text-slate-800">Menunggu</div>
+              <div class="text-[10px] text-slate-500" x-text="getPlenoFilterLabel()"></div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 font-mono" x-text="getPlenoStatusCount('MENUNGGU')"></div>
+          </div>
+        </div>
+
+        <!-- IDENTITAS SANTRI AKTIF -->
+        <div class="space-y-1 pt-1 pb-3 border-b-2 border-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h1 class="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight"
+                x-text="getCurrentPlenoStudent().namaLengkap || 'Nama Lengkap Santri'"></h1>
+            
+            <span class="px-3 py-1 rounded-full text-xs font-black uppercase border"
+                  :class="{
+                    'bg-emerald-100 text-emerald-800 border-emerald-300': getCurrentPlenoStudent().admissionStatus === 'LULUS',
+                    'bg-amber-100 text-amber-800 border-amber-300': getCurrentPlenoStudent().admissionStatus === 'CADANGAN',
+                    'bg-rose-100 text-rose-800 border-rose-300': getCurrentPlenoStudent().admissionStatus === 'TIDAK_LULUS',
+                    'bg-slate-100 text-slate-700 border-slate-300': getCurrentPlenoStudent().admissionStatus === 'MENUNGGU' || !getCurrentPlenoStudent().admissionStatus
+                  }"
+                  x-text="'STATUS: ' + (getCurrentPlenoStudent().admissionStatus || 'MENUNGGU')"></span>
+          </div>
+          <p class="text-sm font-semibold text-slate-600"
+             x-text="(getCurrentPlenoStudent().regNo || '-') + ' / ' + (getCurrentPlenoStudent().jenjang || '-') + ' (' + (getCurrentPlenoStudent().jenisKelamin || '-') + ')'"></p>
+        </div>
+
+        <!-- GRID 2x2 NILAI & CATATAN PENGUJI -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 py-2">
+          
+          <!-- 1. Tes CBT -->
+          <div class="flex items-start gap-4">
+            <div class="text-5xl font-black text-slate-900 font-mono min-w-[70px] text-right"
+                 x-text="getPlenoExamData('CBT').score"></div>
+            <div class="space-y-1">
+              <div class="text-base font-extrabold text-slate-900">Tes CBT</div>
+              <div class="text-xs font-bold"
+                   :class="getPlenoExamData('CBT').recommendation === 'LULUS' ? 'text-emerald-700' : 'text-slate-600'"
+                   x-text="'Rekomendasi: ' + getPlenoExamData('CBT').recommendation"></div>
+              <div class="text-xs text-slate-500 italic leading-snug"
+                   x-text="getPlenoExamData('CBT').notes"></div>
+            </div>
+          </div>
+
+          <!-- 2. Tes Al-Qur'an -->
+          <div class="flex items-start gap-4">
+            <div class="text-5xl font-black text-slate-900 font-mono min-w-[70px] text-right"
+                 x-text="getPlenoExamData('TES_QURAN').score"></div>
+            <div class="space-y-1">
+              <div class="text-base font-extrabold text-slate-900">Tes Al-Qur'an</div>
+              <div class="text-xs font-bold"
+                   :class="getPlenoExamData('TES_QURAN').recommendation === 'LULUS' ? 'text-emerald-700' : 'text-slate-600'"
+                   x-text="'Rekomendasi: ' + getPlenoExamData('TES_QURAN').recommendation"></div>
+              <div class="text-xs text-slate-500 italic leading-snug"
+                   x-text="getPlenoExamData('TES_QURAN').notes"></div>
+            </div>
+          </div>
+
+          <!-- 3. Wawancara Umum -->
+          <div class="flex items-start gap-4">
+            <div class="text-5xl font-black text-slate-900 font-mono min-w-[70px] text-right"
+                 x-text="getPlenoExamData('WAWANCARA_UMUM').score"></div>
+            <div class="space-y-1">
+              <div class="text-base font-extrabold text-slate-900">Wawancara Umum</div>
+              <div class="text-xs font-bold"
+                   :class="getPlenoExamData('WAWANCARA_UMUM').recommendation === 'LULUS' ? 'text-emerald-700' : 'text-slate-600'"
+                   x-text="'Rekomendasi: ' + getPlenoExamData('WAWANCARA_UMUM').recommendation"></div>
+              <div class="text-xs text-slate-500 italic leading-snug"
+                   x-text="getPlenoExamData('WAWANCARA_UMUM').notes"></div>
+            </div>
+          </div>
+
+          <!-- 4. Wawancara Spiritual -->
+          <div class="flex items-start gap-4">
+            <div class="text-5xl font-black text-slate-900 font-mono min-w-[70px] text-right"
+                 x-text="getPlenoExamData('WAWANCARA_SPIRITUAL').score"></div>
+            <div class="space-y-1">
+              <div class="text-base font-extrabold text-slate-900">Wawancara Spiritual</div>
+              <div class="text-xs font-bold"
+                   :class="getPlenoExamData('WAWANCARA_SPIRITUAL').recommendation === 'LULUS' ? 'text-emerald-700' : 'text-slate-600'"
+                   x-text="'Rekomendasi: ' + getPlenoExamData('WAWANCARA_SPIRITUAL').recommendation"></div>
+              <div class="text-xs text-slate-500 italic leading-snug"
+                   x-text="getPlenoExamData('WAWANCARA_SPIRITUAL').notes"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOOTER: TOMBOL NAVIGASI & KEPUTUSAN KELULUSAN -->
+        <div class="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          
+          <button type="button"
+                  @click="psbPlenoBack()"
+                  :disabled="isSubmitting"
+                  class="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center gap-1.5 disabled:opacity-50">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <span>Sebelum</span>
+            <span class="text-[10px] font-mono text-slate-400 ml-1 hidden sm:inline">[&larr;]</span>
+          </button>
+
+          <!-- Action Buttons Group -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button type="button"
+                    @click="psbPlenoAction('LULUS')"
+                    :disabled="isSubmitting"
+                    class="px-6 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 disabled:opacity-50">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Tetapkan Lulus</span>
+              <span class="text-[10px] font-mono bg-emerald-900/60 px-1.5 py-0.5 rounded text-white ml-1 hidden sm:inline">[L]</span>
+            </button>
+
+            <button type="button"
+                    @click="psbPlenoAction('CADANGAN')"
+                    :disabled="isSubmitting"
+                    class="px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-md transition flex items-center gap-1.5 disabled:opacity-50">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+              <span>Cadangan</span>
+              <span class="text-[10px] font-mono bg-amber-700/30 px-1.5 py-0.5 rounded text-slate-950 ml-1 hidden sm:inline">[C]</span>
+            </button>
+
+            <button type="button"
+                    @click="psbPlenoAction('TIDAK_LULUS')"
+                    :disabled="isSubmitting"
+                    class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5 disabled:opacity-50">
+              <i data-lucide="x-circle" class="w-4 h-4"></i>
+              <span>Tidak Lulus</span>
+              <span class="text-[10px] font-mono bg-rose-900/60 px-1.5 py-0.5 rounded text-white ml-1 hidden sm:inline">[T]</span>
+            </button>
+          </div>
+
+          <button type="button"
+                  @click="psbPlenoNext()"
+                  :disabled="isSubmitting"
+                  class="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center gap-1.5 disabled:opacity-50">
+            <span>Berikutnya</span>
+            <span class="text-[10px] font-mono text-slate-400 mr-1 hidden sm:inline">[&rarr;]</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Navigasi Panah Samping Kanan (Berikutnya) -->
+      <button type="button"
+              @click="psbPlenoNext()"
+              :disabled="isSubmitting"
+              title="Santri Berikutnya (Tombol Panah Kanan: [->])"
+              class="hidden md:flex flex-shrink-0 w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white items-center justify-center transition ml-3 border border-white/20 shadow-lg disabled:opacity-30">
+        <i data-lucide="chevron-right" class="w-7 h-7"></i>
+      </button>
+
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- VIEW SECTION B-5: KETUA PANITIA (CHAIRMAN) DASHBOARD -->
+    <!-- ============================================================= -->
+    <template x-if="isLoggedIn && isChairman()">
+     <div x-transition class="w-full min-h-screen flex flex-col bg-slate-900 text-slate-100 relative">
+       <div class="flex flex-1 min-h-screen relative">
+
+         <!-- DESKTOP SIDEBAR -->
+         <aside class="hidden md:flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 z-30"
+                :class="sidebarExpanded ? 'w-64' : 'w-20'">
+           <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+             <div class="flex items-center gap-3 overflow-hidden" x-show="sidebarExpanded">
+               <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black flex-shrink-0">
+                 <i data-lucide="gavel" class="w-5 h-5"></i>
+               </div>
+               <div class="truncate">
+                 <div class="font-bold text-sm leading-tight text-white truncate">KETUA PANITIA</div>
+                 <div class="text-[10px] text-indigo-300 font-medium">Portal Eksekutif</div>
+               </div>
+             </div>
+             <button @click="sidebarExpanded = !sidebarExpanded; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                     class="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white mx-auto">
+               <i :data-lucide="sidebarExpanded ? 'chevron-left' : 'chevron-right'" class="w-5 h-5"></i>
+             </button>
+           </div>
+
+           <div class="p-4 border-b border-slate-800/60 bg-slate-900/40" x-show="sidebarExpanded">
+             <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+             <div class="text-[10px] text-indigo-400 font-mono mt-0.5" x-text="currentUser.regNo"></div>
+           </div>
+
+           <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
+             <template x-for="tab in [
+               { id: 'overview', label: 'Dashboard Eksekutif', icon: 'layout-dashboard' },
+               { id: 'progress', label: 'Pantau Progres', icon: 'list-checks' },
+               { id: 'pleno', label: 'Sidang Pleno', icon: 'gavel' },
+               { id: 'reports', label: 'Laporan Pendaftaran', icon: 'file-down' },
+               { id: 'resign', label: 'Permohonan Undur Diri', icon: 'user-x' }
+             ]" :key="tab.id">
+               <button @click="chairmanTab = tab.id; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                       class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                       :class="chairmanTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-950/40' : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'">
+                 <i :data-lucide="tab.icon" class="w-5 h-5 flex-shrink-0"></i>
+                 <span x-show="sidebarExpanded" class="truncate" x-text="tab.label"></span>
+               </button>
+             </template>
+           </nav>
+
+           <div class="p-3 border-t border-slate-800">
+             <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition">
+               <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>
+               <span x-show="sidebarExpanded" class="truncate">Keluar Akun</span>
+             </button>
+           </div>
+         </aside>
+
+         <!-- MOBILE DRAWER -->
+         <div x-show="sidebarMobileOpen" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden" @click="sidebarMobileOpen = false"></div>
+         <aside x-show="sidebarMobileOpen"
+                x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
+                class="fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col justify-between md:hidden">
+           <div class="space-y-4">
+             <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+               <div class="font-bold text-sm text-white flex items-center gap-2">
+                 <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">
+                   <i data-lucide="gavel" class="w-4 h-4"></i>
+                 </div>
+                 <span>KETUA PANITIA</span>
+               </div>
+               <button @click="sidebarMobileOpen = false" class="text-slate-400 hover:text-white">
+                 <i data-lucide="x" class="w-5 h-5"></i>
+               </button>
+             </div>
+             <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+               <div class="text-xs font-bold text-white truncate" x-text="currentUser.namaLengkap"></div>
+               <div class="text-[10px] text-indigo-400 font-mono" x-text="currentUser.regNo"></div>
+             </div>
+             <nav class="space-y-1">
+               <template x-for="tab in [
+                 { id: 'overview', label: 'Dashboard Eksekutif', icon: 'layout-dashboard' },
+                 { id: 'progress', label: 'Pantau Progres', icon: 'list-checks' },
+                 { id: 'pleno', label: 'Sidang Pleno', icon: 'gavel' },
+                 { id: 'reports', label: 'Laporan Pendaftaran', icon: 'file-down' },
+                 { id: 'resign', label: 'Permohonan Undur Diri', icon: 'user-x' }
+               ]" :key="'kp-mob-' + tab.id">
+                 <button @click="chairmanTab = tab.id; sidebarMobileOpen = false; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })"
+                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition"
+                         :class="chairmanTab === tab.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'">
+                   <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                   <span x-text="tab.label"></span>
+                 </button>
+               </template>
+             </nav>
+           </div>
+           <button @click="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40">
+             <i data-lucide="log-out" class="w-5 h-5"></i>
+             <span>Keluar</span>
+           </button>
+         </aside>
+
+         <!-- CONTENT -->
+         <div class="flex-1 flex flex-col min-w-0 bg-slate-100 text-slate-800">
+           <header class="h-16 border-b border-slate-200/90 bg-white/90 backdrop-blur-xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs text-slate-800">
+             <div class="flex items-center gap-3">
+               <button @click="sidebarMobileOpen = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+                 <i data-lucide="menu" class="w-6 h-6"></i>
+               </button>
+               <div>
+                 <h2 class="text-sm md:text-base font-extrabold text-slate-900 capitalize tracking-tight" x-text="chairmanTab.replace('_', ' ')"></h2>
+                 <p class="text-[10px] text-slate-400 font-medium hidden sm:block">Portal Eksekutif Ketua Panitia PSB</p>
+               </div>
+             </div>
+             <div class="flex items-center gap-3">
+               <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-[11px] shadow-xs">
+                 <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                 <span class="text-indigo-900 font-bold">KETUA PANITIA</span>
+               </div>
+               <button @click="fetchChairmanData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Data">
+                 <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-indigo-600' : ''"></i>
+               </button>
+             </div>
+           </header>
+
+           <main class="flex-1 p-4 sm:p-6 md:p-8 md:px-10 overflow-y-auto space-y-6">
+
+             <!-- MENU 1: DASHBOARD EKSEKUTIF -->
+             <div x-show="chairmanTab === 'overview'" class="space-y-6">
+               <!-- 4 Kartu Metrik Ringkas Eksekutif -->
+               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Total Pendaftar</span>
+                     <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i>
+                   </div>
+                   <div class="text-3xl font-black text-slate-900" x-text="chairmanData.stats.totalStudents || 0"></div>
+                   <div class="text-[10px] text-slate-500">Santri aktif terdaftar</div>
+                 </div>
+
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Berkas Lengkap</span>
+                     <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                   </div>
+                   <div class="text-3xl font-black text-emerald-600" x-text="getChairmanCompletePct() + '%'"></div>
+                   <div class="text-[10px] text-emerald-600 font-semibold" x-text="(chairmanData.stats.completeCount || 0) + ' santri lengkap berkas'"></div>
+                 </div>
+
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Sudah Diplenokan</span>
+                     <i data-lucide="award" class="w-5 h-5 text-amber-600"></i>
+                   </div>
+                   <div class="text-3xl font-black text-indigo-700" x-text="((chairmanData.stats.lulus || 0) + (chairmanData.stats.cadangan || 0) + (chairmanData.stats.tidakLulus || 0))"></div>
+                   <div class="text-[10px] text-slate-500 font-semibold" x-text="(chairmanData.stats.lulus || 0) + ' Lulus • ' + (chairmanData.stats.cadangan || 0) + ' Cadangan • ' + (chairmanData.stats.tidakLulus || 0) + ' Tolak'"></div>
+                 </div>
+
+                 <div class="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-2">
+                   <div class="flex items-center justify-between text-slate-500">
+                     <span class="text-xs font-bold uppercase">Menunggu Sidang</span>
+                     <i data-lucide="clock" class="w-5 h-5 text-rose-500"></i>
+                   </div>
+                   <div class="text-3xl font-black text-rose-600" x-text="chairmanData.stats.menunggu || 0"></div>
+                   <div class="text-[10px] text-rose-600 font-semibold">Perlu diputuskan kelulusannya</div>
+                 </div>
+               </div>
+
+               <!-- 2 Grafik Utama Berdampingan (Donut & Bar) -->
+               <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                 
+                 <!-- Kolom Kiri: Donut Chart Distribusi Jenjang & Gender -->
+                 <div class="lg:col-span-5 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+                   <div>
+                     <div class="flex items-center justify-between mb-2">
+                       <div>
+                         <h4 class="font-extrabold text-sm text-slate-900">Distribusi Jenjang & Gender</h4>
+                         <p class="text-xs text-slate-500">Total akumulasi pendaftar seluruhnya.</p>
+                       </div>
+                       <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-600"></i>
+                     </div>
+                     <div class="h-64 flex justify-center items-center relative my-2">
+                       <canvas id="chairmanDistributionChart"></canvas>
+                     </div>
+                   </div>
+
+                   <!-- Mini Legend Detail -->
+                   <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+                     <div class="flex items-center gap-2">
+                       <span class="w-3 h-3 rounded-full bg-blue-600 flex-shrink-0"></span>
+                       <span class="text-slate-600">SMP Pa: <strong class="text-slate-900" x-text="chairmanData.stats.smpPa || 0"></strong></span>
+                     </div>
+                     <div class="flex items-center gap-2">
+                       <span class="w-3 h-3 rounded-full bg-pink-500 flex-shrink-0"></span>
+                       <span class="text-slate-600">SMP Pi: <strong class="text-slate-900" x-text="chairmanData.stats.smpPi || 0"></strong></span>
+                     </div>
+                     <div class="flex items-center gap-2">
+                       <span class="w-3 h-3 rounded-full bg-emerald-600 flex-shrink-0"></span>
+                       <span class="text-slate-600">MA Pa: <strong class="text-slate-900" x-text="chairmanData.stats.maPa || 0"></strong></span>
+                     </div>
+                     <div class="flex items-center gap-2">
+                       <span class="w-3 h-3 rounded-full bg-purple-600 flex-shrink-0"></span>
+                       <span class="text-slate-600">MA Pi: <strong class="text-slate-900" x-text="chairmanData.stats.maPi || 0"></strong></span>
+                     </div>
+                   </div>
+                 </div>
+
+                 <!-- Kolom Kanan: Bar Chart Pendaftar per Gelombang / Periode -->
+                 <div class="lg:col-span-7 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+                   <div>
+                     <div class="flex items-center justify-between mb-2">
+                       <div>
+                         <h4 class="font-extrabold text-sm text-slate-900">Pendaftar per Gelombang</h4>
+                         <p class="text-xs text-slate-500">Komparasi jumlah pendaftar di setiap periode.</p>
+                       </div>
+                       <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-600"></i>
+                     </div>
+                     <div class="h-64 relative my-2">
+                       <canvas id="chairmanWaveChart"></canvas>
+                     </div>
+                   </div>
+
+                   <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                     <span class="text-slate-500">Periode Aktif Saat Ini:</span>
+                     <span class="font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 uppercase font-mono" x-text="config.PERIODE_AKTIF || 'EARLY BIRD'"></span>
+                   </div>
+                 </div>
+
+               </div>
+             </div>
+
+             <!-- MENU 2: PANTAU PROGRES -->
+             <div x-show="chairmanTab === 'progress'" class="space-y-6">
+               <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                 <div>
+                   <h3 class="font-extrabold text-sm text-slate-900">Pantau Progres Pendaftar</h3>
+                   <p class="text-xs text-slate-500">Tabel read-only untuk memantau kinerja panitia per bagian.</p>
+                 </div>
+                 <div class="relative w-full md:w-64">
+                   <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                   <input type="text" x-model="chairmanSearch" placeholder="Cari No. Reg / Nama..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-indigo-700 focus:outline-none font-semibold">
+                 </div>
+               </div>
+
+               <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                 <div class="overflow-x-auto">
+                   <table class="w-full text-left text-xs">
+                     <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                       <tr>
+                         <th class="p-3.5">No Reg & Santri</th>
+                         <th class="p-3.5">Jenjang</th>
+                         <th class="p-3.5 text-center">Bayar</th>
+                         <th class="p-3.5 text-center">Biodata</th>
+                         <th class="p-3.5 text-center">Dokumen</th>
+                         <th class="p-3.5 text-center">Ujian</th>
+                         <th class="p-3.5">Status</th>
+                       </tr>
+                     </thead>
+                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                       <template x-for="st in getPaginatedChairmanStudents()" :key="'prog-' + st.regNo">
+                         <tr class="hover:bg-slate-50/80 transition">
+                           <td class="p-3.5">
+                             <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
+                             <div class="font-mono text-[10px] text-indigo-800" x-text="st.regNo"></div>
+                           </td>
+                           <td class="p-3.5 font-bold text-slate-800" x-text="st.jenjang + ' (' + (st.jenisKelamin === 'PEREMPUAN' ? 'Pi' : 'Pa') + ')'"></td>
+                           <td class="p-3.5 text-center">
+                             <i :data-lucide="st.payOk ? 'check-circle-2' : 'x-circle'" class="w-4 h-4 inline" :class="st.payOk ? 'text-emerald-600' : 'text-rose-500'"></i>
+                           </td>
+                           <td class="p-3.5 text-center">
+                             <i :data-lucide="st.bioOk ? 'check-circle-2' : 'x-circle'" class="w-4 h-4 inline" :class="st.bioOk ? 'text-emerald-600' : 'text-rose-500'"></i>
+                           </td>
+                           <td class="p-3.5 text-center">
+                             <i :data-lucide="st.docOk ? 'check-circle-2' : 'x-circle'" class="w-4 h-4 inline" :class="st.docOk ? 'text-emerald-600' : 'text-rose-500'"></i>
+                             <div class="text-[9px] text-slate-400 font-mono" x-text="st.docProgress"></div>
+                           </td>
+                           <td class="p-3.5 text-center">
+                             <i :data-lucide="st.examOk ? 'check-circle-2' : 'x-circle'" class="w-4 h-4 inline" :class="st.examOk ? 'text-emerald-600' : 'text-rose-500'"></i>
+                           </td>
+                           <td class="p-3.5">
+                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border"
+                                   :class="{
+                                     'bg-emerald-50 text-emerald-800 border-emerald-200': st.admissionStatus === 'LULUS',
+                                     'bg-amber-50 text-amber-800 border-amber-200': st.admissionStatus === 'CADANGAN',
+                                     'bg-rose-50 text-rose-800 border-rose-200': st.admissionStatus === 'TIDAK_LULUS',
+                                     'bg-slate-100 text-slate-600 border-slate-200': st.admissionStatus === 'MENUNGGU'
+                                   }"
+                                   x-text="st.admissionStatus"></span>
+                           </td>
+                           <td class="p-3.5 text-center">
+                             <button type="button"
+                                     @click="openChairmanStudentReview(st)"
+                                     class="px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-[10px] inline-flex items-center gap-1.5 shadow-sm">
+                               <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                               <span>Tinjau Biodata & Berkas</span>
+                             </button>
+                           </td>
+                         </tr>
+                       </template>
+                     </tbody>
+                   </table>
+                 </div>
+                 <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                   <span class="text-slate-500">Halaman <span x-text="pagination.chairmanStudents"></span> dari <span x-text="getTotalPages(getFilteredChairmanStudents())"></span></span>
+                   <div class="flex items-center gap-1">
+                     <button type="button" @click="setPaginationPage('chairmanStudents', pagination.chairmanStudents - 1)" :disabled="pagination.chairmanStudents <= 1" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">Sebelumnya</button>
+                     <button type="button" @click="setPaginationPage('chairmanStudents', pagination.chairmanStudents + 1)" :disabled="pagination.chairmanStudents >= getTotalPages(getFilteredChairmanStudents())" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">Berikutnya</button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             <!-- MENU 3: SIDANG PLENO -->
+             <div x-show="chairmanTab === 'pleno'" class="space-y-4">
+               
+               <!-- TOOLBAR FILTER & AKSI SIDANG PLENO (CLEAN CARD) -->
+               <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                 
+                 <!-- Baris 1: Header, Search & Tombol Mode Pleno -->
+                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                   <div>
+                     <h3 class="font-black text-base text-slate-900 flex items-center gap-2">
+                       <i data-lucide="gavel" class="w-5 h-5 text-indigo-700"></i>
+                       <span>Sidang Pleno Kelulusan</span>
+                     </h3>
+                     <p class="text-xs text-slate-500">Tentukan status kelulusan peserta seleksi secara massal atau per santri.</p>
+                   </div>
+
+                   <div class="flex items-center gap-2">
+                     <div class="relative w-full sm:w-64">
+                       <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                       <input type="text"
+                              x-model="chairmanPlenoSearch"
+                              @input="pagination.chairmanPleno = 1"
+                              placeholder="Cari No. Reg / Nama..."
+                              class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 bg-slate-50 focus:bg-white focus:border-indigo-700 focus:outline-none font-semibold">
+                     </div>
+
+                     <button type="button"
+                             @click="openPlenoMode()"
+                             :disabled="isSubmitting || getFilteredChairmanPleno().length === 0"
+                             class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-sm transition disabled:opacity-40 flex-shrink-0">
+                       <i data-lucide="presentation" class="w-4 h-4"></i>
+                       <span>Mode Pleno</span>
+                     </button>
+                   </div>
+                 </div>
+
+                 <!-- Baris 2: Dropdown Filter-Filter -->
+                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100 text-xs">
+                   <!-- Filter Jenjang & Gender -->
+                   <div>
+                     <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Jenjang & Gender</label>
+                     <select x-model="chairmanPlenoJenjangGenderFilter"
+                             @change="pagination.chairmanPleno = 1"
+                             class="w-full p-2 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-indigo-700 focus:outline-none">
+                       <option value="ALL">Semua Jenjang & Gender</option>
+                       <option value="SMP_PA">SMP Putra (SMP Pa)</option>
+                       <option value="SMP_PI">SMP Putri (SMP Pi)</option>
+                       <option value="MA_PA">MA Putra (MA Pa)</option>
+                       <option value="MA_PI">MA Putri (MA Pi)</option>
+                       <option value="SMP">Semua SMP</option>
+                       <option value="MA">Semua MA</option>
+                     </select>
+                   </div>
+
+                   <!-- Filter Periode / Gelombang -->
+                   <div>
+                     <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Periode Pendaftaran</label>
+                     <select x-model="chairmanPlenoPeriodeFilter"
+                             @change="pagination.chairmanPleno = 1"
+                             class="w-full p-2 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-indigo-700 focus:outline-none">
+                       <option value="ALL">Semua Gelombang</option>
+                       <option value="EARLY BIRD">Early Bird</option>
+                       <option value="GELOMBANG 1">Gelombang 1</option>
+                       <option value="GELOMBANG 2">Gelombang 2</option>
+                       <option value="SUSULAN">Susulan</option>
+                     </select>
+                   </div>
+
+                   <!-- Filter Status Kelulusan -->
+                   <div>
+                     <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Status Kelulusan</label>
+                     <select x-model="chairmanPlenoStatusFilter"
+                             @change="pagination.chairmanPleno = 1"
+                             class="w-full p-2 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-indigo-700 focus:outline-none">
+                       <option value="ALL">Semua Status</option>
+                       <option value="MENUNGGU">Menunggu Keputusan</option>
+                       <option value="LULUS">Lulus</option>
+                       <option value="CADANGAN">Cadangan</option>
+                       <option value="TIDAK_LULUS">Tidak Lulus</option>
+                     </select>
+                   </div>
+                 </div>
+
+                 <!-- Baris 3: Toolbar Aksi Massal (Muncul Menyesuaikan Jumlah Pilihan) -->
+                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                   <div class="flex items-center gap-2">
+                     <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-indigo-100 text-indigo-800 border border-indigo-200"
+                           x-text="chairmanSelectedCount() + ' dipilih'"></span>
+                     <span class="text-xs text-slate-500" x-text="'(Total ' + getFilteredChairmanPleno().length + ' santri tampil)'"></span>
+                   </div>
+
+                   <div class="flex flex-wrap items-center gap-2">
+                     <input type="text"
+                            x-model="chairmanBulkNote"
+                            placeholder="Catatan pleno (opsional)..."
+                            class="p-2 rounded-xl text-xs border border-slate-300 bg-white focus:border-indigo-700 focus:outline-none flex-1 md:w-56 font-medium">
+
+                     <button type="button"
+                             @click="handleBulkAdmission('LULUS')"
+                             :disabled="isSubmitting || chairmanSelectedCount() === 0"
+                             class="px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1">
+                       <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                       <span>Tetapkan Lulus</span>
+                     </button>
+
+                     <button type="button"
+                             @click="handleBulkAdmission('CADANGAN')"
+                             :disabled="isSubmitting || chairmanSelectedCount() === 0"
+                             class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1">
+                       <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                       <span>Cadangan</span>
+                     </button>
+
+                     <button type="button"
+                             @click="handleBulkAdmission('TIDAK_LULUS')"
+                             :disabled="isSubmitting || chairmanSelectedCount() === 0"
+                             class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1">
+                       <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                       <span>Tidak Lulus</span>
+                     </button>
+                   </div>
+                 </div>
+
+               </div>
+
+               <!-- TABEL DAFTAR SANTRI DENGAN TOMBOL DETAIL & QUICK ACTION -->
+               <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                 <div class="overflow-x-auto">
+                   <table class="w-full text-left text-xs">
+                     <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                       <tr>
+                         <th class="p-3.5 text-center w-10">
+                           <input type="checkbox" @change="toggleChairmanSelectAll()" class="rounded text-indigo-700 w-4 h-4">
+                         </th>
+                         <th class="p-3.5">No. Registrasi</th>
+                         <th class="p-3.5">Nama Santri</th>
+                         <th class="p-3.5">Jenjang & Gender</th>
+                         <th class="p-3.5">Ringkasan Nilai</th>
+                         <th class="p-3.5">Status</th>
+                         <th class="p-3.5 text-center">Aksi</th>
+                       </tr>
+                     </thead>
+                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                       <template x-for="st in getPaginatedChairmanPleno()" :key="'pleno-' + st.regNo">
+                         <tr class="hover:bg-slate-50/80 transition" :class="chairmanSelected[st.regNo] ? 'bg-indigo-50/50' : ''">
+                           <td class="p-3.5 text-center">
+                             <input type="checkbox" :checked="chairmanSelected[st.regNo]" @change="toggleChairmanSelect(st.regNo)" class="rounded text-indigo-700 w-4 h-4">
+                           </td>
+                           <td class="p-3.5 font-mono font-bold text-indigo-800" x-text="st.regNo"></td>
+                           <td class="p-3.5">
+                             <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
+                             <div class="text-[10px] text-slate-400 font-semibold" x-text="(st.jalur || '-') + ' • ' + (st.gelombang || 'EARLY BIRD')"></div>
+                           </td>
+                           <td class="p-3.5">
+                             <span class="font-bold text-slate-800" x-text="st.jenjang + ' (' + (st.jenisKelamin === 'PEREMPUAN' ? 'Pi' : 'Pa') + ')'"></span>
+                           </td>
+                           <td class="p-3.5 text-[11px] text-slate-600 max-w-xs whitespace-pre-line" x-text="getExamResultSummary(st)"></td>
+                           <td class="p-3.5">
+                             <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-block"
+                                   :class="{
+                                     'bg-emerald-50 text-emerald-800 border-emerald-200': st.admissionStatus === 'LULUS',
+                                     'bg-amber-50 text-amber-800 border-amber-200': st.admissionStatus === 'CADANGAN',
+                                     'bg-rose-50 text-rose-800 border-rose-200': st.admissionStatus === 'TIDAK_LULUS',
+                                     'bg-slate-100 text-slate-600 border-slate-200': st.admissionStatus === 'MENUNGGU' || !st.admissionStatus
+                                   }"
+                                   x-text="st.admissionStatus || 'MENUNGGU'"></span>
+                           </td>
+                           <td class="p-3.5 text-center">
+                             <div class="flex items-center justify-center gap-1.5">
+                               <!-- Tombol Detail Pleno (Buka modal pleno langsung ke santri ini) -->
+                               <button type="button"
+                                       @click="openPlenoForStudent(st)"
+                                       class="px-2.5 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-[10px] inline-flex items-center gap-1 shadow-xs transition"
+                                       title="Lihat detail nilai dan buka layar pleno santri ini">
+                                 <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                 <span>Detail Pleno</span>
+                               </button>
+
+                               <!-- Quick Actions Langsung di Tabel -->
+                               <button type="button"
+                                       @click="setSingleAdmission(st.regNo, 'LULUS')"
+                                       :disabled="isSubmitting"
+                                       class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition disabled:opacity-40"
+                                       title="Tetapkan Lulus">
+                                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                               </button>
+                               <button type="button"
+                                       @click="setSingleAdmission(st.regNo, 'CADANGAN')"
+                                       :disabled="isSubmitting"
+                                       class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition disabled:opacity-40"
+                                       title="Tetapkan Cadangan">
+                                 <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                               </button>
+                               <button type="button"
+                                       @click="setSingleAdmission(st.regNo, 'TIDAK_LULUS')"
+                                       :disabled="isSubmitting"
+                                       class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 transition disabled:opacity-40"
+                                       title="Tetapkan Tidak Lulus">
+                                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                               </button>
+                             </div>
+                           </td>
+                         </tr>
+                       </template>
+                       <template x-if="getFilteredChairmanPleno().length === 0">
+                         <tr>
+                           <td colspan="7" class="p-8 text-center text-slate-400 text-xs italic">
+                             Tidak ada data santri yang cocok dengan filter yang dipilih.
+                           </td>
+                         </tr>
+                       </template>
+                     </tbody>
+                   </table>
+                 </div>
+
+                 <!-- Pagination Footer -->
+                 <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                   <span class="text-slate-500">
+                     Halaman <span x-text="pagination.chairmanPleno"></span> dari
+                     <span x-text="getTotalPages(getFilteredChairmanPleno())"></span>
+                   </span>
+                   <div class="flex items-center gap-1">
+                     <button type="button"
+                             @click="setPaginationPage('chairmanPleno', pagination.chairmanPleno - 1)"
+                             :disabled="pagination.chairmanPleno <= 1"
+                             class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
+                       Sebelumnya
+                     </button>
+                     <button type="button"
+                             @click="setPaginationPage('chairmanPleno', pagination.chairmanPleno + 1)"
+                             :disabled="pagination.chairmanPleno >= getTotalPages(getFilteredChairmanPleno())"
+                             class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
+                       Berikutnya
+                     </button>
+                   </div>
+                 </div>
+               </div>
+
+             </div>
+
+             <!-- MENU 4: LAPORAN -->
+             <div x-show="chairmanTab === 'reports'" class="space-y-6">
+               <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                 <h3 class="font-extrabold text-sm text-slate-900">Laporan Pendaftaran</h3>
+                 <p class="text-xs text-slate-500">Ekspor data ke file CSV (dapat dibuka di Excel).</p>
+               </div>
+               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <button type="button" @click="exportChairmanCsv('all')" class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-indigo-400 transition text-left space-y-2">
+                   <i data-lucide="users" class="w-6 h-6 text-indigo-600"></i>
+                   <div class="font-bold text-sm text-slate-900">Daftar Pendaftar Lengkap</div>
+                   <div class="text-[11px] text-slate-500">Semua peserta aktif beserta status</div>
+                 </button>
+                 <button type="button" @click="exportChairmanCsv('lulus')" class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-emerald-400 transition text-left space-y-2">
+                   <i data-lucide="award" class="w-6 h-6 text-emerald-600"></i>
+                   <div class="font-bold text-sm text-slate-900">Daftar Santri Lolos</div>
+                   <div class="text-[11px] text-slate-500">Hanya berstatus LULUS</div>
+                 </button>
+                 <button type="button" @click="exportChairmanCsv('mundur')" class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-rose-400 transition text-left space-y-2">
+                   <i data-lucide="user-x" class="w-6 h-6 text-rose-600"></i>
+                   <div class="font-bold text-sm text-slate-900">Daftar Santri Mundur</div>
+                   <div class="text-[11px] text-slate-500">Peserta yang mengajukan undur diri</div>
+                 </button>
+               </div>
+             </div>
+
+             <!-- MODAL DETAIL BIODATA & BERKAS SANTRI -->
+        <div x-show="showChairmanStudentReview"
+             x-transition
+             class="fixed inset-0 z-[115] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div class="bg-white text-slate-800 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+            <div class="p-5 md:p-7 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                  Detail Peserta
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-900"
+                    x-text="selectedChairmanStudent.namaLengkap || 'Detail Santri'"></h3>
+                <p class="text-xs text-slate-500 mt-1"
+                   x-text="(selectedChairmanStudent.regNo || '-') + ' • ' + (selectedChairmanStudent.jenjang || '-')"></p>
+              </div>
+
+              <button type="button"
+                      @click="showChairmanStudentReview = false"
+                      class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div class="p-5 md:p-7 space-y-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Jalur</div>
+                  <div class="text-xs font-bold mt-1" x-text="selectedChairmanStudent.jalur || '-'"></div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Jenis Kelamin</div>
+                  <div class="text-xs font-bold mt-1" x-text="selectedChairmanStudent.jenisKelamin || '-'"></div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Pembayaran</div>
+                  <div class="text-xs font-bold mt-1" x-text="selectedChairmanStudent.payOk ? 'VERIFIED' : 'BELUM VERIFIED'"></div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">Progress Berkas</div>
+                  <div class="text-xs font-bold mt-1" x-text="selectedChairmanStudent.docProgress || '0/8'"></div>
+                </div>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-200">
+                <div class="text-xs font-extrabold text-indigo-900 mb-2">Ringkasan Ujian</div>
+                <div class="text-xs text-indigo-800 leading-relaxed"
+                     x-text="getExamResultSummary(selectedChairmanStudent)"></div>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-white border border-slate-200">
+                <div class="text-xs font-extrabold text-slate-900 mb-3">
+                  Berkas yang Sudah Diunggah Peserta
+                </div>
+
+                <div class="space-y-2">
+                  <template x-for="(doc, docType) in (selectedChairmanStudent.documents || {})" :key="docType">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="min-w-0">
+                        <div class="text-xs font-bold text-slate-900" x-text="docType"></div>
+                        <div class="text-[10px] text-slate-500 truncate"
+                             x-text="doc.fileName || 'Nama berkas tidak tersedia'"></div>
+                        <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border"
+                              :class="{
+                                'bg-emerald-50 text-emerald-800 border-emerald-200': doc.status === 'VERIFIED',
+                                'bg-amber-50 text-amber-800 border-amber-200': doc.status === 'PENDING',
+                                'bg-rose-50 text-rose-800 border-rose-200': doc.status === 'REVISION',
+                                'bg-slate-100 text-slate-600 border-slate-200': !doc.fileUrl
+                              }"
+                              x-text="doc.fileUrl ? doc.status : 'BELUM UPLOAD'"></span>
+                      </div>
+
+                      <a x-show="doc.fileUrl"
+                         :href="doc.fileUrl"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="shrink-0 px-3 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-[10px] inline-flex items-center justify-center gap-1.5">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Buka Berkas</span>
+                      </a>
+                    </div>
+                  </template>
+
+                  <div x-show="Object.keys(selectedChairmanStudent.documents || {}).length === 0"
+                       class="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-xs text-slate-500 text-center">
+                    Belum ada berkas yang diunggah peserta.
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div class="text-xs font-extrabold text-slate-900 mb-3">Status Biodata & Berkas</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Biodata</span>
+                    <span class="font-bold"
+                          x-text="selectedChairmanStudent.bioOk ? 'TERKUNCI / VERIFIED' : 'BELUM VERIFIED'"></span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Dokumen</span>
+                    <span class="font-bold"
+                          x-text="selectedChairmanStudent.docOk ? 'LENGKAP / VERIFIED' : (selectedChairmanStudent.docProgress || 'BELUM LENGKAP')"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex justify-end pt-2 border-t border-slate-200">
+                <button type="button"
+                        @click="showChairmanStudentReview = false"
+                        class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MENU 5: PERMOHONAN UNDUR DIRI -->
+             <div x-show="chairmanTab === 'resign'" class="space-y-6">
+               <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                 <h3 class="font-extrabold text-sm text-slate-900">Permohonan Undur Diri</h3>
+                 <p class="text-xs text-slate-500">Konfirmasi ke wali santri sebelum menyetujui. Menyetujui akan menghapus peserta dari antrean aktif.</p>
+               </div>
+               <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                 <div class="overflow-x-auto">
+                   <table class="w-full text-left text-xs">
+                     <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                       <tr>
+                         <th class="p-3.5">No Reg & Santri</th>
+                         <th class="p-3.5">Jenjang</th>
+                         <th class="p-3.5">No WA</th>
+                         <th class="p-3.5">Alasan</th>
+                         <th class="p-3.5 text-center">Aksi</th>
+                       </tr>
+                     </thead>
+                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                       <template x-for="st in (chairmanData.resignations || [])" :key="'res-' + st.regNo">
+                         <tr class="hover:bg-slate-50/80 transition">
+                           <td class="p-3.5">
+                             <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
+                             <div class="font-mono text-[10px] text-rose-800" x-text="st.regNo"></div>
+                           </td>
+                           <td class="p-3.5 font-bold text-slate-800" x-text="st.jenjang + ' (' + (st.jenisKelamin === 'PEREMPUAN' ? 'Pi' : 'Pa') + ')'"></td>
+                           <td class="p-3.5 font-mono text-slate-600" x-text="st.noWa"></td>
+                           <td class="p-3.5 text-slate-600 max-w-xs" x-text="st.note"></td>
+                           <td class="p-3.5 text-center">
+                             <div class="flex items-center justify-center gap-1.5">
+                               <a :href="'https://wa.me/' + (st.noWa || '').replace(/\D/g, '').replace(/^0/, '62')" target="_blank" class="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition" title="Hubungi Wali via WA">
+                                 <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                               </a>
+                               <button type="button" @click="handleApproveResignation(st.regNo)" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50">
+                                 <i data-lucide="user-x" class="w-3.5 h-3.5"></i>
+                                 <span>Setujui Mundur</span>
+                               </button>
+                             </div>
+                           </td>
+                         </tr>
+                       </template>
+                       <template x-if="!chairmanData.resignations || chairmanData.resignations.length === 0">
+                         <tr>
+                           <td colspan="5" class="p-8 text-center text-slate-400 text-xs italic">Belum ada permohonan pengunduran diri.</td>
+                         </tr>
+                       </template>
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+             </div>
+
+           </main>
+         </div>
+       </div>
      </div>
    </template>
 
@@ -5079,6 +6073,16 @@
           });
         },
 
+        refreshIcons() {
+          if (!window.lucide) return;
+          document.querySelectorAll('[data-lucide]').forEach(function(el) {
+            if (el.tagName.toLowerCase() === 'svg') {
+              el.removeAttribute('data-lucide');
+            }
+          });
+          window.lucide.createIcons();
+        },
+
         showToast(msg, type) {
           type = type || 'error';
           this.toast.message = msg;
@@ -5416,7 +6420,12 @@
       isDocAdmin() {
         if (!this.currentUser || !this.currentUser.role) return false;
         var r = String(this.currentUser.role).trim().toUpperCase();
-        return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA' || r === 'KETUA_PANITIA';
+        return r === 'ADMIN_BERKAS' || r === 'TU_SMP' || r === 'TU_MA';
+      },
+
+      isChairman() {
+        if (!this.currentUser || !this.currentUser.role) return false;
+        return String(this.currentUser.role).trim().toUpperCase() === 'KETUA_PANITIA';
       },
 
       isExamCoordinator() {
@@ -5591,6 +6600,682 @@
           self.showToast(err.message || 'Gagal menarik hasil dari vendor.');
         });
       },
+
+        chairmanTab: 'overview',
+        chairmanSearch: '',
+        chairmanFilter: 'ALL',
+        chairmanPlenoSearch: '',
+        chairmanPlenoJenjangGenderFilter: 'ALL',
+        chairmanPlenoPeriodeFilter: 'ALL',
+        chairmanPlenoStatusFilter: 'ALL',
+        chairmanBulkNote: '',
+        chairmanSelected: {},
+        chairmanPlenoJenjangFilter: 'ALL',
+        plenoWindow: null,
+        plenoIndex: 0,
+        showPlenoOverlay: false,
+        showChairmanStudentReview: false,
+        selectedChairmanStudent: {},
+        chairmanData: {
+          stats: { totalStudents: 0, smpPa: 0, smpPi: 0, maPa: 0, maPi: 0, completeCount: 0, lulus: 0, cadangan: 0, tidakLulus: 0, menunggu: 0 },
+          students: [],
+          resignations: [],
+          chartData: {
+            categoryLabels: [],
+            categoryValues: [],
+            waveLabels: [],
+            waveBreakdown: { smpPa: [], smpPi: [], maPa: [], maPi: [] },
+            admissionLabels: [],
+            admissionValues: []
+          }
+        },
+
+        renderChairmanCharts() {
+          if (!window.Chart || !this.chairmanData || !this.chairmanData.chartData) {
+            return;
+          }
+
+          var cd = this.chairmanData.chartData;
+          var self = this;
+
+          if (this.chartInstances.chairmanDistributionChart) {
+            this.chartInstances.chairmanDistributionChart.destroy();
+          }
+          if (this.chartInstances.chairmanWaveChart) {
+            this.chartInstances.chairmanWaveChart.destroy();
+          }
+
+          var distCanvas = document.getElementById('chairmanDistributionChart');
+          if (distCanvas) {
+            this.chartInstances.chairmanDistributionChart = new Chart(distCanvas, {
+              type: 'doughnut',
+              data: {
+                labels: cd.categoryLabels || ['SMP Pa', 'SMP Pi', 'MA Pa', 'MA Pi'],
+                datasets: [{
+                  data: cd.categoryValues || [0, 0, 0, 0],
+                  backgroundColor: ['#2563eb', '#ec4899', '#059669', '#9333ea'],
+                  borderColor: '#ffffff',
+                  borderWidth: 3
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false
+                  }
+                }
+              }
+            });
+          }
+
+          var waveCanvas = document.getElementById('chairmanWaveChart');
+          if (waveCanvas) {
+            var wb = cd.waveBreakdown || { smpPa: [], smpPi: [], maPa: [], maPi: [] };
+            this.chartInstances.chairmanWaveChart = new Chart(waveCanvas, {
+              type: 'bar',
+              data: {
+                labels: cd.waveLabels || ['EARLY BIRD', 'GELOMBANG 1', 'GELOMBANG 2', 'SUSULAN'],
+                datasets: [
+                  {
+                    label: 'SMP Pa',
+                    data: wb.smpPa || [0, 0, 0, 0],
+                    backgroundColor: '#2563eb',
+                    borderRadius: 4
+                  },
+                  {
+                    label: 'SMP Pi',
+                    data: wb.smpPi || [0, 0, 0, 0],
+                    backgroundColor: '#ec4899',
+                    borderRadius: 4
+                  },
+                  {
+                    label: 'MA Pa',
+                    data: wb.maPa || [0, 0, 0, 0],
+                    backgroundColor: '#059669',
+                    borderRadius: 4
+                  },
+                  {
+                    label: 'MA Pi',
+                    data: wb.maPi || [0, 0, 0, 0],
+                    backgroundColor: '#9333ea',
+                    borderRadius: 4
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    stacked: false,
+                    grid: { display: false }
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                  }
+                }
+              }
+            });
+          }
+
+          self.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        fetchChairmanData() {
+          if (!this.currentUser) return;
+          var self = this;
+          this.isDashLoading = true;
+          this.postRequest('getChairmanDashboard', { staffRegNo: this.currentUser.regNo })
+            .then(function(res) {
+              self.isDashLoading = false;
+              if (res.ok && res.data) {
+                self.chairmanData = Object.assign({}, self.chairmanData, res.data);
+                self.$nextTick(function() {
+                  self.renderChairmanCharts();
+                  if (window.lucide) window.lucide.createIcons();
+                });
+              } else {
+                self.showToast(res.message || 'Gagal memuat dashboard Ketua Panitia.');
+              }
+            })
+            .catch(function(err) {
+              self.isDashLoading = false;
+              self.showToast('Gagal memuat data Ketua Panitia: ' + err.message);
+            });
+        },
+
+        getChairmanCompletePct() {
+          var s = this.chairmanData.stats || {};
+          if (!s.totalStudents) return 0;
+          return Math.round((s.completeCount / s.totalStudents) * 100);
+        },
+
+        getFilteredChairmanStudents() {
+          var list = this.chairmanData.students || [];
+          var search = (this.chairmanSearch || '').toLowerCase();
+          var filter = this.chairmanFilter || 'ALL';
+          return list.filter(function(st) {
+            if (filter !== 'ALL' && st.admissionStatus !== filter) return false;
+            if (search) {
+              var mReg = (st.regNo || '').toLowerCase().indexOf(search) !== -1;
+              var mNama = (st.namaLengkap || '').toLowerCase().indexOf(search) !== -1;
+              if (!mReg && !mNama) return false;
+            }
+            return true;
+          });
+        },
+
+        getPaginatedChairmanStudents() {
+          return this.paginate(this.getFilteredChairmanStudents(), 'chairmanStudents');
+        },
+
+        getFilteredChairmanPleno() {
+          var list = this.chairmanData.students || [];
+          var jgFilter = this.chairmanPlenoJenjangGenderFilter || 'ALL';
+          var pFilter = this.chairmanPlenoPeriodeFilter || 'ALL';
+          var sFilter = this.chairmanPlenoStatusFilter || 'ALL';
+          var search = (this.chairmanPlenoSearch || '').toLowerCase().trim();
+
+          return list.filter(function(st) {
+            // Filter Jenjang & Gender
+            if (jgFilter === 'SMP_PA' && (st.jenjang !== 'SMP' || st.jenisKelamin !== 'LAKI-LAKI')) return false;
+            if (jgFilter === 'SMP_PI' && (st.jenjang !== 'SMP' || st.jenisKelamin !== 'PEREMPUAN')) return false;
+            if (jgFilter === 'MA_PA' && (st.jenjang !== 'MA' || st.jenisKelamin !== 'LAKI-LAKI')) return false;
+            if (jgFilter === 'MA_PI' && (st.jenjang !== 'MA' || st.jenisKelamin !== 'PEREMPUAN')) return false;
+            if (jgFilter === 'SMP' && st.jenjang !== 'SMP') return false;
+            if (jgFilter === 'MA' && st.jenjang !== 'MA') return false;
+
+            // Filter Periode
+            if (pFilter !== 'ALL') {
+              var stWave = String(st.gelombang || 'EARLY BIRD').trim().toUpperCase();
+              if (stWave !== pFilter) return false;
+            }
+
+            // Filter Status
+            if (sFilter !== 'ALL') {
+              var stStatus = String(st.admissionStatus || 'MENUNGGU').trim().toUpperCase();
+              if (stStatus !== sFilter) return false;
+            }
+
+            // Search
+            if (search) {
+              var mReg = (st.regNo || '').toLowerCase().indexOf(search) !== -1;
+              var mNama = (st.namaLengkap || '').toLowerCase().indexOf(search) !== -1;
+              if (!mReg && !mNama) return false;
+            }
+
+            return true;
+          });
+        },
+
+        openPlenoForStudent(student) {
+          var list = this.getFilteredChairmanPleno();
+          var idx = -1;
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].regNo === student.regNo) {
+              idx = i;
+              break;
+            }
+          }
+          this.plenoIndex = idx >= 0 ? idx : 0;
+          this.showPlenoOverlay = true;
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        setSingleAdmission(regNo, status) {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('setBulkAdmission', {
+            staffRegNo: this.currentUser.regNo,
+            regNos: [regNo],
+            status: status,
+            note: this.chairmanBulkNote || 'Ditetapkan langsung pada Sidang Pleno'
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showToast('Status ' + regNo + ' diubah ke ' + status, 'success');
+              self.fetchChairmanData();
+            } else {
+              self.showToast(res.message || 'Gagal mengubah status.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        getPlenoStatusCount(status) {
+          var list = this.getFilteredChairmanPleno();
+          var normalizedStatus = String(status || '').trim().toUpperCase();
+
+          return list.filter(function(st) {
+            return String(st.admissionStatus || 'MENUNGGU').trim().toUpperCase() === normalizedStatus;
+          }).length;
+        },
+
+        getPlenoFilterLabel() {
+          var filter = this.chairmanPlenoJenjangFilter || 'ALL';
+          return filter === 'ALL' ? 'Semua jenjang' : 'Jenjang ' + filter;
+        },
+
+        getPaginatedChairmanPleno() {
+          return this.paginate(this.getFilteredChairmanPleno(), 'chairmanPleno');
+        },
+
+        openPlenoMode() {
+          var list = this.getFilteredChairmanPleno();
+
+          if (!list.length) {
+            this.showToast('Tidak ada data santri pada filter jenjang ini.');
+            return;
+          }
+
+          this.plenoIndex = 0;
+          this.showPlenoOverlay = true;
+
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        closePlenoOverlay() {
+          this.showPlenoOverlay = false;
+        },
+
+        getCurrentPlenoStudent() {
+          var list = this.getFilteredChairmanPleno();
+
+          if (!list.length) {
+            return {};
+          }
+
+          if (this.plenoIndex < 0) {
+            this.plenoIndex = list.length - 1;
+          }
+
+          if (this.plenoIndex >= list.length) {
+            this.plenoIndex = 0;
+          }
+
+          return list[this.plenoIndex] || {};
+        },
+
+        getPlenoExamData(examType) {
+          var st = this.getCurrentPlenoStudent();
+          var results = st.examResults || [];
+          var targetType = String(examType || '').trim().toUpperCase();
+
+          for (var i = 0; i < results.length; i++) {
+            if (String(results[i].examType || '').trim().toUpperCase() === targetType) {
+              return {
+                score: results[i].score || '-',
+                recommendation: results[i].recommendation || 'Belum dinilai',
+                notes: results[i].notes || 'Tidak ada catatan khusus.'
+              };
+            }
+          }
+
+          return {
+            score: '-',
+            recommendation: 'Belum dinilai',
+            notes: 'Data ujian belum diinput penguji.'
+          };
+        },
+
+        handlePlenoKeyboard(e) {
+          if (!this.showPlenoOverlay) return;
+
+          // Jangan tangkap shortcut jika user sedang mengetik di input/textarea
+          var targetTag = (e.target.tagName || '').toLowerCase();
+          if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') {
+            return;
+          }
+
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            this.psbPlenoBack();
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            this.psbPlenoNext();
+          } else if (e.key === 'l' || e.key === 'L') {
+            e.preventDefault();
+            this.psbPlenoAction('LULUS');
+          } else if (e.key === 'c' || e.key === 'C') {
+            e.preventDefault();
+            this.psbPlenoAction('CADANGAN');
+          } else if (e.key === 't' || e.key === 'T') {
+            e.preventDefault();
+            this.psbPlenoAction('TIDAK_LULUS');
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            this.closePlenoOverlay();
+          }
+        },
+
+        openChairmanStudentReview(student) {
+          this.selectedChairmanStudent = Object.assign({}, student || {});
+          this.showChairmanStudentReview = true;
+
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        renderPlenoWindow() {
+          if (!this.plenoWindow || this.plenoWindow.closed) {
+            this.openPlenoMode();
+            return;
+          }
+
+          var list = this.getFilteredChairmanPleno();
+
+          if (!list.length) {
+            this.showToast('Tidak ada data santri untuk Mode Pleno.');
+            return;
+          }
+
+          if (this.plenoIndex < 0) this.plenoIndex = 0;
+          if (this.plenoIndex >= list.length) this.plenoIndex = list.length - 1;
+
+          var student = list[this.plenoIndex];
+          var summary = this.getExamResultSummary(student);
+          var currentStatus = student.admissionStatus || 'MENUNGGU';
+          var safeName = String(student.namaLengkap || '-')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+
+          var safeRegNo = String(student.regNo || '-')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          var safeJenjang = String(student.jenjang || '-')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          var safeGender = String(student.jenisKelamin || '-')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          var safeSummary = String(summary || '-')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          var safeStatus = String(currentStatus)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          var html = '';
+          html += '<!DOCTYPE html>';
+          html += '<html lang="id"><head><meta charset="UTF-8">';
+          html += '<meta name="viewport" content="width=device-width, initial-scale=1">';
+          html += '<title>Mode Sidang Pleno</title>';
+          html += '<style>';
+          html += 'body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:32px;}';
+          html += '.wrap{max-width:900px;margin:auto;}';
+          html += '.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px;}';
+          html += '.card{background:white;color:#0f172a;border-radius:20px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.35);}';
+          html += '.label{font-size:12px;color:#64748b;text-transform:uppercase;font-weight:bold;margin-top:20px;}';
+          html += '.value{font-size:18px;font-weight:bold;margin-top:6px;}';
+          html += '.summary{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;line-height:1.7;white-space:pre-wrap;}';
+          html += '.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;}';
+          html += 'button{border:0;border-radius:10px;padding:12px 18px;font-weight:bold;cursor:pointer;font-size:13px;}';
+          html += '.back,.next{background:#334155;color:white;}';
+          html += '.lulus{background:#059669;color:white;}';
+          html += '.cadangan{background:#f59e0b;color:#111827;}';
+          html += '.tidak{background:#e11d48;color:white;}';
+          html += '.close{background:#e2e8f0;color:#334155;}';
+          html += '.counter{font-size:13px;color:#94a3b8;}';
+          html += '</style></head><body>';
+          html += '<div class="wrap">';
+          html += '<div class="top">';
+          html += '<div><h1>Mode Sidang Pleno</h1>';
+          html += '<div class="counter">Peserta ' + (this.plenoIndex + 1) + ' dari ' + list.length + '</div></div>';
+          html += '<button class="close" onclick="window.close()">Tutup</button>';
+          html += '</div>';
+          html += '<div class="card">';
+          html += '<div class="label">No Registrasi</div>';
+          html += '<div class="value">' + safeRegNo + '</div>';
+          html += '<div class="label">Nama Santri</div>';
+          html += '<div class="value">' + safeName + '</div>';
+          html += '<div class="label">Jenjang dan Jenis Kelamin</div>';
+          html += '<div class="value">' + safeJenjang + ' (' + safeGender + ')' + '</div>';
+          html += '<div class="label">Status Saat Ini</div>';
+          html += '<div class="value">' + safeStatus + '</div>';
+          html += '<div class="label">Ringkasan Nilai dan Catatan</div>';
+          html += '<div class="summary">' + safeSummary + '</div>';
+          html += '<div class="actions">';
+          html += '<button class="back" onclick="window.opener.psbPlenoBack()">Back</button>';
+          html += '<button class="lulus" onclick="window.opener.psbPlenoAction(\'LULUS\')">Tetapkan Lulus</button>';
+          html += '<button class="cadangan" onclick="window.opener.psbPlenoAction(\'CADANGAN\')">Tetapkan Cadangan</button>';
+          html += '<button class="tidak" onclick="window.opener.psbPlenoAction(\'TIDAK_LULUS\')">Tetapkan Tidak Lulus</button>';
+          html += '<button class="next" onclick="window.opener.psbPlenoNext()">Next</button>';
+          html += '</div>';
+          html += '</div></div></body></html>';
+
+          this.plenoWindow.document.open();
+          this.plenoWindow.document.write(html);
+          this.plenoWindow.document.close();
+          this.plenoWindow.focus();
+        },
+
+        psbPlenoBack() {
+          var list = this.getFilteredChairmanPleno();
+          if (!list.length) return;
+
+          this.plenoIndex--;
+
+          if (this.plenoIndex < 0) {
+            this.plenoIndex = list.length - 1;
+          }
+
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        psbPlenoNext() {
+          var list = this.getFilteredChairmanPleno();
+          if (!list.length) return;
+
+          this.plenoIndex++;
+
+          if (this.plenoIndex >= list.length) {
+            this.plenoIndex = 0;
+          }
+
+          this.$nextTick(function() {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        psbPlenoAction(status) {
+          var list = this.getFilteredChairmanPleno();
+
+          if (!list.length || !list[this.plenoIndex]) return;
+
+          var student = list[this.plenoIndex];
+          var self = this;
+
+          this.isSubmitting = true;
+
+          this.postRequest('setBulkAdmission', {
+            staffRegNo: this.currentUser.regNo,
+            regNos: [student.regNo],
+            status: status,
+            note: this.chairmanBulkNote || ''
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+
+            if (res.ok) {
+              student.admissionStatus = status;
+              self.showToast(
+                'Status ' + student.regNo + ' ditetapkan: ' + status,
+                'success'
+              );
+
+              self.fetchChairmanData();
+
+              self.$nextTick(function() {
+                if (window.lucide) window.lucide.createIcons();
+              });
+            } else {
+              self.showToast(res.message || 'Gagal menetapkan status pleno.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Gagal menetapkan status pleno.');
+          });
+        },
+
+        getExamResultSummary(st) {
+          if (!st.examResults || !st.examResults.length) return '-';
+          return st.examResults.map(function(r) {
+            return r.examType + ': Nilai ' + (r.score || '-') + ' | Rekomendasi ' + (r.recommendation || '-') + ' | Catatan: ' + (r.notes || '-');
+          }).join('\n');
+        },
+
+        toggleChairmanSelect(regNo) {
+          if (this.chairmanSelected[regNo]) {
+            delete this.chairmanSelected[regNo];
+          } else {
+            this.chairmanSelected[regNo] = true;
+          }
+        },
+
+        chairmanSelectedCount() {
+          return Object.keys(this.chairmanSelected).length;
+        },
+
+        toggleChairmanSelectAll() {
+          var list = this.getPaginatedChairmanPleno();
+          var allSelected = list.length > 0 && list.every(function(st) {
+            return this.chairmanSelected[st.regNo];
+          }, this);
+
+          if (allSelected) {
+            for (var i = 0; i < list.length; i++) {
+              delete this.chairmanSelected[list[i].regNo];
+            }
+          } else {
+            for (var j = 0; j < list.length; j++) {
+              this.chairmanSelected[list[j].regNo] = true;
+            }
+          }
+        },
+
+        handleBulkAdmission(status) {
+          var regNos = Object.keys(this.chairmanSelected);
+          if (!regNos.length) {
+            this.showToast('Pilih minimal satu santri terlebih dahulu.');
+            return;
+          }
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('setBulkAdmission', {
+            staffRegNo: this.currentUser.regNo,
+            regNos: regNos,
+            status: status,
+            note: this.chairmanBulkNote
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showToast(res.data.message || 'Status kelulusan ditetapkan!', 'success');
+              self.chairmanSelected = {};
+              self.chairmanBulkNote = '';
+              self.fetchChairmanData();
+            } else {
+              self.showToast(res.message || 'Gagal menetapkan kelulusan.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleApproveResignation(regNo) {
+          var self = this;
+          this.isSubmitting = true;
+          this.postRequest('approveResignation', {
+            staffRegNo: this.currentUser.regNo,
+            regNo: regNo
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+            if (res.ok) {
+              self.showToast(res.data.message || 'Pengunduran diri disetujui.', 'success');
+              self.fetchChairmanData();
+            } else {
+              self.showToast(res.message || 'Gagal menyetujui.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        exportChairmanCsv(type) {
+          var rows = [];
+          var filename = 'Laporan_PSB.csv';
+          if (type === 'all') {
+            rows.push(['No Reg', 'Nama', 'Jenjang', 'Gender', 'Jalur', 'No WA', 'Status']);
+            (this.chairmanData.students || []).forEach(function(st) {
+              rows.push([st.regNo, st.namaLengkap, st.jenjang, st.jenisKelamin, st.jalur, st.noWa, st.admissionStatus]);
+            });
+            filename = 'Daftar_Pendaftar_Lengkap.csv';
+          } else if (type === 'lulus') {
+            rows.push(['No Reg', 'Nama', 'Jenjang', 'Gender', 'Jalur', 'No WA']);
+            (this.chairmanData.students || []).filter(function(st) { return st.admissionStatus === 'LULUS'; }).forEach(function(st) {
+              rows.push([st.regNo, st.namaLengkap, st.jenjang, st.jenisKelamin, st.jalur, st.noWa]);
+            });
+            filename = 'Daftar_Santri_Lulus.csv';
+          } else if (type === 'mundur') {
+            rows.push(['No Reg', 'Nama', 'Jenjang', 'Gender', 'Jalur', 'No WA', 'Alasan']);
+            (this.chairmanData.resignations || []).forEach(function(st) {
+              rows.push([st.regNo, st.namaLengkap, st.jenjang, st.jenisKelamin, st.jalur, st.noWa, st.note]);
+            });
+            filename = 'Daftar_Santri_Mundur.csv';
+          }
+          var csv = rows.map(function(r) {
+            return r.map(function(c) {
+              return '"' + String(c || '').replace(/"/g, '""') + '"';
+            }).join(',');
+          }).join('\n');
+          var blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+          var url = URL.createObjectURL(blob);
+          var link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.click();
+          URL.revokeObjectURL(url);
+          this.showToast('Laporan ' + filename + ' diunduh.', 'success');
+        },
 
         docAdminTab: 'overview',
         docAdminJenjangFilter: 'ALL',
@@ -6300,6 +7985,8 @@
         pagination: {
           payments: 1,
           passedStudents: 1,
+          chairmanStudents: 1,
+          chairmanPleno: 1,
           docStudents: 1,
           docItems: 1,
           staff: 1,
@@ -6612,6 +8299,8 @@
                 self.fetchSuperAdminData();
               } else if (self.isTreasurer()) {
                 self.fetchTreasurerData();
+              } else if (self.isChairman()) {
+                self.fetchChairmanData();
               } else if (self.isDocAdmin()) {
                 self.fetchDocAdminData();
               } else {
