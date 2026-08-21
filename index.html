@@ -7037,10 +7037,11 @@
         },
 
         postRequest(action, payload) {
+          var activeToken = this.sessionToken || (this.currentUser ? this.currentUser.sessionToken : '') || localStorage.getItem('PSB_AUTH_TOKEN') || '';
           var requestBody = {
             action: action,
             payload: payload || {},
-            sessionToken: this.sessionToken || ''
+            sessionToken: activeToken
           };
 
           return fetch(SCRIPT_URL, {
@@ -9322,6 +9323,7 @@
           this.isLoggedIn = false;
           this.currentUser = null;
           this.sessionToken = '';
+          localStorage.removeItem('PSB_AUTH_TOKEN');
           this.mode = 'login';
           this.showToast('Anda telah keluar.', 'success');
           this.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
@@ -9339,6 +9341,9 @@
             if (res.ok) {
               self.currentUser = res.data;
               self.sessionToken = res.data.sessionToken || '';
+              if (self.sessionToken) {
+                localStorage.setItem('PSB_AUTH_TOKEN', self.sessionToken);
+              }
               self.isLoggedIn = true;
               self.showToast('Login Berhasil!', 'success');
               if (self.isSuperAdmin()) {
