@@ -2036,6 +2036,7 @@
                             <option value="SMP Swasta">SMP Swasta / IT</option>
                             <option value="MTs Negeri/Swasta">MTs (Madrasah Tsanawiyah)</option>
                             <option value="Pondok Pesantren">Pondok Pesantren / PKPPS</option>
+                            <option value="PKBM">PKBM</option>
                             <option value="Homeschooling/Lainnya">Homeschooling / Lainnya</option>
                           </select>
                         </div>
@@ -6905,7 +6906,7 @@
           }, 1000);
 
           this.$watch('dashData.biodata', function() {
-            this.normalizeBiodataUppercase();
+            self.normalizeBiodataUppercase();
           });
 
           this.$nextTick(function() {
