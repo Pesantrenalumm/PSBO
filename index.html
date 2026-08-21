@@ -3509,7 +3509,7 @@
                      <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
                        <!-- CBT View -->
                        <template x-if="examCoordinatorData.examType === 'CBT'">
-                         <template x-for="st in examCoordinatorData.students" :key="'cbt-' + st.regNo">
+                         <template x-for="st in paginate(examCoordinatorData.students, 'examStudents')" :key="'cbt-' + st.regNo">
                          <tr class="hover:bg-slate-50/80 transition">
                            <td class="p-3.5">
                              <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
@@ -3526,7 +3526,7 @@
 
                        <!-- Non-CBT View -->
                        <template x-if="examCoordinatorData.examType !== 'CBT'">
-                         <template x-for="st in examCoordinatorData.students" :key="'res-' + st.regNo">
+                         <template x-for="st in paginate(examCoordinatorData.students, 'examStudents')" :key="'res-' + st.regNo">
                          <tr class="hover:bg-slate-50/80 transition">
                            <td class="p-3.5">
                              <div class="font-bold text-slate-900 text-xs" x-text="st.namaLengkap"></div>
@@ -3547,6 +3547,38 @@
                        </template>
                      </tbody>
                    </table>
+                 </div>
+
+                 <!-- Pagination Footer Koordinator Ujian -->
+                 <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                   <span class="text-slate-500">
+                     Halaman <span x-text="pagination.examStudents"></span> dari
+                     <span x-text="getTotalPages(examCoordinatorData.students)"></span>
+                   </span>
+
+                   <div class="flex items-center gap-1">
+                     <button type="button"
+                             @click="setPaginationPage('examStudents', pagination.examStudents - 1)"
+                             :disabled="pagination.examStudents <= 1"
+                             class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                       Sebelumnya
+                     </button>
+
+                     <template x-for="page in getPageNumbers('examStudents')" :key="'exam-page-' + page">
+                       <button type="button"
+                               @click="setPaginationPage('examStudents', page)"
+                               class="min-w-8 px-2 py-1.5 rounded-lg border font-bold"
+                               :class="pagination.examStudents === page ? 'bg-teal-700 text-white border-teal-700' : 'bg-white text-slate-700 border-slate-300'"
+                               x-text="page"></button>
+                     </template>
+
+                     <button type="button"
+                             @click="setPaginationPage('examStudents', pagination.examStudents + 1)"
+                             :disabled="pagination.examStudents >= getTotalPages(examCoordinatorData.students)"
+                             class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                       Berikutnya
+                     </button>
+                   </div>
                  </div>
                </div>
 
@@ -5079,6 +5111,38 @@
                       </tbody>
                     </table>
                   </div>
+
+                  <!-- Pagination Footer Biodata TU -->
+                  <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="text-slate-500">
+                      Halaman <span x-text="pagination.docStudents"></span> dari
+                      <span x-text="getTotalPages(getFilteredDocAdminStudents())"></span>
+                    </span>
+
+                    <div class="flex items-center gap-1">
+                      <button type="button"
+                              @click="setPaginationPage('docStudents', pagination.docStudents - 1)"
+                              :disabled="pagination.docStudents <= 1"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Sebelumnya
+                      </button>
+
+                      <template x-for="page in getPageNumbers('docStudents')" :key="'doc-bio-page-' + page">
+                        <button type="button"
+                                @click="setPaginationPage('docStudents', page)"
+                                class="min-w-8 px-2 py-1.5 rounded-lg border font-bold"
+                                :class="pagination.docStudents === page ? 'bg-purple-700 text-white border-purple-700' : 'bg-white text-slate-700 border-slate-300'"
+                                x-text="page"></button>
+                      </template>
+
+                      <button type="button"
+                              @click="setPaginationPage('docStudents', pagination.docStudents + 1)"
+                              :disabled="pagination.docStudents >= getTotalPages(getFilteredDocAdminStudents())"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Berikutnya
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
               </div>
@@ -5151,6 +5215,38 @@
                         </template>
                       </tbody>
                     </table>
+                  </div>
+
+                  <!-- Pagination Footer Dokumen Berkas TU -->
+                  <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="text-slate-500">
+                      Halaman <span x-text="pagination.docStudents"></span> dari
+                      <span x-text="getTotalPages(getFilteredDocAdminStudents())"></span>
+                    </span>
+
+                    <div class="flex items-center gap-1">
+                      <button type="button"
+                              @click="setPaginationPage('docStudents', pagination.docStudents - 1)"
+                              :disabled="pagination.docStudents <= 1"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Sebelumnya
+                      </button>
+
+                      <template x-for="page in getPageNumbers('docStudents')" :key="'doc-item-page-' + page">
+                        <button type="button"
+                                @click="setPaginationPage('docStudents', page)"
+                                class="min-w-8 px-2 py-1.5 rounded-lg border font-bold"
+                                :class="pagination.docStudents === page ? 'bg-purple-700 text-white border-purple-700' : 'bg-white text-slate-700 border-slate-300'"
+                                x-text="page"></button>
+                      </template>
+
+                      <button type="button"
+                              @click="setPaginationPage('docStudents', pagination.docStudents + 1)"
+                              :disabled="pagination.docStudents >= getTotalPages(getFilteredDocAdminStudents())"
+                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                        Berikutnya
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -8987,7 +9083,8 @@
           staff: 1,
           slides: 1,
           logs: 1,
-          students: 1
+          students: 1,
+          examStudents: 1
         },
         pageSize: 10,
 
@@ -9038,13 +9135,22 @@
           if (key === 'docItems') {
             return this.getFilteredDocAdminDocs();
           }
+          if (key === 'chairmanStudents') {
+            return this.getFilteredChairmanStudents();
+          }
+          if (key === 'chairmanPleno') {
+            return this.getFilteredChairmanPleno();
+          }
+          if (key === 'examStudents') {
+            return this.examCoordinatorData.students || [];
+          }
           if (key === 'staff') {
             return this.saData.staffList || [];
           }
           if (key === 'slides') {
             return this.saData.slides || [];
           }
-         if (key === 'logs') {
+          if (key === 'logs') {
             return this.saData.logs || [];
           }
           if (key === 'students') {
