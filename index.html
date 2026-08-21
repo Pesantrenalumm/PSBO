@@ -2248,8 +2248,9 @@
               <!-- ==================================================== -->
               <div x-show="activeTab === 'upload_berkas'" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <template x-for="(info, key) in docLabels" :key="key">
-                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
+                  <template x-for="(info, key) in getVisibleDocLabels()" :key="key">
+                    <div class="p-4 rounded-2xl border shadow-sm flex flex-col justify-between space-y-3"
+                         :class="key === 'MEDICAL_CHECKUP_TBC_HIV' ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-100' : 'bg-white border-slate-200'">
                       
                       <!-- Document Header & Badge -->
                       <div>
@@ -2380,6 +2381,50 @@
               <!-- TAB 5: UJIAN TES                                     -->
               <!-- ==================================================== -->
               <div x-show="activeTab === 'ujian_tes'" class="space-y-6">
+                <div class="p-5 rounded-2xl bg-indigo-50 border border-indigo-200 shadow-sm">
+                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                      <div class="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="file-signature" class="w-5 h-5"></i>
+                      </div>
+                      <div class="space-y-1">
+                        <h4 class="text-sm font-extrabold text-indigo-950">Surat Pernyataan Orang Tua / Wali</h4>
+                        <p class="text-xs text-indigo-900/80 leading-relaxed max-w-3xl">
+                          Surat ini tidak perlu diunggah ke portal. Silakan unduh template sesuai jenjang, cetak, isi dengan lengkap, lalu tanda tangani di atas meterai. Bawa dokumen asli tersebut saat tes wawancara.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-indigo-200/70">
+                    <div class="flex items-center gap-2 text-[11px] font-semibold text-indigo-900">
+                      <span class="w-6 h-6 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-700">1</span>
+                      <span>Unduh dan cetak template.</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] font-semibold text-indigo-900">
+                      <span class="w-6 h-6 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-700">2</span>
+                      <span>Isi data dan tanda tangani di atas meterai.</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] font-semibold text-indigo-900">
+                      <span class="w-6 h-6 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-700">3</span>
+                      <span>Bawa dokumen asli saat wawancara.</span>
+                    </div>
+                  </div>
+
+                  <p x-show="getParentStatementTemplateUrl() === '#'"
+                     class="mt-3 text-[11px] font-semibold text-rose-700">
+                    Template belum diatur oleh panitia. Silakan hubungi Helpdesk PSB untuk mendapatkan template surat.
+                  </p>
+
+                  <a :href="getParentStatementTemplateUrl()"
+                     target="_blank"
+                     :class="getParentStatementTemplateUrl() !== '#' ? 'bg-indigo-700 hover:bg-indigo-800 text-white' : 'bg-slate-300 text-slate-600 cursor-not-allowed pointer-events-none'"
+                     class="w-full mt-4 px-4 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span x-text="'Unduh Template ' + (currentUser.jenjang || 'SMP')"></span>
+                  </a>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <!-- Ujian Akademik (Online) -->
                   <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
@@ -5852,6 +5897,50 @@
                   </div>
                 </div>
 
+                <!-- Kontak, Brosur & Google Drive Peserta -->
+                <div x-show="superAdminTab === 'config'" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <h4 class="font-bold text-sm text-brand-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <i data-lucide="contact-round" class="w-4 h-4"></i>
+                    <span>Kontak Helpdesk, Brosur & Google Drive Peserta</span>
+                  </h4>
+
+                  <p class="text-xs text-slate-500 leading-relaxed">
+                    Atur nomor WhatsApp Helpdesk, tautan unduhan brosur, dan ID folder Google Drive utama untuk penyimpanan berkas setiap peserta.
+                  </p>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Nomor WhatsApp Helpdesk</label>
+                      <input type="text"
+                             x-model="saData.config.HELPDESK_WA"
+                             placeholder="Contoh: 6281234567890"
+                             @input="saData.config.HELPDESK_WA = saData.config.HELPDESK_WA.replace(/\D/g, '')"
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold font-mono focus:bg-white focus:border-brand-700 focus:outline-none">
+                      <p class="text-[10px] text-slate-500 mt-1">Gunakan format internasional tanpa tanda tambah, contoh: 6281234567890.</p>
+                    </div>
+
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Link Download Brosur PSB</label>
+                      <input type="url"
+                             x-model="saData.config.LINK_BROSUR"
+                             placeholder="https://drive.google.com/..."
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      <p class="text-[10px] text-slate-500 mt-1">Masukkan link Google Drive atau link dokumen brosur yang dapat dibuka publik.</p>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                      <label class="block text-slate-700 font-semibold mb-1">ID Folder Google Drive Utama Peserta</label>
+                      <input type="text"
+                             x-model="saData.config.DRIVE_PARENT_FOLDER_ID"
+                             placeholder="Contoh: 1AbCdEfGhIjKlMnOpQrStUvWxYz"
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-mono font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      <p class="text-[10px] text-slate-500 mt-1">
+                        ID folder diambil dari URL Google Drive setelah bagian <strong>/folders/</strong>. Sistem akan membuat folder baru untuk setiap peserta di dalam folder ini.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Pengaturan Jadwal Seleksi -->
                 <div x-show="superAdminTab === 'jadwal_ujian'" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
                   <div class="border-b border-slate-100 pb-3">
@@ -5970,6 +6059,35 @@
                       <i data-lucide="save" class="w-4 h-4"></i>
                       <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Jadwal Ujian'"></span>
                     </button>
+                  </div>
+                </div>
+
+                <div x-show="superAdminTab === 'config'" class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+                  <h4 class="font-bold text-sm text-brand-700 border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <i data-lucide="file-signature" class="w-4 h-4"></i>
+                    <span>Template Surat Pernyataan Orang Tua / Wali</span>
+                  </h4>
+
+                  <p class="text-xs text-slate-500 leading-relaxed">
+                    Upload terlebih dahulu masing-masing template SMP dan MA ke Google Drive, lalu masukkan link file yang dapat dibuka peserta. Peserta akan diarahkan untuk mengunduh, mencetak, mengisi, menandatangani di atas meterai, dan membawa dokumen asli saat wawancara.
+                  </p>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Link Template Surat Pernyataan SMP</label>
+                      <input type="url"
+                             x-model="saData.config.PARENT_STATEMENT_TEMPLATE_SMP_URL"
+                             placeholder="https://drive.google.com/..."
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                    </div>
+
+                    <div>
+                      <label class="block text-slate-700 font-semibold mb-1">Link Template Surat Pernyataan MA</label>
+                      <input type="url"
+                             x-model="saData.config.PARENT_STATEMENT_TEMPLATE_MA_URL"
+                             placeholder="https://drive.google.com/..."
+                             class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-semibold focus:bg-white focus:border-brand-700 focus:outline-none">
+                    </div>
                   </div>
                 </div>
 
@@ -8377,7 +8495,10 @@
           var pending = 0;
           var verified = 0;
           var revision = 0;
-          var total = Object.keys(this.docLabels || {}).length;
+          var isPassed = String(student.admissionStatus || '').trim().toUpperCase() === 'LULUS';
+          var total = isPassed
+            ? Object.keys(this.docLabels || {}).length
+            : Object.keys(this.docLabels || {}).length - 1;
 
           for (var i = 0; i < studentItems.length; i++) {
             var item = studentItems[i];
@@ -8406,9 +8527,14 @@
           var items = this.docAdminData.items || [];
           var details = [];
           var labels = this.docLabels || {};
+          var isPassed = String(student.admissionStatus || '').trim().toUpperCase() === 'LULUS';
 
           for (var key in labels) {
             if (!Object.prototype.hasOwnProperty.call(labels, key)) {
+              continue;
+            }
+
+            if (key === 'MEDICAL_CHECKUP_TBC_HIV' && !isPassed) {
               continue;
             }
 
@@ -9138,7 +9264,52 @@
           PAS_FOTO: { title: 'Pas Foto Santri', desc: 'Latar Belakang Merah/Biru Rapi' },
           RAPOR: { title: 'Scan Rapor Terakhir', desc: 'Halaman identitas & nilai semester akhir' },
           KTP_AYAH: { title: 'KTP Ayah Kandung', desc: 'Scan e-KTP Ayah' },
-          KTP_IBU: { title: 'KTP Ibu Kandung', desc: 'Scan e-KTP Ibu' }
+          KTP_IBU: { title: 'KTP Ibu Kandung', desc: 'Scan e-KTP Ibu' },
+          MEDICAL_CHECKUP_TBC_HIV: {
+            title: 'Medical Check Up Bebas TBC & HIV',
+            desc: 'Wajib diunggah setelah peserta dinyatakan LULUS / diterima. Surat pernyataan orang tua tidak diunggah dan dibawa saat wawancara.'
+          }
+        },
+
+        getParentStatementTemplateUrl() {
+          var user = this.currentUser || {};
+          var dashboardConfig = this.dashData.config || {};
+          var jenjang = String(user.jenjang || 'SMP').trim().toUpperCase();
+
+          if (jenjang === 'MA') {
+            return dashboardConfig.PARENT_STATEMENT_TEMPLATE_MA_URL ||
+              this.config.PARENT_STATEMENT_TEMPLATE_MA_URL ||
+              '#';
+          }
+
+          return dashboardConfig.PARENT_STATEMENT_TEMPLATE_SMP_URL ||
+            this.config.PARENT_STATEMENT_TEMPLATE_SMP_URL ||
+            '#';
+        },
+
+        getVisibleDocLabels() {
+          var visibleLabels = {};
+          var isPassed = this.dashData &&
+            this.dashData.announcement &&
+            String(this.dashData.announcement.status || '').trim().toUpperCase() === 'LULUS';
+
+          if (isPassed && this.docLabels.MEDICAL_CHECKUP_TBC_HIV) {
+            visibleLabels.MEDICAL_CHECKUP_TBC_HIV = this.docLabels.MEDICAL_CHECKUP_TBC_HIV;
+          }
+
+          for (var key in this.docLabels) {
+            if (!Object.prototype.hasOwnProperty.call(this.docLabels, key)) {
+              continue;
+            }
+
+            if (key === 'MEDICAL_CHECKUP_TBC_HIV') {
+              continue;
+            }
+
+            visibleLabels[key] = this.docLabels[key];
+          }
+
+          return visibleLabels;
         },
 
         copyToClipboard(txt, label) {
