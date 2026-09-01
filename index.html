@@ -6793,23 +6793,20 @@
               .trim()
               .toUpperCase() === 'TRUE';
 
-            var promoAmount = Number(cfg.PROMO_AMOUNT || 0);
-            var promoStart = String(cfg.PROMO_START || '');
-            var promoEnd = String(cfg.PROMO_END || '');
+            var promoAmount = Number(String(cfg.PROMO_AMOUNT || '0').replace(/[^\d.-]/g, '')) || 0;
+            var promoStart = String(cfg.PROMO_START || '').trim().substring(0, 10);
+            var promoEnd = String(cfg.PROMO_END || '').trim().substring(0, 10);
 
             var today = new Date();
             var todayText = today.getFullYear() + '-' +
               String(today.getMonth() + 1).padStart(2, '0') + '-' +
               String(today.getDate()).padStart(2, '0');
 
-            if (
-              promoActive &&
-              promoAmount > 0 &&
-              promoStart &&
-              promoEnd &&
-              todayText >= promoStart &&
-              todayText <= promoEnd
-            ) {
+            var isDateEligible = true;
+            if (promoStart && todayText < promoStart) isDateEligible = false;
+            if (promoEnd && todayText > promoEnd) isDateEligible = false;
+
+            if (promoActive && promoAmount > 0 && isDateEligible) {
               return promoAmount;
             }
 
