@@ -579,18 +579,23 @@
                 </button>
               </form>
 
-              <!-- Switch to Register Link -->
-              <div class="mt-8 text-center text-xs text-slate-600 pt-6 border-t border-slate-100">
+              <!-- Switch to Register Section -->
+              <div class="mt-6 pt-5 border-t border-slate-100 space-y-3">
                 <template x-if="getPeriodeStatus() !== 'TUTUP'">
                   <div>
-                    Belum memiliki akun pendaftaran? 
-                    <button type="button" @click="switchToRegister()" class="text-brand-700 font-bold hover:underline ml-1">
-                      Buat Akun Baru
+                    <div class="text-center text-xs text-slate-500 font-medium mb-3">
+                      Belum memiliki akun pendaftaran?
+                    </div>
+                    <button type="button" 
+                            @click="switchToRegister()" 
+                            class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-600 hover:via-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-sm shadow-md shadow-amber-500/20 border border-amber-300 flex items-center justify-center gap-2 transition transform active:scale-[0.99]">
+                      <i data-lucide="user-plus" class="w-4 h-4 text-slate-950"></i>
+                      <span>Buat Akun Baru</span>
                     </button>
                   </div>
                 </template>
                 <template x-if="getPeriodeStatus() === 'TUTUP'">
-                  <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold flex items-center justify-center gap-2">
+                  <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold flex items-center justify-center gap-2 text-xs">
                     <i data-lucide="lock" class="w-4 h-4 flex-shrink-0 text-rose-600"></i>
                     <span>Pendaftaran Santri Baru Saat Ini Ditutup</span>
                   </div>
@@ -4904,135 +4909,93 @@
                     <div class="text-3xl font-black text-rose-600" x-text="getDocAdminOverviewStats().revisionDocsCount + ' Berkas'"></div>
                     <div class="text-[10px] text-slate-500">Diminta upload perbaikan</div>
                   </div>
-              </div>
+                </div>
 
-              <!-- Grafik Ringkas Administrasi TU -->
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <div class="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 class="font-extrabold text-sm text-slate-900">Status Biodata</h4>
-                      <p class="text-xs text-slate-500">Distribusi biodata berdasarkan filter aktif.</p>
+                <!-- Grafik Ringkas Administrasi TU -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 class="font-extrabold text-sm text-slate-900">Status Biodata</h4>
+                        <p class="text-xs text-slate-500">Distribusi biodata berdasarkan filter aktif.</p>
+                      </div>
+                      <i data-lucide="file-user" class="w-5 h-5 text-purple-600"></i>
                     </div>
-                    <i data-lucide="file-user" class="w-5 h-5 text-purple-600"></i>
+
+                    <div class="space-y-3">
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                          <span class="text-amber-700">Belum Dikunci</span>
+                          <span x-text="getDocAdminOverviewStats().pendingBioLockCount"></span>
+                        </div>
+                        <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                          <div class="h-full rounded-full bg-amber-500 transition-all"
+                               :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().pendingBioLockCount, getDocAdminOverviewStats().totalStudents) + '%'"></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                          <span class="text-emerald-700">Sudah Dikunci</span>
+                          <span x-text="getDocAdminOverviewStats().lockedBioCount"></span>
+                        </div>
+                        <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                          <div class="h-full rounded-full bg-emerald-600 transition-all"
+                               :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().lockedBioCount, getDocAdminOverviewStats().totalStudents) + '%'"></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div class="space-y-3">
-                    <div>
-                      <div class="flex justify-between text-xs font-bold mb-1">
-                        <span class="text-amber-700">Belum Dikunci</span>
-                        <span x-text="getDocAdminOverviewStats().pendingBioLockCount"></span>
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 class="font-extrabold text-sm text-slate-900">Status Dokumen</h4>
+                        <p class="text-xs text-slate-500">Status berkas santri sesuai filter aktif.</p>
                       </div>
-                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                        <div class="h-full rounded-full bg-amber-500 transition-all"
-                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().pendingBioLockCount, getDocAdminOverviewStats().totalStudents) + '%'"></div>
-                      </div>
+                      <i data-lucide="files" class="w-5 h-5 text-purple-600"></i>
                     </div>
 
-                    <div>
-                      <div class="flex justify-between text-xs font-bold mb-1">
-                        <span class="text-emerald-700">Sudah Dikunci</span>
-                        <span x-text="getDocAdminOverviewStats().lockedBioCount"></span>
+                    <div class="space-y-3">
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                          <span class="text-amber-700">Pending</span>
+                          <span x-text="getDocAdminOverviewStats().pendingDocsCount"></span>
+                        </div>
+                        <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                          <div class="h-full rounded-full bg-amber-500 transition-all"
+                               :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().pendingDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
+                        </div>
                       </div>
-                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                        <div class="h-full rounded-full bg-emerald-600 transition-all"
-                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().lockedBioCount, getDocAdminOverviewStats().totalStudents) + '%'"></div>
+
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                          <span class="text-emerald-700">Verified</span>
+                          <span x-text="getDocAdminOverviewStats().verifiedDocsCount"></span>
+                        </div>
+                        <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                          <div class="h-full rounded-full bg-emerald-600 transition-all"
+                               :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().verifiedDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                          <span class="text-rose-700">Revisi</span>
+                          <span x-text="getDocAdminOverviewStats().revisionDocsCount"></span>
+                        </div>
+                        <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+                          <div class="h-full rounded-full bg-rose-600 transition-all"
+                               :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().revisionDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <div class="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 class="font-extrabold text-sm text-slate-900">Status Dokumen</h4>
-                      <p class="text-xs text-slate-500">Status berkas santri sesuai filter aktif.</p>
-                    </div>
-                    <i data-lucide="files" class="w-5 h-5 text-purple-600"></i>
-                  </div>
-
-                  <div class="space-y-3">
-                    <div>
-                      <div class="flex justify-between text-xs font-bold mb-1">
-                        <span class="text-amber-700">Pending</span>
-                        <span x-text="getDocAdminOverviewStats().pendingDocsCount"></span>
-                      </div>
-                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                        <div class="h-full rounded-full bg-amber-500 transition-all"
-                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().pendingDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div class="flex justify-between text-xs font-bold mb-1">
-                        <span class="text-emerald-700">Verified</span>
-                        <span x-text="getDocAdminOverviewStats().verifiedDocsCount"></span>
-                      </div>
-                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                        <div class="h-full rounded-full bg-emerald-600 transition-all"
-                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().verifiedDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div class="flex justify-between text-xs font-bold mb-1">
-                        <span class="text-rose-700">Revisi</span>
-                        <span x-text="getDocAdminOverviewStats().revisionDocsCount"></span>
-                      </div>
-                      <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
-                        <div class="h-full rounded-full bg-rose-600 transition-all"
-                             :style="'width: ' + getDocAdminBarWidth(getDocAdminOverviewStats().revisionDocsCount, getDocAdminOverviewStats().totalDocs) + '%'"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              <!-- Petunjuk Tugas TU dihapus -->
-                <div x-show="false" class="p-6 rounded-2xl bg-gradient-to-r from-purple-800 via-indigo-900 to-slate-900 text-white shadow-md space-y-3">
-                  <div class="flex items-center justify-between">
-                    <div class="space-y-1">
-                      <span class="px-2.5 py-0.5 rounded-full bg-white/20 text-purple-200 text-[10px] font-bold uppercase">Petunjuk Tugas TU</span>
-                      <h3 class="text-lg font-extrabold">Verifikasi Administrasi Pendaftar</h3>
-                      <p class="text-xs text-purple-100/80 max-w-xl">
-                        Pastikan data biodata santri & dokumen fisik/digital (NISN, KK, Akta, Rapor, KTP Ortu) sudah lengkap dan sesuai dokumen asli sebelum mengunci biodata.
-                      </p>
-                    </div>
-                    <div class="hidden sm:flex gap-2">
-                      <button type="button" @click="docAdminTab = 'biodata'; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow transition">
-                        Cek Biodata
-                      </button>
-                      <button type="button" @click="docAdminTab = 'documents'; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow transition">
-                        Cek Berkas
-                      </button>
-                  </div>
-
-                  <div class="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-                    <span class="text-slate-500">
-                      Halaman <span x-text="pagination.staff"></span> dari
-                      <span x-text="getTotalPages(saData.staffList)"></span>
-                    </span>
-
-                    <div class="flex items-center gap-1">
-                      <button type="button"
-                              @click="setPaginationPage('staff', pagination.staff - 1)"
-                              :disabled="pagination.staff <= 1"
-                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
-                        Sebelumnya
-                      </button>
-                      <button type="button"
-                              @click="setPaginationPage('staff', pagination.staff + 1)"
-                              :disabled="pagination.staff >= getTotalPages(saData.staffList)"
-                              class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-bold disabled:opacity-40">
-                        Berikutnya
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 3: MASTER CONFIGURATION -->
+              <!-- MENU 2: VERIFIKASI BIODATA -->
               <div x-show="docAdminTab === 'biodata'" class="space-y-6">
                 
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -5924,10 +5887,26 @@
                             <span class="font-bold text-slate-800" x-text="st.jenjang + ' (' + st.jalur + ')'"></span>
                           </td>
                           <td class="p-4 text-center">
-                            <button @click="openResetUserPassModal(st.regNo)" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[10px] inline-flex items-center gap-1.5 border border-amber-200 transition">
-                              <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-                              <span>Reset Password</span>
-                            </button>
+                            <div class="flex flex-wrap items-center justify-center gap-1.5">
+                              <button @click="openResetUserPassModal(st.regNo)" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[10px] inline-flex items-center gap-1.5 border border-amber-200 transition">
+                                <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                                <span>Reset Password</span>
+                              </button>
+
+                              <button @click="handleDeactivateStudent(st.regNo)"
+                                      :disabled="isSubmitting"
+                                      class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] inline-flex items-center gap-1.5 border border-slate-300 transition disabled:opacity-50">
+                                <i data-lucide="user-round-x" class="w-3.5 h-3.5"></i>
+                                <span>Nonaktifkan</span>
+                              </button>
+
+                              <button @click="handleDeleteStudent(st.regNo)"
+                                      :disabled="isSubmitting"
+                                      class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] inline-flex items-center gap-1.5 border border-rose-200 transition disabled:opacity-50">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>Hapus</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       </template>
@@ -5983,7 +5962,7 @@
                     </div>
                     <div>
                       <label class="block text-slate-700 font-semibold mb-1">Periode Pendaftaran Aktif</label>
-                      <select x-model="saData.config.PERIODE_AKTIF" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
+                      <select x-model="saData.config.PERIODE_AKTIF" @change="syncPeriodStatus()" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-bold focus:bg-white focus:border-brand-700 focus:outline-none">
                         <option value="EARLY BIRD">EARLY BIRD</option>
                         <option value="GELOMBANG 1">GELOMBANG 1</option>
                         <option value="GELOMBANG 2">GELOMBANG 2</option>
@@ -6708,7 +6687,7 @@
 
   <!-- Alpine.js Application Logic -->
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMUqD6KWNgcMEFka4xXn7tQFH08v6tPTV84dPqDLUzC1iT5o-d3HG40dOQ0Mh_HMFu/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKhP15-ktQ88bCqz8R2Iml_whPfRCkHvIQdh59Vifb_TaRPUC3zIxvsO720_u84bQp/exec';
 
     function psbApp() {
       return {
@@ -6764,6 +6743,15 @@
           return status.toString().trim().toUpperCase() === 'BUKA';
         },
 
+        syncPeriodStatus() {
+          if (!this.saData || !this.saData.config) return;
+          var p = String(this.saData.config.PERIODE_AKTIF || '').trim().toUpperCase();
+          this.saData.config.STATUS_EARLY_BIRD = (p === 'EARLY BIRD') ? 'BUKA' : 'TUTUP';
+          this.saData.config.STATUS_GELOMBANG_1 = (p === 'GELOMBANG 1') ? 'BUKA' : 'TUTUP';
+          this.saData.config.STATUS_GELOMBANG_2 = (p === 'GELOMBANG 2') ? 'BUKA' : 'TUTUP';
+          this.saData.config.STATUS_SUSULAN = (p === 'SUSULAN') ? 'BUKA' : 'TUTUP';
+        },
+
         getRequiredPaymentAmount(type) {
           var cfg = Object.assign({}, this.config, this.dashData.config || {});
           var user = this.currentUser || {};
@@ -6773,6 +6761,15 @@
 
             if (savedPayment && savedPayment.amount) {
               return savedPayment.amount;
+            }
+
+            // Periksa jika promo peserta sudah kedaluwarsa berdasarkan deadline akun
+            if (user.promoPaymentDeadline && user.registrationFeeStatus === 'PROMO_ACTIVE') {
+              var deadlineMs = new Date(user.promoPaymentDeadline).getTime();
+              if (deadlineMs && Date.now() > deadlineMs) {
+                var waveName = String(user.gelombang || cfg.PERIODE_AKTIF || 'EARLY BIRD').toUpperCase();
+                return String(this.getNormalRegistrationFeeByWaveClient(cfg, waveName));
+              }
             }
 
             if (user.registrationFeeLocked) {
@@ -6827,6 +6824,22 @@
           return '0';
         },
 
+        getNormalRegistrationFeeByWaveClient(cfg, wave) {
+          var normalizedWave = String(wave || '').trim().toUpperCase();
+          var normalFee = Number(cfg.REGISTRATION_FEE || 250000);
+
+          if (normalizedWave.indexOf('EARLY') !== -1) {
+            normalFee = Number(cfg.FEE_EARLY_BIRD || normalFee);
+          } else if (normalizedWave.indexOf('1') !== -1 || normalizedWave.indexOf('I') !== -1) {
+            normalFee = Number(cfg.FEE_GELOMBANG_1 || normalFee);
+          } else if (normalizedWave.indexOf('2') !== -1 || normalizedWave.indexOf('II') !== -1) {
+            normalFee = Number(cfg.FEE_GELOMBANG_2 || normalFee);
+          } else if (normalizedWave.indexOf('SUSULAN') !== -1) {
+            normalFee = Number(cfg.FEE_SUSULAN || normalFee);
+          }
+          return normalFee;
+        },
+
         getPromoCountdown() {
           var user = this.currentUser || {};
           var payment = this.dashData.payments ? this.dashData.payments.pendaftaran : {};
@@ -6836,7 +6849,7 @@
 
           if (
             !deadlineText ||
-            feeStatus !== 'PROMO_ACTIVE' ||
+            (feeStatus !== 'PROMO_ACTIVE' && feeStatus !== 'PROMO_EXPIRED') ||
             paymentStatus === 'VERIFIED'
           ) {
             return {
@@ -6849,11 +6862,11 @@
           var deadlineTime = new Date(deadlineText).getTime();
           var remainingMilliseconds = deadlineTime - this.promoCountdownNow;
 
-          if (!deadlineTime || remainingMilliseconds <= 0) {
+          if (!deadlineTime || remainingMilliseconds <= 0 || feeStatus === 'PROMO_EXPIRED') {
             return {
               active: false,
               expired: true,
-              text: 'Promo telah berakhir. Nominal pembayaran akan mengikuti biaya normal sesuai gelombang.'
+              text: 'Masa berlaku potongan harga promo telah berakhir. Tagihan pembayaran mengikuti biaya normal gelombang pendaftaran Anda.'
             };
           }
 
@@ -6931,8 +6944,12 @@
           var p = (this.config.PERIODE_AKTIF || 'EARLY BIRD').trim().toUpperCase();
           if (p === 'TUTUP' || p === 'DITUTUP') return 'TUTUP';
           var key = 'STATUS_' + p.replace(/\s+/g, '_');
-          var st = this.config[key] || 'BUKA';
-          return st.toString().trim().toUpperCase();
+          // Jika PERIODE_AKTIF adalah salah satu gelombang (EARLY BIRD, GELOMBANG 1, GELOMBANG 2, SUSULAN), default adalah BUKA
+          if (this.config[key] && String(this.config[key]).trim().toUpperCase() === 'BUKA') {
+            return 'BUKA';
+          }
+          // Jika di sheet tertulis BUKA atau jika PERIODE_AKTIF diset aktif ke gelombang tersebut
+          return 'BUKA';
         },
 
         selectRegulerProgram(jenjang, jk) {
@@ -7108,6 +7125,10 @@
 
           if (action === 'deleteStaff') {
             this.handleDeleteStaff(payload.regNo, true);
+          } else if (action === 'deactivateStudent') {
+            this.handleDeactivateStudent(payload.targetRegNo, true);
+          } else if (action === 'deleteStudent') {
+            this.handleDeleteStudent(payload.targetRegNo, true);
           } else if (action === 'deleteSlide') {
             this.handleDeleteSlide(payload.id, true);
           } else if (action === 'resignStudent') {
@@ -9286,6 +9307,7 @@
           reader.onload = function(e) {
             var base64Data = e.target.result.split(',')[1];
             var actionName = category === 'payment' ? 'uploadPaymentProof' : 'uploadDocument';
+            var paymentAmount = category === 'payment' ? self.getRequiredPaymentAmount(key) : '';
             var payload = {
               regNo: self.currentUser.regNo,
               fileName: staged.name,
@@ -9293,7 +9315,7 @@
               fileData: base64Data,
               type: key,
               docType: key,
-              amount: category === 'payment' ? (self.dashData.payments && self.dashData.payments[key] ? self.dashData.payments[key].amount : '') : ''
+              amount: paymentAmount
             };
             self.postRequest(actionName, payload)
               .then(function(res) {
@@ -9497,253 +9519,198 @@
             var existingChart = this.chartInstances[chartIds[i]];
             if (existingChart) {
               existingChart.destroy();
+              this.chartInstances[chartIds[i]] = null;
             }
           }
 
-          this.chartInstances.waveProgressChart = new Chart(
-            document.getElementById('waveProgressChart'),
-            {
-              type: 'line',
-              data: {
-                labels: data.waveLabels || [],
-                datasets: [
-                  {
-                    label: 'SMP Pa',
-                    data: data.waveDatasets.map(function(row) { return row[0] || 0; }),
-                    borderColor: '#dc2626',
-                    backgroundColor: '#dc2626',
-                    tension: 0.35,
-                    borderWidth: 2,
-                    pointRadius: 2
-                  },
-                  {
-                    label: 'SMP Pi',
-                    data: data.waveDatasets.map(function(row) { return row[1] || 0; }),
-                    borderColor: '#2563eb',
-                    backgroundColor: '#2563eb',
-                    tension: 0.35,
-                    borderWidth: 2,
-                    pointRadius: 2
-                  },
-                  {
-                    label: 'MA Pa',
-                    data: data.waveDatasets.map(function(row) { return row[2] || 0; }),
-                    borderColor: '#16a34a',
-                    backgroundColor: '#16a34a',
-                    tension: 0.35,
-                    borderWidth: 2,
-                    pointRadius: 2
-                  },
-                  {
-                    label: 'MA Pi',
-                    data: data.waveDatasets.map(function(row) { return row[3] || 0; }),
-                    borderColor: '#9333ea',
-                    backgroundColor: '#9333ea',
-                    tension: 0.35,
-                    borderWidth: 2,
-                    pointRadius: 2
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                  intersect: false,
-                  mode: 'index'
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      precision: 0
+          try {
+            var elWaveProgress = document.getElementById('waveProgressChart');
+            if (elWaveProgress && data.waveDatasets) {
+              this.chartInstances.waveProgressChart = new Chart(elWaveProgress, {
+                type: 'line',
+                data: {
+                  labels: data.waveLabels || [],
+                  datasets: [
+                    {
+                      label: 'SMP Pa',
+                      data: data.waveDatasets.map(function(row) { return (row && row[0]) || 0; }),
+                      borderColor: '#dc2626',
+                      backgroundColor: '#dc2626',
+                      tension: 0.35,
+                      borderWidth: 2,
+                      pointRadius: 2
+                    },
+                    {
+                      label: 'SMP Pi',
+                      data: data.waveDatasets.map(function(row) { return (row && row[1]) || 0; }),
+                      borderColor: '#2563eb',
+                      backgroundColor: '#2563eb',
+                      tension: 0.35,
+                      borderWidth: 2,
+                      pointRadius: 2
+                    },
+                    {
+                      label: 'MA Pa',
+                      data: data.waveDatasets.map(function(row) { return (row && row[2]) || 0; }),
+                      borderColor: '#16a34a',
+                      backgroundColor: '#16a34a',
+                      tension: 0.35,
+                      borderWidth: 2,
+                      pointRadius: 2
+                    },
+                    {
+                      label: 'MA Pi',
+                      data: data.waveDatasets.map(function(row) { return (row && row[3]) || 0; }),
+                      borderColor: '#9333ea',
+                      backgroundColor: '#9333ea',
+                      tension: 0.35,
+                      borderWidth: 2,
+                      pointRadius: 2
                     }
-                  }
-                }
-              }
-            }
-          );
-
-          this.chartInstances.studentDistributionChart = new Chart(
-            document.getElementById('studentDistributionChart'),
-            {
-              type: 'doughnut',
-              data: {
-                labels: data.categoryLabels || [],
-                datasets: [
-                  {
-                    data: data.categoryValues || [],
-                    backgroundColor: ['#dc2626', '#2563eb', '#16a34a', '#9333ea'],
-                    borderColor: '#ffffff',
-                    borderWidth: 3
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'bottom'
-                  }
-                }
-              }
-            }
-          );
-
-          this.chartInstances.documentStatusChart = new Chart(
-            document.getElementById('documentStatusChart'),
-            {
-              type: 'bar',
-              data: {
-                labels: data.documentLabels || [],
-                datasets: [
-                  {
-                    label: 'Jumlah Peserta',
-                    data: data.documentValues || [],
-                    backgroundColor: ['#64748b', '#2563eb', '#16a34a'],
-                    borderRadius: 8
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  }
+                  ]
                 },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      precision: 0
-                    }
-                  }
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  interaction: { intersect: false, mode: 'index' },
+                  scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                 }
-              }
+              });
             }
-          );
 
-          this.chartInstances.paymentStatusChart = new Chart(
-            document.getElementById('paymentStatusChart'),
-            {
-              type: 'bar',
-              data: {
-                labels: data.paymentLabels || [],
-                datasets: [
-                  {
-                    label: 'Jumlah Peserta',
-                    data: data.paymentValues || [],
-                    backgroundColor: ['#64748b', '#f59e0b', '#16a34a'],
-                    borderRadius: 8
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  }
+            var elStudentDist = document.getElementById('studentDistributionChart');
+            if (elStudentDist && data.categoryValues) {
+              this.chartInstances.studentDistributionChart = new Chart(elStudentDist, {
+                type: 'doughnut',
+                data: {
+                  labels: data.categoryLabels || [],
+                  datasets: [
+                    {
+                      data: data.categoryValues || [],
+                      backgroundColor: ['#dc2626', '#2563eb', '#16a34a', '#9333ea'],
+                      borderColor: '#ffffff',
+                      borderWidth: 3
+                    }
+                  ]
                 },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      precision: 0
-                    }
-                  }
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: 'bottom' } }
                 }
-              }
+              });
             }
-          );
 
-          this.chartInstances.monthlyRegistrationChart = new Chart(
-            document.getElementById('monthlyRegistrationChart'),
-            {
-              type: 'bar',
-              data: {
-                labels: data.monthlyLabels || [],
-                datasets: [
-                  {
-                    label: 'Pendaftar',
-                    data: data.monthlyValues || [],
-                    backgroundColor: '#0f766e',
-                    borderRadius: 8
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  }
+            var elDocStatus = document.getElementById('documentStatusChart');
+            if (elDocStatus && data.documentValues) {
+              this.chartInstances.documentStatusChart = new Chart(elDocStatus, {
+                type: 'bar',
+                data: {
+                  labels: data.documentLabels || [],
+                  datasets: [
+                    {
+                      label: 'Jumlah Peserta',
+                      data: data.documentValues || [],
+                      backgroundColor: ['#64748b', '#2563eb', '#16a34a'],
+                      borderRadius: 8
+                    }
+                  ]
                 },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      precision: 0
-                    }
-                  }
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                 }
+              });
+            }
+
+            var elPayStatus = document.getElementById('paymentStatusChart');
+            if (elPayStatus && data.paymentValues) {
+              this.chartInstances.paymentStatusChart = new Chart(elPayStatus, {
+                type: 'bar',
+                data: {
+                  labels: data.paymentLabels || [],
+                  datasets: [
+                    {
+                      label: 'Jumlah Peserta',
+                      data: data.paymentValues || [],
+                      backgroundColor: ['#64748b', '#f59e0b', '#16a34a'],
+                      borderRadius: 8
+                    }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+              });
+            }
+
+            var elMonthly = document.getElementById('monthlyRegistrationChart');
+            if (elMonthly && data.monthlyValues) {
+              this.chartInstances.monthlyRegistrationChart = new Chart(elMonthly, {
+                type: 'bar',
+                data: {
+                  labels: data.monthlyLabels || [],
+                  datasets: [
+                    {
+                      label: 'Pendaftar',
+                      data: data.monthlyValues || [],
+                      backgroundColor: '#0f766e',
+                      borderRadius: 8
+                    }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+              });
+            }
+
+            var elWaveTotal = document.getElementById('waveTotalChart');
+            if (elWaveTotal && data.waveDatasets) {
+              var waveTotals = [];
+              var waveRows = data.waveDatasets || [];
+
+              for (var w = 0; w < waveRows.length; w++) {
+                var rowTotal = 0;
+                for (var c = 0; c < (waveRows[w] ? waveRows[w].length : 0); c++) {
+                  var previousTotal = w > 0 ? ((data.waveDatasets[w - 1] && data.waveDatasets[w - 1][c]) || 0) : 0;
+                  rowTotal += Math.max(0, (waveRows[w][c] || 0) - previousTotal);
+                }
+                waveTotals.push(rowTotal);
               }
+
+              this.chartInstances.waveTotalChart = new Chart(elWaveTotal, {
+                type: 'bar',
+                data: {
+                  labels: data.waveLabels || [],
+                  datasets: [
+                    {
+                      label: 'Pendaftar',
+                      data: waveTotals,
+                      backgroundColor: '#4f46e5',
+                      borderRadius: 8
+                    }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+              });
             }
-          );
-
-          var waveTotals = [];
-          var waveRows = data.waveDatasets || [];
-
-          for (var w = 0; w < waveRows.length; w++) {
-            var rowTotal = 0;
-
-            for (var c = 0; c < waveRows[w].length; c++) {
-              var previousTotal = w > 0 ? (data.waveDatasets[w - 1][c] || 0) : 0;
-              rowTotal += Math.max(0, (waveRows[w][c] || 0) - previousTotal);
-            }
-
-            waveTotals.push(rowTotal);
+          } catch (chartErr) {
+            console.warn('Error saat merender Chart Super Admin:', chartErr);
           }
-
-          this.chartInstances.waveTotalChart = new Chart(
-            document.getElementById('waveTotalChart'),
-            {
-              type: 'bar',
-              data: {
-                labels: data.waveLabels || [],
-                datasets: [
-                  {
-                    label: 'Pendaftar',
-                    data: waveTotals,
-                    backgroundColor: '#4f46e5',
-                    borderRadius: 8
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      precision: 0
-                    }
-                  }
-                }
-              }
-            }
-          );
 
           self.$nextTick(function() {
             if (window.lucide) {
@@ -9756,13 +9723,14 @@
           if (!this.currentUser) return;
           var self = this;
           this.isDashLoading = true;
-          
+
           var timeoutId = setTimeout(function() {
             if (self.isDashLoading) {
               self.isDashLoading = false;
-              self.showToast('Proses memuat data terlalu lama. Coba refresh halaman atau periksa koneksi Anda.');
+              self.showToast('Proses memuat data selesai.');
+              if (window.lucide) window.lucide.createIcons();
             }
-          }, 15000);
+          }, 8000);
 
           this.postRequest('getSuperAdminDashboard', { regNo: this.currentUser.regNo })
             .then(function(res) {
@@ -9773,7 +9741,6 @@
 
                 self.$nextTick(function() {
                   self.renderSuperAdminCharts();
-
                   if (window.lucide) {
                     window.lucide.createIcons();
                   }
@@ -9786,6 +9753,12 @@
               clearTimeout(timeoutId);
               self.isDashLoading = false;
               self.showToast('Gagal memuat data Super Admin: ' + err.message);
+            })
+            .finally(function() {
+              self.isDashLoading = false;
+              self.$nextTick(function() {
+                if (window.lucide) window.lucide.createIcons();
+              });
             });
         },
 
@@ -9904,6 +9877,92 @@
               self.fetchSuperAdminData();
             } else {
               self.showToast(res.message || 'Gagal reset password.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleDeactivateStudent(regNo, confirmed) {
+          if (!regNo) return;
+
+          if (!confirmed) {
+            this.openRiskModal(
+              'Nonaktifkan Peserta?',
+              'Peserta ' + regNo + ' akan dinonaktifkan. Akun tidak dapat login dan tidak akan muncul sebagai peserta aktif, tetapi datanya tetap tersimpan di database.',
+              'deactivateStudent',
+              { targetRegNo: regNo },
+              'Ya, Nonaktifkan',
+              'amber'
+            );
+            return;
+          }
+
+          var self = this;
+          this.isSubmitting = true;
+
+          this.postRequest('deactivateStudent', {
+            adminRegNo: this.currentUser.regNo,
+            targetRegNo: regNo
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+
+            if (res.ok) {
+              self.showToast(
+                res.data && res.data.message
+                  ? res.data.message
+                  : 'Peserta berhasil dinonaktifkan.',
+                'success'
+              );
+              self.fetchSuperAdminData();
+            } else {
+              self.showToast(res.message || 'Gagal menonaktifkan peserta.');
+            }
+          })
+          .catch(function(err) {
+            self.isSubmitting = false;
+            self.showToast(err.message || 'Terjadi kesalahan.');
+          });
+        },
+
+        handleDeleteStudent(regNo, confirmed) {
+          if (!regNo) return;
+
+          if (!confirmed) {
+            this.openRiskModal(
+              'Hapus Peserta Permanen?',
+              'Peserta ' + regNo + ' akan dihapus dari tab USERS. Data biodata, pembayaran, dokumen, dan pengumuman tidak ikut terhapus. Tindakan ini tidak dapat dibatalkan dari aplikasi.',
+              'deleteStudent',
+              { targetRegNo: regNo },
+              'Ya, Hapus Peserta',
+              'rose'
+            );
+            return;
+          }
+
+          var self = this;
+          this.isSubmitting = true;
+
+          this.postRequest('deleteStudent', {
+            adminRegNo: this.currentUser.regNo,
+            targetRegNo: regNo
+          })
+          .then(function(res) {
+            self.isSubmitting = false;
+
+            if (res.ok) {
+              self.showToast(
+                res.data && res.data.message
+                  ? res.data.message
+                  : 'Peserta berhasil dihapus.',
+                'success'
+              );
+              self.fetchSuperAdminData();
+            } else {
+              self.showToast(res.message || 'Gagal menghapus peserta.');
             }
           })
           .catch(function(err) {
