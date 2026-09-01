@@ -9739,6 +9739,9 @@
               if (res.ok && res.data) {
                 self.saData = Object.assign({}, self.saData, res.data);
                 if (self.saData.config) {
+                  if (self.saData.config.PROMO_ACTIVE !== undefined && self.saData.config.PROMO_ACTIVE !== null) {
+                    self.saData.config.PROMO_ACTIVE = String(self.saData.config.PROMO_ACTIVE).trim().toUpperCase() === 'TRUE' ? 'TRUE' : 'FALSE';
+                  }
                   if (self.saData.config.PROMO_START && self.saData.config.PROMO_START.length > 10) {
                     self.saData.config.PROMO_START = self.saData.config.PROMO_START.substring(0, 10);
                   }
