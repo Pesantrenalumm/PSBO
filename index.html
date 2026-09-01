@@ -47,37 +47,14 @@
         var originalCreateIcons = window.lucide.createIcons.bind(window.lucide);
 
         window.lucide.createIcons = function() {
-          var protectedIcons = [];
-          var iconElements = document.querySelectorAll('[data-lucide]');
-
-          iconElements.forEach(function(el) {
-            if (el.tagName.toLowerCase() !== 'i') {
-              protectedIcons.push({
-                element: el,
-                iconName: el.getAttribute('data-lucide')
-              });
-              el.removeAttribute('data-lucide');
+          // Hapus svg duplikat jika elemen container sudah memiliki SVG sebelumnya
+          document.querySelectorAll('svg.lucide').forEach(function(svg) {
+            if (svg.parentElement && svg.parentElement.querySelector('i[data-lucide]')) {
+              svg.remove();
             }
           });
 
-          var result = originalCreateIcons();
-
-          protectedIcons.forEach(function(item) {
-            if (
-              item.element &&
-              item.element.tagName &&
-              item.element.tagName.toLowerCase() !== 'svg' &&
-              item.iconName
-            ) {
-              item.element.setAttribute('data-lucide', item.iconName);
-            }
-          });
-
-          document.querySelectorAll('svg[data-lucide]').forEach(function(svg) {
-            svg.removeAttribute('data-lucide');
-          });
-
-          return result;
+          return originalCreateIcons();
         };
       }
 
@@ -6646,7 +6623,7 @@
               <span class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
             </template>
             <template x-if="!isSubmitting">
-              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <i :data-lucide="riskModal.action && riskModal.action.toLowerCase().includes('delete') ? 'trash-2' : (riskModal.tone === 'rose' ? 'alert-octagon' : 'check-circle-2')" class="w-4 h-4"></i>
             </template>
             <span x-text="riskModal.confirmLabel"></span>
           </button>
@@ -7072,10 +7049,8 @@
 
         refreshIcons() {
           if (!window.lucide) return;
-          document.querySelectorAll('[data-lucide]').forEach(function(el) {
-            if (el.tagName.toLowerCase() === 'svg') {
-              el.removeAttribute('data-lucide');
-            }
+          document.querySelectorAll('svg.lucide').forEach(function(svg) {
+            svg.remove();
           });
           window.lucide.createIcons();
         },
@@ -10497,7 +10472,7 @@
             email: this.regForm.email
           };
 
-          this.postRequest('register', payload)
+            this.postRequest('register', payload)
             .then(function(res) {
               self.isSubmitting = false;
               if (res.ok) {
@@ -10505,7 +10480,7 @@
                 self.mode = 'success';
                 self.showToast('Akun berhasil dibuat!', 'success');
               } else {
-                self.showToast(res.message || 'Gagal mendaftarkan akun.');
+                self.showToast(res.message || 'Gagal mendaftarkan akun.', 'error');
               }
               self.$nextTick(function() {
                 if (window.lucide) window.lucide.createIcons();
@@ -10513,7 +10488,7 @@
             })
             .catch(function(err) {
               self.isSubmitting = false;
-              self.showToast(err.message || 'Gagal terhubung ke server.');
+              self.showToast(err.message || 'Gagal terhubung ke server.', 'error');
             });
         },
 
