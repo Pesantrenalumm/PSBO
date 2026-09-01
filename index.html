@@ -9738,6 +9738,14 @@
               self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.saData = Object.assign({}, self.saData, res.data);
+                if (self.saData.config) {
+                  if (self.saData.config.PROMO_START && self.saData.config.PROMO_START.length > 10) {
+                    self.saData.config.PROMO_START = self.saData.config.PROMO_START.substring(0, 10);
+                  }
+                  if (self.saData.config.PROMO_END && self.saData.config.PROMO_END.length > 10) {
+                    self.saData.config.PROMO_END = self.saData.config.PROMO_END.substring(0, 10);
+                  }
+                }
 
                 self.$nextTick(function() {
                   self.renderSuperAdminCharts();
