@@ -5022,11 +5022,25 @@
                               <div class="text-[10px] text-slate-500 font-mono" x-text="'WA Ortu: ' + (st.biodata.noWaAyah || st.biodata.noWaIbu || st.noWa || '-')"></div>
                             </td>
                             <td class="p-3.5">
-                              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-flex items-center gap-1"
-                                    :class="st.biodata.isLocked ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'">
-                                <i :data-lucide="st.biodata.isLocked ? 'lock' : 'unlock'" class="w-3 h-3"></i>
-                                <span x-text="st.biodata.isLocked ? 'TERKUNCI (ACC)' : 'DRAF / OPEN'"></span>
-                              </span>
+                              <template x-if="st.biodata.revisionStatus === 'VERIFIED'">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-300">
+                                  <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i>
+                                  <span>ACC PANITIA</span>
+                                </span>
+                              </template>
+                              <template x-if="st.biodata.revisionStatus === 'REVISION'">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-flex items-center gap-1 bg-rose-50 text-rose-800 border-rose-300">
+                                  <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i>
+                                  <span>REVISI</span>
+                                </span>
+                              </template>
+                              <template x-if="st.biodata.revisionStatus !== 'VERIFIED' && st.biodata.revisionStatus !== 'REVISION'">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border inline-flex items-center gap-1"
+                                      :class="st.biodata.isLocked ? 'bg-blue-50 text-blue-800 border-blue-300' : 'bg-amber-50 text-amber-800 border-amber-300'">
+                                  <i :data-lucide="st.biodata.isLocked ? 'lock' : 'unlock'" class="w-3 h-3"></i>
+                                  <span x-text="st.biodata.isLocked ? 'TERKUNCI (SANTRI)' : 'DRAF (BELUM KUNCI)'"></span>
+                                </span>
+                              </template>
                             </td>
                             <td class="p-3.5 text-center" @click.stop>
                               <div class="flex items-center justify-center gap-1.5">
@@ -5035,12 +5049,12 @@
                                   <span>Tinjau</span>
                                 </button>
 
-                                <button type="button" @click="handleVerifyBiodata(st.regNo, true, 'VERIFIED', 'Terkunci & disetujui oleh TU.')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Kunci & ACC Biodata Ini">
-                                  <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-                                  <span>Kunci (ACC)</span>
+                                <button type="button" @click="handleVerifyBiodata(st.regNo, true, 'VERIFIED', 'Telah divalidasi dan disetujui oleh TU.')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Setujui / ACC Biodata Ini">
+                                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                  <span>ACC</span>
                                 </button>
 
-                                <button type="button" @click="handleVerifyBiodata(st.regNo, false, 'REVISION', 'Minta perbaikan data biodata oleh TU.')" :disabled="isSubmitting" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Minta Revisi Biodata">
+                                <button type="button" @click="openBioDetailModal(st)" class="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition disabled:opacity-50" title="Minta Perbaikan / Revisi">
                                   <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
                                   <span>Revisi</span>
                                 </button>
