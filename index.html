@@ -2750,6 +2750,9 @@
                   <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
                   <span class="text-emerald-900 font-bold">SEKSI BENDAHARA</span>
                 </div>
+                <span x-show="lastTreasurerSyncAt" class="hidden lg:inline text-[10px] font-semibold text-slate-400">
+                  Sinkron: <span x-text="formatSyncTime(lastTreasurerSyncAt)"></span>
+                </span>
                 <button @click="fetchTreasurerData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Data Keuangan">
                   <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-emerald-600' : ''"></i>
                 </button>
@@ -4733,6 +4736,9 @@
                   <span class="w-2 h-2 rounded-full bg-purple-600 animate-ping"></span>
                   <span class="text-purple-900 font-bold" x-text="currentUser.role"></span>
                 </div>
+                <span x-show="lastDocSyncAt" class="hidden lg:inline text-[10px] font-semibold text-slate-400">
+                  Sinkron: <span x-text="formatSyncTime(lastDocSyncAt)"></span>
+                </span>
                 <button @click="fetchDocAdminData()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200/60" title="Refresh Data Admin Berkas">
                   <i data-lucide="refresh-cw" class="w-4 h-4" :class="isDashLoading ? 'animate-spin text-purple-600' : ''"></i>
                 </button>
@@ -5158,12 +5164,27 @@
                               </div>
                             </td>
                             <td class="p-3.5 text-center">
-                              <button type="button"
-                                      @click="openDocumentDetailModal(student)"
-                                      class="px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] inline-flex items-center gap-1.5 shadow-sm transition">
-                                <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
-                                <span>Lihat Detail</span>
-                              </button>
+                              <div class="flex items-center justify-center gap-1.5">
+                                <button type="button"
+                                        @click="openDocumentDetailModal(student)"
+                                        class="px-3 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] inline-flex items-center gap-1.5 shadow-sm transition">
+                                  <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                                  <span>Lihat Detail</span>
+                                </button>
+                                <button type="button"
+                                        @click="downloadStudentZip(student)"
+                                        :disabled="isDownloadingZip(student.regNo)"
+                                        class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-[10px] inline-flex items-center gap-1 shadow-sm transition disabled:opacity-50"
+                                        title="Download Semua Berkas (.zip)">
+                                  <template x-if="isDownloadingZip(student.regNo)">
+                                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                  </template>
+                                  <template x-if="!isDownloadingZip(student.regNo)">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                  </template>
+                                  <span>ZIP</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         </template>
@@ -5265,6 +5286,7 @@
               <div x-show="bioDetailTab === 3" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                 <div><span class="text-[10px] text-slate-400 font-bold block">NAMA AYAH</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.namaAyah : '-'"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">NIK AYAH</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.nikAyah : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">TTL AYAH</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.tempatLahirAyah : '-') + ', ' + (selectedStudentBio.biodata ? displayDate(selectedStudentBio.biodata.tanggalLahirAyah) : '-')"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">STATUS AYAH</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.statusAyah : '-'"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">WA AYAH</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.noWaAyah : '-'"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">PEKERJAAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.pekerjaanAyah : '-'"></span></div>
@@ -5275,6 +5297,7 @@
               <div x-show="bioDetailTab === 4" class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                 <div><span class="text-[10px] text-slate-400 font-bold block">NAMA IBU</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.namaIbu : '-'"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">NIK IBU</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.nikIbu : '-'"></span></div>
+                <div><span class="text-[10px] text-slate-400 font-bold block">TTL IBU</span><span class="font-bold text-slate-800" x-text="(selectedStudentBio.biodata ? selectedStudentBio.biodata.tempatLahirIbu : '-') + ', ' + (selectedStudentBio.biodata ? displayDate(selectedStudentBio.biodata.tanggalLahirIbu) : '-')"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">STATUS IBU</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.statusIbu : '-'"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">WA IBU</span><span class="font-mono font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.noWaIbu : '-'"></span></div>
                 <div><span class="text-[10px] text-slate-400 font-bold block">PEKERJAAN</span><span class="font-bold text-slate-800" x-text="selectedStudentBio.biodata ? selectedStudentBio.biodata.pekerjaanIbu : '-'"></span></div>
@@ -5322,14 +5345,29 @@
                 </div>
               </div>
 
-              <button type="button"
-                      x-show="bulkAccCount > 0"
-                      @click="requestBulkAccDocuments()"
-                      :disabled="isSubmitting"
-                      class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition disabled:opacity-50">
-                <i data-lucide="check-check" class="w-4 h-4"></i>
-                <span>ACC Semua Berkas Terunggah</span>
-              </button>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        @click="downloadStudentZip(selectedDocumentStudent)"
+                        :disabled="isDownloadingZip(selectedDocumentStudent.regNo)"
+                        class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition disabled:opacity-50">
+                  <template x-if="isDownloadingZip(selectedDocumentStudent.regNo)">
+                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  </template>
+                  <template x-if="!isDownloadingZip(selectedDocumentStudent.regNo)">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                  </template>
+                  <span>Download Semua File (.zip)</span>
+                </button>
+
+                <button type="button"
+                        x-show="bulkAccCount > 0"
+                        @click="requestBulkAccDocuments()"
+                        :disabled="isSubmitting"
+                        class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition disabled:opacity-50">
+                  <i data-lucide="check-check" class="w-4 h-4"></i>
+                  <span>ACC Semua Berkas Terunggah</span>
+                </button>
+              </div>
 
               <span x-show="bulkAccCount === 0"
                     class="px-3 py-2 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold">
@@ -7010,6 +7048,26 @@
             self.normalizeBiodataUppercase();
           });
 
+          this.startAutoRefresh();
+
+          var onVisibilityChange = function() {
+            if (!document.hidden) {
+              self.requestAutoRefresh();
+            }
+          };
+          var onFocus = function() {
+            self.requestAutoRefresh();
+          };
+          if (document.addEventListener) {
+            document.addEventListener('visibilitychange', onVisibilityChange);
+            document.addEventListener('focus', onFocus);
+          } else if (document.attachEvent) {
+            document.attachEvent('onvisibilitychange', onVisibilityChange);
+            document.attachEvent('onfocus', onFocus);
+          }
+          this._visibilityHandler = onVisibilityChange;
+          this._focusHandler = onFocus;
+
           this.$nextTick(function() {
             if (window.lucide) window.lucide.createIcons();
           });
@@ -7067,6 +7125,70 @@
             svg.remove();
           });
           window.lucide.createIcons();
+        },
+
+        requestAutoRefresh() {
+          if (!this.isAutoRefreshActive()) return;
+          var self = this;
+          if (this.versionPollInFlight) return;
+          this.versionPollInFlight = true;
+
+          this.postRequest('getDataVersion', { staffRegNo: this.currentUser ? this.currentUser.regNo : '' })
+            .then(function(res) {
+              self.versionPollInFlight = false;
+              if (!res.ok || !res.data) return;
+              var serverVersion = Number(res.data.version) || 0;
+              if (self.lastDataVersion === null || self.lastDataVersion !== serverVersion) {
+                self.lastDataVersion = serverVersion;
+                if (self.isTreasurer()) {
+                  if (!self.treasurerPollInFlight) {
+                    self.fetchTreasurerData({ silent: true });
+                  }
+                } else if (self.isDocAdmin()) {
+                  if (!self.docPollInFlight) {
+                    self.fetchDocAdminData({ silent: true });
+                  }
+                }
+              }
+            })
+            .catch(function() {
+              self.versionPollInFlight = false;
+            });
+        },
+
+        syncVersionBaseline() {
+          var self = this;
+          this.postRequest('getDataVersion', { staffRegNo: this.currentUser ? this.currentUser.regNo : '' })
+            .then(function(res) {
+              if (res.ok && res.data) {
+                self.lastDataVersion = Number(res.data.version) || 0;
+              }
+            })
+            .catch(function() {});
+        },
+
+        isAutoRefreshActive() {
+          if (!this.isLoggedIn) return false;
+          if (document.hidden) return false;
+          if (!this.isTreasurer() && !this.isDocAdmin()) return false;
+          return !this.showHelpModal && !this.showFileReviewModal && !this.showDocumentDetailModal && !this.showBulkAccModal;
+        },
+
+        startAutoRefresh() {
+          var self = this;
+          if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+          }
+          this.autoRefreshInterval = setInterval(function() {
+            self.requestAutoRefresh();
+          }, this.pollIntervalMs || 15000);
+        },
+
+        stopAutoRefresh() {
+          if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+          }
         },
 
         showToast(msg, type) {
@@ -7383,19 +7505,16 @@
           // Optimistic local state update
           var targetReg = this.reviewModalData.regNo;
           var targetKey = this.reviewModalData.itemKey;
-          if (this.treasurerData && this.treasurerData.items) {
-            for (var i = 0; i < this.treasurerData.items.length; i++) {
-              if (this.treasurerData.items[i].regNo === targetReg && this.treasurerData.items[i].type === targetKey) {
-                this.treasurerData.items[i].status = newStatus;
-                this.treasurerData.items[i].note = this.reviewModalData.note;
-              }
-            }
-          }
-          if (this.docAdminData && this.docAdminData.items) {
-            for (var d = 0; d < this.docAdminData.items.length; d++) {
-              if (this.docAdminData.items[d].regNo === targetReg && this.docAdminData.items[d].docType === targetKey) {
-                this.docAdminData.items[d].status = newStatus;
-                this.docAdminData.items[d].note = this.reviewModalData.note;
+          var newNote = this.reviewModalData.note || '';
+          if (this.reviewModalData.category === 'PAYMENT') {
+            this.applyTreasurerItemOptimistic(targetReg, targetKey, newStatus, newNote);
+          } else {
+            if (this.docAdminData && this.docAdminData.items) {
+              for (var d = 0; d < this.docAdminData.items.length; d++) {
+                if (this.docAdminData.items[d].regNo === targetReg && this.docAdminData.items[d].docType === targetKey) {
+                  this.docAdminData.items[d].status = newStatus;
+                  this.docAdminData.items[d].note = newNote;
+                }
               }
             }
           }
@@ -7418,9 +7537,9 @@
               if (self.isSuperAdmin()) {
                 self.fetchSuperAdminData();
               } else if (self.isTreasurer()) {
-                self.fetchTreasurerData();
+                self.fetchTreasurerData({ silent: true });
               } else if (self.isDocAdmin()) {
-                self.fetchDocAdminData();
+                self.fetchDocAdminData({ silent: true });
               } else if (self.isExamCoordinator()) {
                 self.fetchExamCoordinatorData();
               } else {
@@ -7430,13 +7549,13 @@
             .catch(function(err) {
               self.isSubmitting = false;
               self.showFileReviewModal = false;
-              self.showToast('Status berkas berhasil diperbarui!', 'success');
+              self.showToast('Gagal memperbarui status berkas: ' + (err.message || 'Terjadi kesalahan.'), 'error');
               if (self.isSuperAdmin()) {
                 self.fetchSuperAdminData();
               } else if (self.isTreasurer()) {
-                self.fetchTreasurerData();
+                self.fetchTreasurerData({ silent: true });
               } else if (self.isDocAdmin()) {
-                self.fetchDocAdminData();
+                self.fetchDocAdminData({ silent: true });
               } else if (self.isExamCoordinator()) {
                 self.fetchExamCoordinatorData();
               } else {
@@ -8405,24 +8524,97 @@
         selectedDocumentStudent: {},
         selectedDocumentDetails: [],
         bulkAccCount: 0,
+        downloadingZipMap: {},
+        docPollInFlight: false,
+        lastDocSyncAt: null,
 
-        fetchDocAdminData() {
-          if (!this.currentUser) return;
+        isDownloadingZip(regNo) {
+          return !!this.downloadingZipMap[regNo];
+        },
+
+        downloadStudentZip(student) {
+          if (!student || !student.regNo) return;
+          var regNo = student.regNo;
           var self = this;
-          this.isDashLoading = true;
-          this.postRequest('getDocAdminDashboard', { staffRegNo: this.currentUser.regNo })
+
+          this.downloadingZipMap[regNo] = true;
+          this.postRequest('downloadAllStudentFiles', {
+            regNo: regNo,
+            staffRegNo: this.currentUser ? this.currentUser.regNo : 'ADMIN_BERKAS'
+          })
+          .then(function(res) {
+            self.downloadingZipMap[regNo] = false;
+            if (res.ok && res.data && res.data.base64Data) {
+              var byteCharacters = atob(res.data.base64Data);
+              var byteNumbers = new Array(byteCharacters.length);
+              for (var i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              var byteArray = new Uint8Array(byteNumbers);
+              var blob = new Blob([byteArray], { type: 'application/zip' });
+
+              var link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = res.data.fileName || ('BERKAS_' + regNo + '.zip');
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(link.href);
+
+              self.showToast('Berhasil mengunduh ' + (res.data.fileCount || '') + ' berkas santri ' + regNo + '.', 'success');
+            } else {
+              self.showToast(res.message || 'Gagal mengunduh berkas santri.');
+            }
+          })
+          .catch(function(err) {
+            self.downloadingZipMap[regNo] = false;
+            self.showToast(err.message || 'Terjadi kesalahan saat mengunduh berkas.');
+          });
+        },
+
+        fetchDocAdminData(options) {
+          if (!this.currentUser) return Promise.resolve(null);
+          var self = this;
+          options = options || {};
+          var silent = !!options.silent;
+
+          if (this.docPollInFlight) {
+            return Promise.resolve(null);
+          }
+          this.docPollInFlight = true;
+
+          if (!silent) {
+            this.isDashLoading = true;
+          }
+
+          return this.postRequest('getDocAdminDashboard', { staffRegNo: this.currentUser.regNo })
             .then(function(res) {
-              self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.docAdminData = Object.assign({}, self.docAdminData, res.data);
-              } else {
+                if (silent) {
+                  self.lastDocSyncAt = new Date();
+                }
+              } else if (!silent) {
                 self.showToast(res.message || 'Gagal memuat dashboard pemberkasan.');
               }
               self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+              return res;
             })
             .catch(function(err) {
-              self.isDashLoading = false;
-              self.showToast('Gagal memuat data TU/Berkas: ' + err.message);
+              if (!silent) {
+                self.showToast('Gagal memuat data TU/Berkas: ' + err.message);
+              }
+              return err;
+            })
+            .then(function(res) {
+              if (!silent) {
+                self.isDashLoading = false;
+              }
+              self.docPollInFlight = false;
+              if (res && res.ok) {
+                self.syncVersionBaseline();
+              }
+              return res;
             });
         },
 
@@ -8693,6 +8885,29 @@
 
           this.isSubmitting = true;
 
+          // Optimistic local state update
+          if (this.selectedDocumentDetails && this.selectedDocumentDetails.length) {
+            for (var od = 0; od < this.selectedDocumentDetails.length; od++) {
+              var odStatus = String(this.selectedDocumentDetails[od].status || '').toUpperCase();
+              if (odStatus === 'PENDING' || odStatus === 'REVISION') {
+                this.selectedDocumentDetails[od].status = 'VERIFIED';
+                this.selectedDocumentDetails[od].note = 'Seluruh berkas terunggah telah di-ACC oleh petugas.';
+              }
+            }
+          }
+          if (this.docAdminData && this.docAdminData.items) {
+            for (var oi = 0; oi < this.docAdminData.items.length; oi++) {
+              if (this.docAdminData.items[oi].regNo === regNo) {
+                var oiStatus = String(this.docAdminData.items[oi].status || '').toUpperCase();
+                if (oiStatus === 'PENDING' || oiStatus === 'REVISION') {
+                  this.docAdminData.items[oi].status = 'VERIFIED';
+                  this.docAdminData.items[oi].note = 'Seluruh berkas terunggah telah di-ACC oleh petugas.';
+                }
+              }
+            }
+          }
+          this.bulkAccCount = 0;
+
           this.postRequest('verifyAllDocuments', {
             staffRegNo: this.currentUser.regNo,
             regNo: regNo
@@ -8707,15 +8922,17 @@
                 'success'
               );
               self.showDocumentDetailModal = false;
-              self.fetchDocAdminData();
+              self.fetchDocAdminData({ silent: true });
             } else {
               self.showToast(res.message || 'Gagal melakukan ACC seluruh berkas.');
+              self.fetchDocAdminData({ silent: true });
             }
           })
           .catch(function(err) {
             self.isSubmitting = false;
             self.showBulkAccModal = false;
             self.showToast(err.message || 'Gagal melakukan ACC seluruh berkas.');
+            self.fetchDocAdminData({ silent: true });
           });
         },
 
@@ -8751,12 +8968,12 @@
           .then(function(res) {
             self.isSubmitting = false;
             self.showToast('Status biodata ' + regNo + ' berhasil diperbarui!', 'success');
-            self.fetchDocAdminData();
+            self.fetchDocAdminData({ silent: true });
           })
           .catch(function(err) {
             self.isSubmitting = false;
-            self.showToast('Status biodata ' + regNo + ' berhasil diperbarui!', 'success');
-            self.fetchDocAdminData();
+            self.showToast('Gagal memperbarui status biodata: ' + (err.message || 'Terjadi kesalahan.'), 'error');
+            self.fetchDocAdminData({ silent: true });
           });
         },
 
@@ -8774,12 +8991,12 @@
           .then(function(res) {
             self.isSubmitting = false;
             self.showToast('Dokumen ' + item.docType + ' santri ' + item.regNo + ' berhasil di-ACC!', 'success');
-            self.fetchDocAdminData();
+            self.fetchDocAdminData({ silent: true });
           })
           .catch(function(err) {
             self.isSubmitting = false;
-            self.showToast('Dokumen ' + item.docType + ' santri ' + item.regNo + ' berhasil di-ACC!', 'success');
-            self.fetchDocAdminData();
+            self.showToast('Gagal memperbarui status berkas: ' + (err.message || 'Terjadi kesalahan.'), 'error');
+            self.fetchDocAdminData({ silent: true });
           });
         },
 
@@ -8808,25 +9025,57 @@
 
         showReceiptModal: false,
         receiptData: { regNo: '', namaSantri: '', type: '', amount: 0, status: '', updatedAt: '' },
+        treasurerPollInFlight: false,
+        lastTreasurerSyncAt: null,
+        autoRefreshInterval: null,
+        pollIntervalMs: 15000,
+        versionPollInFlight: false,
+        lastDataVersion: null,
 
-        fetchTreasurerData() {
-          if (!this.currentUser) return;
+        fetchTreasurerData(options) {
+          if (!this.currentUser) return Promise.resolve(null);
           var self = this;
-          this.isDashLoading = true;
-          this.postRequest('getTreasurerDashboard', { staffRegNo: this.currentUser.regNo })
+          options = options || {};
+          var silent = !!options.silent;
+
+          if (this.treasurerPollInFlight) {
+            return Promise.resolve(null);
+          }
+          this.treasurerPollInFlight = true;
+
+          if (!silent) {
+            this.isDashLoading = true;
+          }
+
+          return this.postRequest('getTreasurerDashboard', { staffRegNo: this.currentUser.regNo })
             .then(function(res) {
-              self.isDashLoading = false;
               if (res.ok && res.data) {
                 self.treasurerData = Object.assign({}, self.treasurerData, res.data);
                 self.calculateVendorVaStats();
-              } else {
+                if (silent) {
+                  self.lastTreasurerSyncAt = new Date();
+                }
+              } else if (!silent) {
                 self.showToast(res.message || 'Gagal memuat dashboard bendahara.');
               }
               self.$nextTick(function() { if (window.lucide) window.lucide.createIcons(); });
+              return res;
             })
             .catch(function(err) {
-              self.isDashLoading = false;
-              self.showToast('Gagal memuat data Bendahara: ' + err.message);
+              if (!silent) {
+                self.showToast('Gagal memuat data Bendahara: ' + err.message);
+              }
+              return err;
+            })
+            .then(function(res) {
+              if (!silent) {
+                self.isDashLoading = false;
+              }
+              self.treasurerPollInFlight = false;
+              if (res && res.ok) {
+                self.syncVersionBaseline();
+              }
+              return res;
             });
         },
 
@@ -8998,9 +9247,32 @@
           return this.paginate(this.treasurerData.passedStudents || [], 'passedStudents');
         },
 
+        applyTreasurerItemOptimistic(regNo, type, newStatus, note) {
+          if (!this.treasurerData || !this.treasurerData.items) return;
+          var stats = this.treasurerData.stats || {};
+          var adjustedRegNo = String(regNo || '').trim();
+          var newStat = String(newStatus || '').toUpperCase();
+
+          for (var i = 0; i < this.treasurerData.items.length; i++) {
+            var item = this.treasurerData.items[i];
+            if (item.regNo !== adjustedRegNo || item.type !== type) continue;
+            var oldStat = String(item.status || 'PENDING').toUpperCase();
+            if (oldStat === newStat) continue;
+            if (oldStat === 'VERIFIED') { stats.verifiedCount = Math.max(0, (Number(stats.verifiedCount) || 0) - 1); stats.totalIncome = Math.max(0, (Number(stats.totalIncome) || 0) - (Number(item.amount) || 0)); }
+            if (oldStat === 'PENDING') { stats.pendingCount = Math.max(0, (Number(stats.pendingCount) || 0) - 1); stats.pendingAmount = Math.max(0, (Number(stats.pendingAmount) || 0) - (Number(item.amount) || 0)); }
+            if (oldStat === 'REVISION') stats.revisionCount = Math.max(0, (Number(stats.revisionCount) || 0) - 1);
+            if (newStat === 'VERIFIED') { stats.verifiedCount = (Number(stats.verifiedCount) || 0) + 1; stats.totalIncome = (Number(stats.totalIncome) || 0) + (Number(item.amount) || 0); }
+            if (newStat === 'PENDING') { stats.pendingCount = (Number(stats.pendingCount) || 0) + 1; stats.pendingAmount = (Number(stats.pendingAmount) || 0) + (Number(item.amount) || 0); }
+            if (newStat === 'REVISION') stats.revisionCount = (Number(stats.revisionCount) || 0) + 1;
+            item.status = newStat;
+            item.note = note || '';
+          }
+          this.treasurerData.stats = stats;
+        },
+
         quickApprovePayment(item) {
           var self = this;
-          item.status = 'VERIFIED'; // Optimistic local UI update
+          this.applyTreasurerItemOptimistic(item.regNo, item.type, 'VERIFIED', 'Telah diverifikasi oleh bendahara.');
           this.isSubmitting = true;
           this.postRequest('verifyPayment', {
             staffRegNo: this.currentUser.regNo,
@@ -9012,12 +9284,12 @@
           .then(function(res) {
             self.isSubmitting = false;
             self.showToast('Pembayaran ' + item.regNo + ' berhasil di-ACC!', 'success');
-            self.fetchTreasurerData();
+            self.fetchTreasurerData({ silent: true });
           })
           .catch(function(err) {
             self.isSubmitting = false;
-            self.showToast('Pembayaran ' + item.regNo + ' berhasil di-ACC!', 'success');
-            self.fetchTreasurerData();
+            self.showToast('Gagal memperbarui pembayaran: ' + (err.message || 'Terjadi kesalahan.'), 'error');
+            self.fetchTreasurerData({ silent: true });
           });
         },
 
@@ -9025,6 +9297,22 @@
           if (!regNo) return;
           var self = this;
           this.isSubmitting = true;
+          if (!this.treasurerData.passedStudents) this.treasurerData.passedStudents = [];
+          var foundVa = false;
+          for (var ps = 0; ps < this.treasurerData.passedStudents.length; ps++) {
+            if (this.treasurerData.passedStudents[ps].regNo === regNo) {
+              this.treasurerData.passedStudents[ps].vaNumber = vaNum || '';
+              foundVa = true;
+              break;
+            }
+          }
+          if (!foundVa) {
+            this.treasurerData.passedStudents.push({
+              regNo: regNo,
+              vaNumber: vaNum || ''
+            });
+          }
+          this.calculateVendorVaStats();
           this.postRequest('saveVaNumber', {
             staffRegNo: this.currentUser.regNo,
             regNo: regNo,
@@ -9033,12 +9321,12 @@
           .then(function(res) {
             self.isSubmitting = false;
             self.showToast('Nomor VA untuk ' + regNo + ' tersimpan!', 'success');
-            self.fetchTreasurerData();
+            self.fetchTreasurerData({ silent: true });
           })
           .catch(function(err) {
             self.isSubmitting = false;
-            self.showToast('Nomor VA untuk ' + regNo + ' tersimpan!', 'success');
-            self.fetchTreasurerData();
+            self.showToast('Gagal menyimpan Nomor VA: ' + (err.message || 'Terjadi kesalahan.'), 'error');
+            self.fetchTreasurerData({ silent: true });
           });
         },
 
@@ -9117,6 +9405,33 @@
         getTotalPages(list) {
           var source = Array.isArray(list) ? list : [];
           return Math.max(1, Math.ceil(source.length / this.pageSize));
+        },
+
+        formatSyncTime(dateVal) {
+          if (!dateVal) return '-';
+          try {
+            var d = new Date(dateVal);
+            if (isNaN(d.getTime())) return '-';
+            var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+            return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+          } catch (e) {
+            return '-';
+          }
+        },
+
+        displayDate(dateVal) {
+          if (!dateVal) return '-';
+          var s = String(dateVal);
+          var ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (ymd) return ymd[1] + '-' + ymd[2] + '-' + ymd[3];
+          try {
+            var d = new Date(s);
+            if (isNaN(d.getTime())) return s;
+            var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+          } catch (e) {
+            return s;
+          }
         },
 
         setPaginationPage(key, page) {
@@ -9435,6 +9750,7 @@
         },
 
         logout() {
+          this.stopAutoRefresh();
           this.isLoggedIn = false;
           this.currentUser = null;
           this.sessionToken = '';
